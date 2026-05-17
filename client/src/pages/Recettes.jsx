@@ -1,0 +1,240 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { api } from '../api.js';
+import { coutPortionTTC, calculerFoodCost } from '../utils.js';
+
+const T = { green: '#2D6A4F', text: '#1A1A1A', muted: '#9CA3AF' };
+const SECTIONS = ['Amuse-bouche', 'Entrée', 'Plat viande', 'Plat poisson', 'Plat végétarien', 'Dessert', 'Autre'];
+
+function sectionFor(categorie) {
+  const c = (categorie || '').trim();
+  const exact = SECTIONS.find(s => s.toLowerCase() === c.toLowerCase());
+  if (exact) return exact;
+  const legacy = { plat: 'Plat viande', entree: 'Entrée', dessert: 'Dessert', 'amuse-bouche': 'Amuse-bouche' };
+  return legacy[c.toLowerCase()] || 'Autre';
+}
+
+function fcBadge(pct, cible) {
+  if (pct < cible) return { label: 'Rentable', color: '#16a34a', bg: '#DCFCE7' };
+  if (pct < cible + 5) return { label: 'Acceptable', color: '#d97706', bg: '#FEF3C7' };
+  return { label: 'À retravailler', color: '#dc2626', bg: '#FEE2E2' };
+}
+
+function Col({ label, value, color, italic }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+      <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: T.muted }}>
+        {label}
+      </span>
+      <span style={{ fontSize: '13px', fontWeight: 600, color: color || T.text, fontStyle: italic ? 'italic' : 'normal' }}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function TileFiche({ r, cible, onDelete, onUpdateCategorie, navigate }) {
+  const [hovered, setHovered] = useState(false);
+  const [catEdit, setCatEdit] = useState(false);
+  const cpTTC = coutPortionTTC(r);
+  const pvTTC = r.prixVentePratiqueTTC || 0;
+  const fc = calculerFoodCost(cpTTC, pvTTC);
+  const badge = fc !== null ? fcBadge(fc, cible) : null;
+
+  return (
+    <div
+      style={{
+        display: 'flex', alignItems: 'center', gap: '0.75rem',
+        padding: '0 1.5rem',
+        height: '60px',
+        borderRadius: '50px',
+        background: '#FFFFFF',
+        border: `1px solid ${hovered ? T.green : '#E8E2D9'}`,
+        boxShadow: hovered ? '0 4px 16px rgba(45,106,79,0.12)' : '0 1px 4px rgba(0,0,0,0.05)',
+        cursor: 'pointer',
+        transition: 'all 0.15s',
+        marginBottom: '8px',
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => navigate('/fiches-techniques/' + r.id)}
+    >
+      {/* Nom + badge catégorie */}
+      <div style={{ flex: 1, minWidth: 0, paddingRight: '0.5rem' }}>
+        <span style={{ fontSize: '15px', fontWeight: 600, color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
+          {r.nom}
+        </span>
+        {catEdit ? (
+          <select
+            autoFocus
+            value={r.categorie || 'Autre'}
+            onClick={e => e.stopPropagation()}
+            onChange={e => { onUpdateCategorie(r.id, e.target.value); setCatEdit(false); }}
+            onBlur={() => setCatEdit(false)}
+            style={{ fontSize: '10px', padding: '1px 4px', border: '1px solid #2D6A4F', borderRadius: '4px', color: T.green, marginTop: '3px', fontFamily: "'DM Sans', sans-serif", outline: 'none' }}
+          >
+            {SECTIONS.map(s => <option key={s}>{s}</option>)}
+          </select>
+        ) : (
+          <span
+            onClick={e => { e.stopPropagation(); setCatEdit(true); }}
+            title="Cliquer pour changer la catégorie"
+            style={{ fontSize: '10px', fontWeight: 600, color: T.green, background: 'rgba(45,106,79,0.08)', padding: '1px 7px', borderRadius: '3px', display: 'inline-block', marginTop: '3px', cursor: 'pointer' }}
+          >
+            {r.categorie || 'Autre'}
+          </span>
+        )}
+      </div>
+
+      {/* Coût matière — 160px */}
+      <div style={{ width: '160px', flexShrink: 0 }}>
+        <Col label="Coût mat." value={cpTTC > 0 ? cpTTC.toFixed(2) + ' €/cvt' : '—'} />
+      </div>
+
+      {/* Prix de vente — 160px */}
+      <div style={{ width: '160px', flexShrink: 0 }}>
+        {pvTTC > 0
+          ? <Col label="Prix de vente" value={pvTTC.toFixed(2) + ' € TTC'} />
+          : <Col label="Prix de vente" value="non renseigné" color={T.muted} italic />
+        }
+      </div>
+
+      {/* Marge — 100px */}
+      <div style={{ width: '100px', flexShrink: 0 }}>
+        {fc !== null
+          ? <Col label="Food cost" value={fc.toFixed(1) + '%'} color={badge.color} />
+          : <Col label="Food cost" value="—" color={T.muted} />
+        }
+      </div>
+
+      {/* Badge — 130px */}
+      <div style={{ width: '130px', flexShrink: 0, textAlign: 'center' }}>
+        {badge ? (
+          <span style={{ fontSize: '11px', fontWeight: 700, padding: '4px 12px', borderRadius: '99px', background: badge.bg, color: badge.color, whiteSpace: 'nowrap' }}>
+            {badge.label}
+          </span>
+        ) : (
+          <span style={{ fontSize: '11px', color: '#f97316', fontWeight: 600 }} title="Prix de vente non renseigné">⚠️</span>
+        )}
+      </div>
+
+      {/* Supprimer */}
+      <button
+        onClick={e => { e.stopPropagation(); if (!confirm('Supprimer cette fiche ?')) return; onDelete(r.id); }}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: hovered ? '#D1C4B0' : 'transparent', fontSize: '12px', padding: '4px 6px', flexShrink: 0, transition: 'color 0.15s' }}
+        onMouseEnter={e => { e.stopPropagation(); e.currentTarget.style.color = '#ef4444'; }}
+        onMouseLeave={e => { e.currentTarget.style.color = hovered ? '#D1C4B0' : 'transparent'; }}
+        title="Supprimer"
+      >✕</button>
+
+      {/* Flèche */}
+      <span style={{ color: hovered ? T.green : '#D1C4B0', fontSize: '16px', flexShrink: 0, lineHeight: 1, transition: 'color 0.15s', paddingLeft: '4px' }}>→</span>
+    </div>
+  );
+}
+
+export default function Recettes() {
+  const [recettes, setRecettes] = useState([]);
+  const [params, setParams] = useState({ foodCostCible: 30, tva: 10 });
+  const [loading, setLoading] = useState(true);
+  const [recherche, setRecherche] = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    Promise.all([
+      api.recettes.list(),
+      api.parametres.get().catch(() => ({ foodCostCible: 30, tva: 10 })),
+    ]).then(([data, p]) => { setRecettes(data); setParams(p); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  function supprimer(id) {
+    api.recettes.delete(id).then(() => setRecettes(prev => prev.filter(r => r.id !== id)));
+  }
+
+  function updateCategorie(id, newCat) {
+    const r = recettes.find(x => x.id === id);
+    if (!r) return;
+    api.recettes.update(id, { ...r, categorie: newCat })
+      .then(() => setRecettes(prev => prev.map(x => x.id === id ? { ...x, categorie: newCat } : x)));
+  }
+
+  const filtrees = recherche
+    ? recettes.filter(r => r.nom.toLowerCase().includes(recherche.toLowerCase()) || (r.categorie || '').toLowerCase().includes(recherche.toLowerCase()))
+    : recettes;
+
+  const grouped = Object.fromEntries(SECTIONS.map(s => [s, []]));
+  filtrees.forEach(r => grouped[sectionFor(r.categorie)].push(r));
+  const sectionsActives = SECTIONS.filter(s => grouped[s].length > 0);
+
+  if (loading) return <p style={{ color: T.muted }}>Chargement...</p>;
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <div>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', fontWeight: 700, color: T.text }}>
+            Fiches techniques
+          </h1>
+          <p style={{ color: T.muted, fontSize: '0.875rem', marginTop: '2px' }}>
+            {filtrees.length} fiche{filtrees.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <input
+            type="search"
+            placeholder="Rechercher une fiche..."
+            value={recherche}
+            onChange={e => setRecherche(e.target.value)}
+            style={{ padding: '0.5rem 1rem', border: '1px solid #E5E0D8', borderRadius: '8px', width: '220px', fontSize: '0.875rem', background: '#fff', outline: 'none', color: T.text, fontFamily: "'DM Sans', sans-serif" }}
+          />
+          <button
+            onClick={() => navigate('/fiches-techniques/nouvelle')}
+            style={{ padding: '0.55rem 1.25rem', background: T.green, color: '#fff', borderRadius: '8px', fontWeight: 600, fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif", border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
+            onMouseEnter={e => e.currentTarget.style.background = '#1e4d38'}
+            onMouseLeave={e => e.currentTarget.style.background = T.green}
+          >+ Nouvelle fiche</button>
+        </div>
+      </div>
+
+      {filtrees.length === 0 && (
+        <p style={{ color: T.muted }}>
+          {recettes.length === 0 ? 'Aucune fiche. ' : 'Aucun résultat. '}
+          <button onClick={() => navigate('/fiches-techniques/nouvelle')} style={{ background: 'none', border: 'none', color: T.green, fontWeight: 600, cursor: 'pointer', fontSize: 'inherit', padding: 0 }}>
+            Créer une fiche
+          </button>
+        </p>
+      )}
+
+      {/* Sections */}
+      {sectionsActives.map(sectionName => {
+        const fiches = grouped[sectionName];
+        return (
+          <div key={sectionName} style={{ marginBottom: '2rem' }}>
+            {/* Titre section "── NOM (N) ──" */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingTop: '16px', paddingBottom: '8px', marginBottom: '0.75rem' }}>
+              <div style={{ flex: 1, height: '2px', background: '#2D6A4F', opacity: 0.3, borderRadius: '1px' }} />
+              <span style={{ fontSize: '16px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#2D6A4F', whiteSpace: 'nowrap' }}>
+                {sectionName} ({fiches.length})
+              </span>
+              <div style={{ flex: 1, height: '2px', background: '#2D6A4F', opacity: 0.3, borderRadius: '1px' }} />
+            </div>
+
+            {/* Tuiles */}
+            {fiches.map(r => (
+              <TileFiche
+                key={r.id}
+                r={r}
+                cible={params.foodCostCible}
+                onDelete={supprimer}
+                onUpdateCategorie={updateCategorie}
+                navigate={navigate}
+              />
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}

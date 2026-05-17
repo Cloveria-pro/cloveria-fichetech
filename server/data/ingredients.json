@@ -1,0 +1,129 @@
+[
+  {
+    "id": "1",
+    "user_id": "demo",
+    "nom": "Magret de canard",
+    "categorie": "viande",
+    "unite": "kg",
+    "prixUnitaire": 18,
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "2",
+    "user_id": "demo",
+    "nom": "Filet de bar",
+    "categorie": "poisson",
+    "unite": "kg",
+    "prixUnitaire": 28,
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "3",
+    "user_id": "demo",
+    "nom": "Foie gras mi-cuit",
+    "categorie": "épicerie fine",
+    "unite": "kg",
+    "prixUnitaire": 85,
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "4",
+    "user_id": "demo",
+    "nom": "Miel",
+    "categorie": "condiment",
+    "unite": "kg",
+    "prixUnitaire": 12,
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "5",
+    "user_id": "demo",
+    "nom": "Vinaigre balsamique",
+    "categorie": "condiment",
+    "unite": "L",
+    "prixUnitaire": 25,
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "6",
+    "user_id": "demo",
+    "nom": "Patate douce",
+    "categorie": "légume",
+    "unite": "kg",
+    "prixUnitaire": 3,
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "7",
+    "user_id": "demo",
+    "nom": "Beurre",
+    "categorie": "produit laitier",
+    "unite": "kg",
+    "prixUnitaire": 9,
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "8",
+    "user_id": "demo",
+    "nom": "Crème liquide 35%",
+    "categorie": "produit laitier",
+    "unite": "L",
+    "prixUnitaire": 4,
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "9",
+    "user_id": "demo",
+    "nom": "Oeufs",
+    "categorie": "produit laitier",
+    "unite": "piece",
+    "prixUnitaire": 0.35,
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "10",
+    "user_id": "demo",
+    "nom": "Asperges vertes",
+    "categorie": "légume",
+    "unite": "kg",
+    "prixUnitaire": 8,
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "11",
+    "user_id": "demo",
+    "nom": "Chocolat Valrhona 70%",
+    "categorie": "épicerie fine",
+    "unite": "kg",
+    "prixUnitaire": 18,
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "12",
+    "user_id": "demo",
+    "nom": "Framboises fraîches",
+    "categorie": "fruit",
+    "unite": "kg",
+    "prixUnitaire": 12,
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "13",
+    "user_id": "demo",
+    "nom": "Fleur de sel",
+    "categorie": "épice",
+    "unite": "kg",
+    "prixUnitaire": 8,
+    "createdAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "3eef362f-cad4-4793-a14d-6b87eb6e4461",
+    "user_id": "demo",
+    "nom": "Poivre noir moulu",
+    "categorie": "épicerie",
+    "unite": "kg",
+    "prixUnitaire": 10,
+    "tva": 10,
+    "createdAt": "2026-05-17T13:06:53.346Z"
+  }
+]

@@ -1,0 +1,9 @@
+/* Force Inter globally — overrides all inline fontFamily declarations */
+* {
+  font-family: 'Inter', system-ui, sans-serif !important;
+}
+
+/* Only exception: recipe name h1 on fiche technique pages */
+[data-font-playfair] {
+  font-family: 'Playfair Display', serif !important;
+}

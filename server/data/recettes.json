@@ -1,0 +1,522 @@
+[
+  {
+    "id": "1",
+    "user_id": "demo",
+    "nom": "Quiche Lorraine",
+    "categorie": "Entrée",
+    "portions": 6,
+    "tempsPreparation": 20,
+    "tempsCuisson": 35,
+    "allergenes": [
+      "gluten",
+      "oeufs",
+      "lait"
+    ],
+    "ingredients": [
+      {
+        "nom": "Pâte brisée",
+        "quantite": 250,
+        "unite": "g",
+        "prixUnitaire": 8,
+        "tva": 20
+      },
+      {
+        "nom": "Lardons",
+        "quantite": 200,
+        "unite": "g",
+        "prixUnitaire": 12,
+        "tva": 20
+      },
+      {
+        "nom": "Crème fraîche",
+        "quantite": 200,
+        "unite": "ml",
+        "prixUnitaire": 5
+      },
+      {
+        "nom": "Oeufs",
+        "quantite": 3,
+        "unite": "piece",
+        "prixUnitaire": 0.35,
+        "tva": 20
+      },
+      {
+        "nom": "Gruyère râpé",
+        "quantite": 80,
+        "unite": "g",
+        "prixUnitaire": 20,
+        "tva": 10
+      }
+    ],
+    "etapes": [
+      "Préchauffer le four à 180°C. Foncer un moule à tarte avec la pâte brisée, piquer le fond à la fourchette et précuire 10 min à blanc.",
+      "Faire revenir les lardons à sec dans une poêle jusqu'à légère coloration dorée. Égoutter sur papier absorbant.",
+      "Battre les œufs avec la crème fraîche, assaisonner généreusement. Incorporer les lardons refroidis.",
+      "okokok",
+      "Verser l'appareil sur le fond de tarte précuit, parsemer uniformément de gruyère râpé.",
+      "Cuire 35 min à 180°C jusqu'à ce que la quiche soit bien dorée et ferme au toucher. Laisser reposer 5 min avant de servir."
+    ],
+    "description": "Tarte salée garnie de lardons, crème et fromage.",
+    "prixVente": 5.5,
+    "createdAt": "2026-01-15T10:00:00.000Z",
+    "updatedAt": "2026-05-17T14:30:12.478Z",
+    "prixVentePratiqueTTC": 4.92
+  },
+  {
+    "id": "2",
+    "user_id": "demo",
+    "nom": "Cromesquis de foie gras, gelée de Sauternes",
+    "categorie": "Amuse-bouche",
+    "portions": 8,
+    "tempsPreparation": 60,
+    "tempsCuisson": 5,
+    "allergenes": [
+      "gluten",
+      "oeufs",
+      "lait"
+    ],
+    "ingredients": [
+      {
+        "nom": "Foie gras mi-cuit",
+        "quantite": 200,
+        "unite": "g",
+        "prixUnitaire": 85
+      },
+      {
+        "nom": "Farine",
+        "quantite": 100,
+        "unite": "g",
+        "prixUnitaire": 1.2
+      },
+      {
+        "nom": "Oeufs",
+        "quantite": 2,
+        "unite": "piece",
+        "prixUnitaire": 0.35
+      },
+      {
+        "nom": "Chapelure",
+        "quantite": 80,
+        "unite": "g",
+        "prixUnitaire": 2
+      },
+      {
+        "nom": "Huile de friture",
+        "quantite": 500,
+        "unite": "ml",
+        "prixUnitaire": 3
+      }
+    ],
+    "etapes": [
+      "Tailler le foie gras mi-cuit en cubes réguliers de 2 cm. Réserver 15 min au congélateur pour raffermir.",
+      "Préparer la panure à l'anglaise dans trois assiettes séparées : farine, œufs battus, chapelure.",
+      "Paner chaque cube en respectant l'ordre : farine → œuf battu → chapelure. Presser légèrement pour faire adhérer. Réfrigérer 15 min.",
+      "Chauffer l'huile de friture à 180°C. Frire les cromesquis par petites quantités, 2 min, jusqu'à coloration dorée et croustillante.",
+      "Égoutter sur papier absorbant. Dresser sur cuillère de dégustation avec une pointe de gelée de Sauternes. Servir immédiatement."
+    ],
+    "description": "Préparer le foie gras en cubes réguliers, paner à l'anglaise (farine, oeuf, chapelure), frire 2 min à 180°C jusqu'à coloration dorée. Dresser sur cuillère avec une pointe de gelée de Sauternes.",
+    "prixVente": 7,
+    "createdAt": "2026-02-01T09:00:00.000Z",
+    "updatedAt": "2026-05-17T13:15:28.630Z",
+    "prixVentePratiqueTTC": 12
+  },
+  {
+    "id": "3",
+    "user_id": "demo",
+    "nom": "Asperges vertes rôties, oeuf parfait 63°, émulsion beurre noisette",
+    "categorie": "Entrée",
+    "portions": 4,
+    "tempsPreparation": 15,
+    "tempsCuisson": 60,
+    "allergenes": [
+      "oeufs",
+      "lait"
+    ],
+    "ingredients": [
+      {
+        "nom": "Asperges vertes",
+        "quantite": 800,
+        "unite": "g",
+        "prixUnitaire": 8
+      },
+      {
+        "nom": "Oeufs",
+        "quantite": 4,
+        "unite": "piece",
+        "prixUnitaire": 0.35
+      },
+      {
+        "nom": "Beurre",
+        "quantite": 120,
+        "unite": "g",
+        "prixUnitaire": 9
+      },
+      {
+        "nom": "Fleur de sel",
+        "quantite": 5,
+        "unite": "g",
+        "prixUnitaire": 8
+      }
+    ],
+    "etapes": [
+      "Mettre de l'eau à chauffer à exactement 63°C dans un bain-marie ou avec un thermoplongeur. Plonger les œufs entiers sans les casser et maintenir la température 1 heure.",
+      "Éplucher le tiers inférieur des asperges à l'économe, éliminer les extrémités ligneuses en cassant les tiges naturellement.",
+      "Disposer les asperges sur une plaque de cuisson, filet d'huile d'olive, fleur de sel. Rôtir 12 min à 200°C jusqu'à légère coloration.",
+      "Dans une casserole à fond épais, faire fondre le beurre à feu vif en remuant jusqu'à obtenir une coloration noisette ambrée et un parfum de noisette. Stopper aussitôt hors du feu.",
+      "Dresser les asperges rôties en fagot, casser délicatement l'œuf parfait par-dessus à l'aide d'une cuillère. Napper généreusement de beurre noisette et finir à la fleur de sel."
+    ],
+    "description": "Cuire les oeufs 1h à 63°C au bain-marie ou thermoplongeur. Rôtir les asperges au four 12 min à 200°C avec un filet d'huile et fleur de sel. Réaliser le beurre noisette à feu vif jusqu'à coloration ambrée. Dresser les asperges, poser l'oeuf parfait, napper de beurre noisette.",
+    "prixVente": 8.5,
+    "createdAt": "2026-02-05T09:00:00.000Z",
+    "updatedAt": "2026-05-17T13:42:26.821Z",
+    "prixVentePratiqueTTC": 10
+  },
+  {
+    "id": "4",
+    "user_id": "demo",
+    "nom": "Filet de bar en croûte de sel, vierge aux agrumes",
+    "categorie": "Plat poisson",
+    "portions": 4,
+    "tempsPreparation": 20,
+    "tempsCuisson": 25,
+    "allergenes": [
+      "poisson"
+    ],
+    "ingredients": [
+      {
+        "nom": "Filet de bar",
+        "quantite": 800,
+        "unite": "g",
+        "prixUnitaire": 28
+      },
+      {
+        "nom": "Gros sel",
+        "quantite": 1000,
+        "unite": "g",
+        "prixUnitaire": 1
+      },
+      {
+        "nom": "Citron",
+        "quantite": 2,
+        "unite": "piece",
+        "prixUnitaire": 0.5
+      },
+      {
+        "nom": "Tomates cerises",
+        "quantite": 200,
+        "unite": "g",
+        "prixUnitaire": 4
+      },
+      {
+        "nom": "Basilic frais",
+        "quantite": 1,
+        "unite": "botte",
+        "prixUnitaire": 2
+      },
+      {
+        "nom": "Huile d'olive",
+        "quantite": 50,
+        "unite": "ml",
+        "prixUnitaire": 8
+      }
+    ],
+    "etapes": [
+      "Préchauffer le four à 200°C. Tapisser un plat à rôtir d'une couche uniforme de gros sel de 1 cm d'épaisseur.",
+      "Déposer les filets de bar côté peau sur le sel. Recouvrir entièrement d'une épaisse couche de gros sel en tassant légèrement.",
+      "Enfourner 25 min. La croûte de sel doit être complètement sèche et légèrement colorée.",
+      "Pendant la cuisson, préparer la sauce vierge : couper les tomates cerises en deux, zester et prélever les suprêmes d'un citron, presser l'autre, ciseler finement le basilic. Assembler et émulsionner avec l'huile d'olive. Ajuster l'assaisonnement.",
+      "En salle, casser la croûte de sel devant les convives avec un couteau. Lever délicatement les filets, napper de sauce vierge aux agrumes et servir."
+    ],
+    "description": "Tapisser un plat de gros sel, déposer le filet de bar, recouvrir de sel et enfourner 25 min à 200°C. Préparer la vierge : tomates cerises coupées, zestes et suprêmes de citron, basilic ciselé, huile d'olive. Casser la croûte de sel en salle et napper de sauce vierge.",
+    "prixVente": 18,
+    "createdAt": "2026-02-10T09:00:00.000Z",
+    "updatedAt": "2026-05-17T13:42:57.772Z",
+    "prixVentePratiqueTTC": 25.3
+  },
+  {
+    "id": "5",
+    "user_id": "demo",
+    "nom": "Magret de canard sauce miel balsamique, purée patate douce",
+    "categorie": "Plat viande",
+    "portions": 4,
+    "tempsPreparation": 20,
+    "tempsCuisson": 20,
+    "allergenes": [
+      "lait"
+    ],
+    "ingredients": [
+      {
+        "nom": "Magret de canard",
+        "quantite": 800,
+        "unite": "g",
+        "prixUnitaire": 18
+      },
+      {
+        "nom": "Miel",
+        "quantite": 60,
+        "unite": "g",
+        "prixUnitaire": 12
+      },
+      {
+        "nom": "Vinaigre balsamique",
+        "quantite": 40,
+        "unite": "ml",
+        "prixUnitaire": 25
+      },
+      {
+        "nom": "Patate douce",
+        "quantite": 600,
+        "unite": "g",
+        "prixUnitaire": 3
+      },
+      {
+        "nom": "Beurre",
+        "quantite": 80,
+        "unite": "g",
+        "prixUnitaire": 9
+      },
+      {
+        "nom": "Fleur de sel",
+        "quantite": 5,
+        "unite": "g",
+        "prixUnitaire": 8
+      }
+    ],
+    "etapes": [
+      "Quadriller la peau du magret au couteau en croisillons sans atteindre la chair. Assaisonner généreusement côté chair.",
+      "Déposer le magret côté peau dans une poêle froide. Chauffer à feu moyen-doux et cuire 8 min en évacuant régulièrement la graisse fondue.",
+      "Retourner le magret, cuire côté chair 4 min pour une cuisson rosée. Laisser reposer 5 min sous papier aluminium sans couvrir hermétiquement.",
+      "Vider l'excédent de graisse de la poêle. Ajouter le miel et caraméliser 2 min à feu vif. Verser le vinaigre balsamique, réduire à consistance nappante. Rectifier l'assaisonnement.",
+      "Cuire les patates douces épluchées et coupées en morceaux à l'eau bouillante salée 20 min. Égoutter et écraser avec le beurre. Trancher le magret en biais et dresser avec la purée et la sauce."
+    ],
+    "description": "Quadriller la peau du magret au couteau. Cuire côté peau 8 min à feu moyen pour fondre la graisse, retourner et cuire 4 min côté chair, laisser reposer 5 min sous papier alu. Déglacer la poêle avec le miel jusqu'à caramélisation, ajouter le balsamique et réduire 2 min. Cuire les patates douces à l'eau, écraser avec beurre et assaisonner.",
+    "prixVente": 15,
+    "createdAt": "2026-02-15T09:00:00.000Z",
+    "updatedAt": "2026-05-17T12:46:15.000Z",
+    "prixVentePratiqueTTC": 18
+  },
+  {
+    "id": "6",
+    "user_id": "demo",
+    "nom": "Fondant chocolat Valrhona, framboises fraîches",
+    "categorie": "Dessert",
+    "portions": 6,
+    "tempsPreparation": 20,
+    "tempsCuisson": 10,
+    "allergenes": [
+      "gluten",
+      "oeufs",
+      "lait"
+    ],
+    "ingredients": [
+      {
+        "nom": "Chocolat Valrhona 70%",
+        "quantite": 200,
+        "unite": "g",
+        "prixUnitaire": 18
+      },
+      {
+        "nom": "Beurre",
+        "quantite": 150,
+        "unite": "g",
+        "prixUnitaire": 9
+      },
+      {
+        "nom": "Oeufs",
+        "quantite": 4,
+        "unite": "piece",
+        "prixUnitaire": 0.35
+      },
+      {
+        "nom": "Sucre",
+        "quantite": 80,
+        "unite": "g",
+        "prixUnitaire": 1.5
+      },
+      {
+        "nom": "Farine",
+        "quantite": 40,
+        "unite": "g",
+        "prixUnitaire": 1.2
+      },
+      {
+        "nom": "Framboises fraîches",
+        "quantite": 200,
+        "unite": "g",
+        "prixUnitaire": 12
+      },
+      {
+        "nom": "Crème liquide 35%",
+        "quantite": 100,
+        "unite": "ml",
+        "prixUnitaire": 4
+      }
+    ],
+    "etapes": [
+      "Préchauffer le four à 180°C. Beurrer généreusement les moules individuels, fariner et tapoter pour éliminer l'excédent.",
+      "Faire fondre le chocolat Valrhona cassé en morceaux avec le beurre au bain-marie en remuant jusqu'à obtenir un mélange lisse et brillant. Laisser tiédir.",
+      "Fouetter énergiquement les œufs entiers avec le sucre au batteur électrique jusqu'à blanchiment et formation du ruban (environ 3 min).",
+      "Incorporer délicatement le mélange chocolaté tiède aux œufs au fouet, puis ajouter la farine tamisée à la spatule en soulevant la masse sans trop travailler.",
+      "Verser l'appareil dans les moules aux 3/4 et cuire exactement 10 min à 180°C — le centre doit rester tremblotant.",
+      "Démouler délicatement en retournant sur l'assiette. Dresser avec les framboises fraîches disposées autour et un trait de crème liquide. Servir immédiatement."
+    ],
+    "description": "Fondre le chocolat et le beurre au bain-marie. Fouetter vigoureusement les oeufs avec le sucre jusqu'à blanchiment. Incorporer le mélange chocolaté, puis la farine tamisée. Beurrer et fariner des moules individuels, verser l'appareil et cuire 10 min à 180°C — le coeur doit rester coulant. Dresser avec les framboises fraîches et un trait de crème.",
+    "prixVente": 5,
+    "createdAt": "2026-02-20T09:00:00.000Z",
+    "updatedAt": "2026-05-17T13:42:14.187Z",
+    "prixVentePratiqueTTC": 8
+  },
+  {
+    "id": "c0138e6e-5775-4650-8562-df23f1cdfdcf",
+    "user_id": "demo",
+    "nom": "Magret de canard et purée de patate douce",
+    "categorie": "Plat végétarien",
+    "portions": 4,
+    "tempsPreparation": 20,
+    "tempsCuisson": 30,
+    "description": "Magret de canard cuit à la poêle, peau croustillante, accompagné d'une purée onctueuse de patate douce au beurre, finition à la fleur de sel.",
+    "allergenes": [
+      "lait"
+    ],
+    "ingredients": [
+      {
+        "nom": "Magret de canard",
+        "quantite": 2,
+        "unite": "piece",
+        "prixUnitaire": 18,
+        "tva": 10
+      },
+      {
+        "nom": "Patate douce",
+        "quantite": 800,
+        "unite": "g",
+        "prixUnitaire": 3,
+        "tva": 10
+      },
+      {
+        "nom": "Beurre",
+        "quantite": 60,
+        "unite": "g",
+        "prixUnitaire": 9,
+        "tva": 10
+      },
+      {
+        "nom": "Fleur de sel",
+        "quantite": 1,
+        "unite": "c.c.",
+        "prixUnitaire": 8,
+        "tva": 10
+      },
+      {
+        "nom": "Poivre noir moulu",
+        "quantite": 1,
+        "unite": "c.c.",
+        "prixUnitaire": 10,
+        "tva": 10
+      },
+      {
+        "nom": "Thym frais",
+        "quantite": 4,
+        "unite": "botte",
+        "prixUnitaire": 0,
+        "tva": 10
+      }
+    ],
+    "etapes": [
+      "Éplucher et couper les patates douces en cubes réguliers, puis les plonger dans une casserole d'eau froide salée. Porter à ébullition et cuire 20 minutes jusqu'à ce qu'elles soient tendres.",
+      "Quadriller la peau des magrets de canard avec un couteau en incisant profondément sans atteindre la chair. Assaisonner généreusement de poivre noir.",
+      "Déposer les magrets côté peau dans une poêle froide sans matière grasse. Monter progressivement à feu moyen et cuire 8 à 10 minutes côté peau pour bien faire fondre et dorer le gras.",
+      "Retourner les magrets et cuire encore 4 à 5 minutes côté chair pour une cuisson rosée. Réserver sous papier aluminium pour laisser reposer 5 minutes.",
+      "okokok",
+      "Égoutter les patates douces et les écraser au presse-purée. Incorporer le beurre froid en morceaux et mélanger jusqu'à obtenir une purée lisse et onctueuse. Rectifier l'assaisonnement.",
+      "Trancher les magrets en biais et dresser les tranches en éventail sur assiette. Disposer la purée de patate douce à côté. Finir avec une pincée de fleur de sel sur le magret et quelques brins de thym frais."
+    ],
+    "createdAt": "2026-05-17T10:51:45.725Z",
+    "updatedAt": "2026-05-17T14:21:36.262Z",
+    "prixVentePratiqueTTC": 50
+  },
+  {
+    "id": "5f74127c-a530-42d2-8cb9-8122c52320cc",
+    "user_id": "demo",
+    "nom": "Pâtes Carbonara",
+    "categorie": "Plat viande",
+    "portions": 4,
+    "tempsPreparation": 10,
+    "tempsCuisson": 20,
+    "description": "Pâtes à la carbonara traditionnelles avec guanciale, oeufs, pecorino et poivre noir",
+    "allergenes": [
+      "gluten",
+      "oeufs",
+      "lait"
+    ],
+    "ingredients": [
+      {
+        "nom": "Spaghetti",
+        "quantite": 400,
+        "unite": "g",
+        "prixUnitaire": 0,
+        "tva": 10
+      },
+      {
+        "nom": "Guanciale",
+        "quantite": 200,
+        "unite": "g",
+        "prixUnitaire": 0,
+        "tva": 10
+      },
+      {
+        "nom": "Oeufs entiers",
+        "quantite": 2,
+        "unite": "piece",
+        "prixUnitaire": 0,
+        "tva": 10
+      },
+      {
+        "nom": "Jaunes d'oeufs",
+        "quantite": 4,
+        "unite": "piece",
+        "prixUnitaire": 0,
+        "tva": 10
+      },
+      {
+        "nom": "Pecorino Romano râpé",
+        "quantite": 100,
+        "unite": "g",
+        "prixUnitaire": 0,
+        "tva": 10
+      },
+      {
+        "nom": "Parmesan râpé",
+        "quantite": 50,
+        "unite": "g",
+        "prixUnitaire": 0,
+        "tva": 10
+      },
+      {
+        "nom": "Poivre noir moulu",
+        "quantite": 2,
+        "unite": "c.c.",
+        "prixUnitaire": 10,
+        "tva": 10
+      },
+      {
+        "nom": "Sel",
+        "quantite": 20,
+        "unite": "g",
+        "prixUnitaire": 0,
+        "tva": 10
+      }
+    ],
+    "etapes": [
+      "Porter une grande casserole d'eau salée à ébullition et cuire les spaghetti al dente selon les indications du paquet.",
+      "Pendant ce temps, couper le guanciale en lardons ou en dés et les faire revenir à feu moyen dans une poêle sans matière grasse jusqu'à ce qu'ils soient dorés et croustillants. Réserver la graisse de cuisson.",
+      "Dans un bol, fouetter les oeufs entiers et les jaunes avec le pecorino et le parmesan râpés. Poivrer généreusement.",
+      "Réserver une louche d'eau de cuisson des pâtes avant d'égoutter.",
+      "Égoutter les pâtes et les ajouter directement dans la poêle avec le guanciale hors du feu.",
+      "Ajouter le mélange oeufs-fromage sur les pâtes en mélangeant rapidement. Incorporer un peu d'eau de cuisson pour obtenir une sauce crémeuse et homogène sans cuire les oeufs.",
+      "Dresser immédiatement dans des assiettes chaudes, garnir de pecorino râpé et d'un tour de moulin à poivre noir."
+    ],
+    "createdAt": "2026-05-17T14:13:18.119Z",
+    "updatedAt": "2026-05-17T14:13:18.119Z"
+  }
+]

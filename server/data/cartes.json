@@ -1,0 +1,81 @@
+[
+  {
+    "id": "1",
+    "user_id": "demo",
+    "nom": "Carte Printemps 20026",
+    "saison": "Automne 2026",
+    "sections": [
+      {
+        "titre": "Amuse-bouche",
+        "plats": [
+          {
+            "recetteId": "2",
+            "nom": "Cromesquis de foie gras, gelée de Sauternes",
+            "prixVente": 7
+          }
+        ]
+      },
+      {
+        "titre": "Entrées",
+        "plats": [
+          {
+            "recetteId": "3",
+            "nom": "Asperges vertes rôties, oeuf parfait 63°, émulsion beurre noisette",
+            "prixVente": 8.5
+          }
+        ]
+      },
+      {
+        "titre": "Plats",
+        "plats": [
+          {
+            "recetteId": "4",
+            "nom": "Filet de bar en croûte de sel, vierge aux agrumes",
+            "prixVente": 18
+          },
+          {
+            "recetteId": "5",
+            "nom": "Magret de canard sauce miel balsamique, purée patate douce",
+            "prixVente": 15
+          }
+        ]
+      },
+      {
+        "titre": "Desserts",
+        "plats": [
+          {
+            "recetteId": "6",
+            "nom": "Fondant chocolat Valrhona, framboises fraîches",
+            "prixVente": 5
+          }
+        ]
+      }
+    ],
+    "createdAt": "2026-03-01T10:00:00.000Z"
+  },
+  {
+    "id": "00ba7e52-cd3b-4544-b280-49f1f9035581",
+    "user_id": "demo",
+    "nom": "automne 2026",
+    "saison": "Printemps 2026",
+    "sections": [
+      {
+        "titre": "Amuse-bouche",
+        "plats": []
+      },
+      {
+        "titre": "Entrées",
+        "plats": []
+      },
+      {
+        "titre": "Plats",
+        "plats": []
+      },
+      {
+        "titre": "Desserts",
+        "plats": []
+      }
+    ],
+    "createdAt": "2026-05-17T13:22:25.951Z"
+  }
+]
