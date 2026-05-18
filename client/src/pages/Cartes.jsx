@@ -107,7 +107,7 @@ function ListeCartes({ cartes, onNew, onOpen, onDelete }) {
 
 // ─── Vue consultant ───────────────────────────────────────────────────────────
 function VueCarte({ carte, recettes, parametres, onEdit, onBack, onAutoSave }) {
-  const [showAllergenesMenu, setShowAllergenesMenu] = useState(false);
+  // showAllergenesMenu removed — buttons are now direct
   const [closedSections, setClosedSections] = useState(new Set());
   const [localSections, setLocalSections] = useState(carte?.sections || []);
   const autoSaveTimerVC = useRef(null);
@@ -296,7 +296,6 @@ ${sections}
 
   return (
     <div>
-      {showAllergenesMenu && <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onClick={() => setShowAllergenesMenu(false)} />}
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
@@ -306,26 +305,10 @@ ${sections}
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', fontWeight: 700, color: T.text, margin: 0, lineHeight: 1.2 }}>{carte.nom}</h1>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
-          <div style={{ position: 'relative', zIndex: 50 }}>
-            <button onClick={() => setShowAllergenesMenu(m => !m)}
-              style={{ padding: '0.45rem 0.9rem', border: '1px solid #E5E0D8', background: '#fff', borderRadius: '8px', cursor: 'pointer', fontSize: '0.82rem', color: T.muted, fontFamily: "'DM Sans', sans-serif" }}>
-              Allergènes ▾
-            </button>
-            {showAllergenesMenu && (
-              <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: 0, background: '#fff', border: '1px solid #E5E0D8', borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.1)', minWidth: '210px', overflow: 'hidden' }}>
-                <button onClick={() => { exportAllergenesA(); setShowAllergenesMenu(false); }}
-                  style={{ display: 'block', width: '100%', padding: '0.65rem 1rem', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '0.82rem', color: T.text, fontFamily: "'DM Sans', sans-serif" }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#FAFAF8'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                >📋 Format A — Fiche serveurs</button>
-                <button onClick={() => { exportAllergenesB(); setShowAllergenesMenu(false); }}
-                  style={{ display: 'block', width: '100%', padding: '0.65rem 1rem', background: 'none', borderTop: '1px solid #F3EFE8', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '0.82rem', color: T.text, fontFamily: "'DM Sans', sans-serif" }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#FAFAF8'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                >📄 Format B — Menu clients</button>
-              </div>
-            )}
-          </div>
+          <button onClick={exportAllergenesA}
+            style={{ padding: '0.45rem 0.9rem', border: '1px solid #E5E0D8', background: '#fff', borderRadius: '8px', cursor: 'pointer', fontSize: '0.82rem', color: T.muted, fontFamily: "'DM Sans', sans-serif" }}>
+            Allergènes
+          </button>
           <button onClick={exportArgumentation}
             style={{ padding: '0.45rem 0.9rem', border: '1px solid #E5E0D8', background: '#fff', borderRadius: '8px', cursor: 'pointer', fontSize: '0.82rem', color: T.muted, fontFamily: "'DM Sans', sans-serif" }}>
             Argumentation

@@ -93,17 +93,14 @@ Analyse chaque ingrédient de la recette un par un. Le temps de cuisson est la s
 RÈGLE ABSOLUE sur les temps de préparation :
 Sois réaliste et proportionnel à la complexité. Salade simple = 5-10 min. Plat avec sauce = 20-30 min. Plat complexe avec plusieurs éléments = 45-60 min+.
 
-description_commerciale : Écris 2 à 3 phrases simples et naturelles pour présenter ce plat à un client. Le ton doit être chaleureux et accessible, comme un serveur sympa qui parle normalement — pas trop chic, pas trop technique. Donne envie en parlant des goûts et des textures.
+description_commerciale : 2 à 3 phrases simples et naturelles pour donner envie au client. Parle des goûts, des textures, de ce que ça évoque. Ton naturel et chaleureux, comme un ami qui recommande un plat. JAMAIS de termes techniques, JAMAIS de méthodes de cuisson, JAMAIS de températures ou de temps. JAMAIS les mots : sublimé, nappé, réalisé, élaboré, déglacer, thermoplongeur, bain-marie, blanchir, monter, infuser, chiffonnade.
 
-Exemples de BONNES descriptions :
-- "Un petit cromesquis de foie gras avec une touche de gelée de Sauternes. Fondant dedans, croustillant dehors — parfait pour commencer."
-- "Un tartare de bœuf bien assaisonné avec des câpres, des herbes fraîches et un filet d'huile d'olive. Simple, frais et généreux."
-- "Notre panna cotta maison avec un coulis de fruits rouges du moment. Légère, crémeuse, et pas trop sucrée."
-
-Exemples à NE JAMAIS faire :
-- Tout ce qui contient des degrés, des temps, des techniques de cuisson → INTERDIT
-- Les mots : sublimé, nappé, réalisé, élaboré, cuisson, rôti (sauf si c'est le nom du plat), thermoplongeur, bain-marie, déglacer → INTERDIT
-- Phrases trop longues ou trop pompeuses → INTERDIT
+Exemples corrects :
+- Cromesquis foie gras : "Un petit bouchée croustillante avec du foie gras fondant à l'intérieur et une touche sucrée de gelée de Sauternes. Parfait pour démarrer le repas."
+- Magret canard : "Du magret de canard avec une sauce au miel et vinaigre balsamique, servi avec une purée de patate douce. C'est doux, savoureux et bien généreux."
+- Salade pastèque feta : "Une salade fraîche avec de la pastèque, de la feta et de la menthe. Simple, légère et pleine de goût — parfaite pour l'été."
+- Burger : "Un burger avec un steak maison, des légumes frais et notre sauce maison. Costaud et vraiment bon."
+- Fondant chocolat : "Un fondant au chocolat avec le cœur qui coule, accompagné de framboises fraîches. Pour les amateurs de chocolat, c'est le dessert parfait."
 
 Pour les ingrédients, utilise les noms français courants et professionnels. Indique des quantités réalistes pour le nombre de portions demandé.`,
       messages: [{ role: 'user', content: description }],
@@ -139,14 +136,12 @@ router.post('/description-commerciale', async (req, res) => {
 
 Génère UNIQUEMENT ce JSON : { "description_commerciale": "string" }
 
-Écris 2 à 3 phrases simples et naturelles pour présenter ce plat à un client. Le ton doit être chaleureux et accessible, comme un serveur sympa qui parle normalement — pas trop chic, pas trop technique. Donne envie en parlant des goûts et des textures.
+2 à 3 phrases simples et naturelles pour donner envie au client. Parle des goûts, des textures, de ce que ça évoque. Ton naturel et chaleureux, comme un ami qui recommande un plat. JAMAIS de termes techniques, JAMAIS de méthodes de cuisson, JAMAIS de températures ou de temps. JAMAIS les mots : sublimé, nappé, réalisé, élaboré, déglacer, thermoplongeur, bain-marie, blanchir, monter, infuser, chiffonnade.
 
-Exemples de BONNES descriptions :
-- "Un petit cromesquis de foie gras avec une touche de gelée de Sauternes. Fondant dedans, croustillant dehors — parfait pour commencer."
-- "Un tartare de bœuf bien assaisonné avec des câpres, des herbes fraîches et un filet d'huile d'olive. Simple, frais et généreux."
-- "Notre panna cotta maison avec un coulis de fruits rouges du moment. Légère, crémeuse, et pas trop sucrée."
-
-INTERDIT absolument : degrés de température, temps de cuisson, thermoplongeur, bain-marie, déglacer, sublimé, nappé, réalisé, élaboré, rôti (sauf si c'est le nom du plat). Pas de phrases longues ou pompeuses.`;
+Exemples corrects :
+- "Un burger avec un steak maison, des légumes frais et notre sauce maison. Costaud et vraiment bon."
+- "Un fondant au chocolat avec le cœur qui coule, accompagné de framboises fraîches. Pour les amateurs de chocolat, c'est le dessert parfait."
+- "Une salade fraîche avec de la pastèque, de la feta et de la menthe. Simple, légère et pleine de goût — parfaite pour l'été."`;
 
   try {
     const message = await client.messages.create({

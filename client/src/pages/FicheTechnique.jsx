@@ -11,6 +11,39 @@ const ALLERGENES_LIST = [
   'gluten', 'crustaces', 'oeufs', 'poisson', 'arachides', 'soja', 'lait', 'fruits_a_coque',
   'celeri', 'moutarde', 'sesame', 'sulfites', 'lupin', 'mollusques',
 ];
+
+const ALLERGENES_MAPPING = {
+  gluten:       ['farine', 'ble', 'seigle', 'orge', 'avoine', 'pain', 'pate', 'crouton', 'chapelure', 'semoule', 'epeautre'],
+  crustaces:    ['crevette', 'homard', 'crabe', 'langouste', 'langoustine', 'ecrevisse'],
+  oeufs:        ['oeuf', 'oeufs', 'egg'],
+  poisson:      ['saumon', 'thon', 'cabillaud', 'sole', 'daurade', 'anchois', 'sardine', 'truite', 'filet de poisson'],
+  arachides:    ['cacahuete', 'arachide', 'peanut'],
+  soja:         ['soja', 'tofu', 'edamame', 'miso'],
+  lait:         ['beurre', 'creme', 'lait', 'fromage', 'yaourt', 'parmesan', 'gruyere', 'feta', 'burrata', 'mozzarella', 'pecorino', 'mascarpone'],
+  fruits_a_coque: ['noix', 'amande', 'noisette', 'pistache', 'cajou', 'pecan', 'macadamia'],
+  celeri:       ['celeri'],
+  moutarde:     ['moutarde'],
+  sesame:       ['sesame', 'tahini'],
+  sulfites:     ['sulfite', 'anhydride sulfureux', 'vinaigre balsamique', 'vinaigre de vin'],
+  lupin:        ['lupin'],
+  mollusques:   ['moule', 'huitre', 'saint-jacques', 'calmar', 'seiche', 'escargot', 'poulpe'],
+};
+
+function scanAllergenesFromEtapes(etapes) {
+  const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const text = norm((etapes || []).join(' '));
+  const detected = [];
+  for (const [allergen, keywords] of Object.entries(ALLERGENES_MAPPING)) {
+    for (const kw of keywords) {
+      const pat = norm(kw).replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '[\\s-]+');
+      if (new RegExp(`(?<![a-z])${pat}(?![a-z])`).test(text)) {
+        detected.push(allergen);
+        break;
+      }
+    }
+  }
+  return detected;
+}
 const CHART_COLORS = ['#2D6A4F','#C9A84C','#4F86C6','#E05C5C','#7B5EA7','#E09F3E','#8DB580','#6E9EBF','#E8A87C','#B8B0A4'];
 const TVA_OPTIONS = [
   { value: 5.5, label: '5.5% — Alim. bruts' },
@@ -110,8 +143,12 @@ export default function FicheTechnique() {
   }
 
   function toggleAllergene(a) {
-    const list = form.allergenes || [];
-    setForm(f => ({ ...f, allergenes: list.includes(a) ? list.filter(x => x !== a) : [...list, a] }));
+    setForm(f => {
+      const list = f.allergenes || [];
+      const updated = { ...f, allergenes: list.includes(a) ? list.filter(x => x !== a) : [...list, a] };
+      api.recettes.update(id, updated).then(saved => setRecette(saved)).catch(() => {});
+      return updated;
+    });
   }
 
   function savePrixVentePratiqueTTC(currentForm) {
@@ -703,7 +740,13 @@ export default function FicheTechnique() {
         {editMode ? (
           <EtapesEditor
             etapes={form.etapes || []}
-            onChange={etapes => setForm(f => ({ ...f, etapes }))}
+            onChange={newEtapes => {
+              const detected = scanAllergenesFromEtapes(newEtapes);
+              setForm(f => {
+                const merged = [...new Set([...(f.allergenes || []), ...detected])];
+                return { ...f, etapes: newEtapes, allergenes: merged };
+              });
+            }}
           />
         ) : (
           <>
@@ -729,7 +772,7 @@ export default function FicheTechnique() {
           {ALLERGENES_LIST.map(a => {
             const actif = (form.allergenes || []).includes(a);
             return (
-              <span key={a} onClick={() => editMode && toggleAllergene(a)} style={{ padding: '0.35rem 0.9rem', borderRadius: '20px', fontSize: '0.8rem', background: actif ? '#FEF9EC' : '#F9F7F4', color: actif ? '#92400e' : T.muted, border: actif ? '1px solid #F6E8B8' : '1px solid #EDE8DF', cursor: editMode ? 'pointer' : 'default', fontWeight: actif ? 600 : 400, transition: 'all 0.1s' }}>{a}</span>
+              <span key={a} onClick={() => toggleAllergene(a)} style={{ padding: '0.35rem 0.9rem', borderRadius: '20px', fontSize: '0.8rem', background: actif ? '#FEF9EC' : '#F9F7F4', color: actif ? '#92400e' : T.muted, border: actif ? '1px solid #F6E8B8' : '1px solid #EDE8DF', cursor: 'pointer', fontWeight: actif ? 600 : 400, transition: 'all 0.1s' }}>{a}</span>
             );
           })}
         </div>
