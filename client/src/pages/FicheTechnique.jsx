@@ -64,6 +64,7 @@ export default function FicheTechnique() {
   const [selectedCarteId, setSelectedCarteId] = useState('');
   const [selectedSection, setSelectedSection] = useState('');
   const [showCarteAdd, setShowCarteAdd] = useState(false);
+  const [generatingDesc, setGeneratingDesc] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -131,7 +132,7 @@ export default function FicheTechnique() {
     const carte = cartes.find(c => c.id === selectedCarteId);
     if (!carte || !selectedSection) return;
     const cp = form.portions > 0 ? (form.ingredients || []).reduce((acc, i) => acc + coutIng(i), 0) / form.portions : 0;
-    const prixVente = recette.prixVente || parseFloat((cp / 0.30).toFixed(2));
+    const prixVente = recette.prixVentePratiqueTTC || recette.prixVente || parseFloat((cp / 0.30).toFixed(2));
     const updatedCarte = {
       ...carte,
       sections: carte.sections.map(s =>
@@ -159,6 +160,26 @@ export default function FicheTechnique() {
     const exact = cat.find(c => c.nom.toLowerCase() === n);
     if (exact) return null;
     return cat.find(c => c.prixUnitaire > 0 && (c.nom.toLowerCase().includes(n) || n.includes(c.nom.toLowerCase()))) || null;
+  }
+
+  async function genererDescriptionCommerciale() {
+    setGeneratingDesc(true);
+    try {
+      const result = await api.ia.descriptionCommerciale({
+        nom: recette.nom,
+        ingredients: recette.ingredients,
+        portions: recette.portions,
+      });
+      const updated = { ...form, description_commerciale: result.description_commerciale };
+      setForm(updated);
+      const saved = await api.recettes.update(id, updated);
+      setRecette(saved);
+      setForm(saved);
+    } catch (err) {
+      alert('Erreur IA : ' + err.message);
+    } finally {
+      setGeneratingDesc(false);
+    }
   }
 
   async function associerIngredient(idx, suggestion) {
@@ -442,10 +463,26 @@ export default function FicheTechnique() {
           </div>
         )}
         <div>
-          <label style={labelStyle}>Description</label>
+          <label style={labelStyle}>Description (usage interne chef)</label>
           {editMode
-            ? <textarea value={form.description || ''} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} style={{ ...inputStyle, minHeight: '80px', resize: 'vertical' }} />
+            ? <textarea value={form.description || ''} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} style={{ ...inputStyle, minHeight: '70px', resize: 'vertical' }} />
             : <p style={{ color: '#374151', lineHeight: 1.6, fontSize: '0.9rem' }}>{recette.description || '—'}</p>}
+        </div>
+        <div style={{ marginTop: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '5px' }}>
+            <label style={{ ...labelStyle, marginBottom: 0 }}>Description commerciale (vue carte client)</label>
+            {!editMode && (
+              <button onClick={genererDescriptionCommerciale} disabled={generatingDesc}
+                style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '4px', background: generatingDesc ? '#F3EFE8' : 'rgba(201,168,76,0.1)', color: '#8B6914', border: '1px solid rgba(201,168,76,0.35)', cursor: generatingDesc ? 'default' : 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, whiteSpace: 'nowrap' }}>
+                {generatingDesc ? '⏳ Génération...' : '✨ Générer avec l\'IA'}
+              </button>
+            )}
+          </div>
+          {editMode
+            ? <textarea value={form.description_commerciale || ''} onChange={e => setForm(f => ({ ...f, description_commerciale: e.target.value }))} placeholder="Description appétissante pour le client..." style={{ ...inputStyle, minHeight: '70px', resize: 'vertical' }} />
+            : recette.description_commerciale
+              ? <p style={{ color: '#374151', lineHeight: 1.6, fontSize: '0.9rem', fontStyle: 'italic' }}>{recette.description_commerciale}</p>
+              : <p style={{ color: T.muted, fontSize: '0.85rem', fontStyle: 'italic' }}>Aucune description commerciale — cliquez sur "Générer avec l'IA" pour en créer une automatiquement.</p>}
         </div>
       </div>
 

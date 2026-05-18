@@ -52,7 +52,8 @@ export const api = {
     update: (data) => request('/parametres', { method: 'PUT', body: JSON.stringify(data) })
   },
   ia: {
-    structurer: (description) => request('/ia/structurer', { method: 'POST', body: JSON.stringify({ description }) })
+    structurer: (description) => request('/ia/structurer', { method: 'POST', body: JSON.stringify({ description }) }),
+    descriptionCommerciale: (data) => request('/ia/description-commerciale', { method: 'POST', body: JSON.stringify(data) }),
   },
   aliases: {
     list: () => request('/aliases'),

@@ -1,5 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
 import { coutIng } from '../utils.js';
 import { api } from '../api.js';
@@ -233,7 +236,7 @@ function VueCarte({ carte, recettes, parametres, onEdit, onBack, onAutoSave }) {
           const allergs = (p.rec?.allergenes || []).map(k => labelMap[k] || k).join(', ');
           return `<div style="padding:10px 0;border-bottom:1px solid #F3EFE8">
             <div style="font-family:Georgia,serif;font-size:1rem;font-weight:700;color:#1C2B1E">${p.nom}${p.prixVente > 0 ? `<span style="float:right;font-weight:400;font-size:0.9rem">${p.prixVente.toFixed(2)} €</span>` : ''}</div>
-            ${p.rec?.description ? `<div style="font-size:0.82rem;color:#6B7280;margin:2px 0 4px;line-height:1.4">${p.rec.description}</div>` : ''}
+            ${(p.rec?.description_commerciale || p.rec?.description) ? `<div style="font-size:0.82rem;color:#6B7280;margin:2px 0 4px;line-height:1.4;font-style:italic">${p.rec.description_commerciale || p.rec.description}</div>` : ''}
             <div style="font-size:0.78rem;color:#9A3412"><em>${allergs ? `Contient : ${allergs}` : 'Aucun allergène majeur déclaré'}</em></div>
           </div>`;
         }).join('');
@@ -330,9 +333,9 @@ ${sections}
                               onMouseEnter={e => e.currentTarget.style.color = T.green}
                               onMouseLeave={e => e.currentTarget.style.color = T.text}
                             >{plat.nom}</Link>
-                            {plat.rec?.description && (
-                              <p style={{ fontSize: '0.8rem', color: T.muted, margin: '3px 0 0', lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                                {plat.rec.description}
+                            {(plat.rec?.description_commerciale || plat.rec?.description) && (
+                              <p style={{ fontSize: '0.8rem', color: T.muted, margin: '3px 0 0', lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', fontStyle: plat.rec?.description_commerciale ? 'italic' : 'normal' }}>
+                                {plat.rec.description_commerciale || plat.rec.description}
                               </p>
                             )}
                             {badge && (
@@ -426,6 +429,16 @@ ${sections}
   );
 }
 
+// ─── Sortable section wrapper ─────────────────────────────────────────────────
+function SortableSection({ id, children }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  return (
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.45 : 1 }}>
+      {children({ dragProps: { ...attributes, ...listeners } })}
+    </div>
+  );
+}
+
 // ─── Éditeur de carte ─────────────────────────────────────────────────────────
 function EditeurCarte({ carte, recettes, onSave, onBack, onAutoSave }) {
   const [form, setForm] = useState(carte || {
@@ -456,6 +469,7 @@ function EditeurCarte({ carte, recettes, onSave, onBack, onAutoSave }) {
   const width = useWindowWidth();
   const autoSaveTimer = useRef(null);
   const latestForm = useRef(form);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   function setFormAndSave(updater, debounce = false) {
     setForm(prev => {
@@ -488,7 +502,7 @@ function EditeurCarte({ carte, recettes, onSave, onBack, onAutoSave }) {
 
   function addToSection(recette, sectionTitre) {
     const cp = coutPortion(recette);
-    const prixVente = recette.prixVente || parseFloat((cp / 0.30).toFixed(2));
+    const prixVente = recette.prixVentePratiqueTTC || recette.prixVente || parseFloat((cp / 0.30).toFixed(2));
     setFormAndSave(f => ({
       ...f,
       sections: f.sections.map(s =>
@@ -528,6 +542,16 @@ function EditeurCarte({ carte, recettes, onSave, onBack, onAutoSave }) {
   function supprimerSection(titre) {
     if (!confirm(`Supprimer la section "${titre}" ?`)) return;
     setFormAndSave(f => ({ ...f, sections: f.sections.filter(s => s.titre !== titre) }));
+  }
+
+  function handleDragEnd(event) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setFormAndSave(f => {
+      const oi = f.sections.findIndex(s => s.titre === active.id);
+      const ni = f.sections.findIndex(s => s.titre === over.id);
+      return { ...f, sections: arrayMove(f.sections, oi, ni) };
+    });
   }
 
   async function sauvegarder() {
@@ -599,6 +623,8 @@ function EditeurCarte({ carte, recettes, onSave, onBack, onAutoSave }) {
 
         {/* Panneau droit : carte en construction */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={form.sections.map(s => s.titre)} strategy={verticalListSortingStrategy}>
           {form.sections.map(section => {
             const isOpen = !closedSections.has(section.titre);
             const sectionCoutMoyen = section.plats.length > 0
@@ -608,11 +634,12 @@ function EditeurCarte({ carte, recettes, onSave, onBack, onAutoSave }) {
                 }, 0) / section.plats.length
               : 0;
             return (
-              <div key={section.titre} style={{ ...card, padding: '1.25rem' }}>
-                <div onClick={() => toggleSection(section.titre)}
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isOpen ? '0.875rem' : 0, cursor: 'pointer', userSelect: 'none' }}
-                >
-                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, color: T.text, display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+              <SortableSection key={section.titre} id={section.titre}>
+                {({ dragProps }) => (
+              <div style={{ ...card, padding: '1.25rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isOpen ? '0.875rem' : 0 }}>
+                  <h3 onClick={() => toggleSection(section.titre)} style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, color: T.text, display: 'flex', alignItems: 'center', gap: '8px', margin: 0, flex: 1, cursor: 'pointer', userSelect: 'none' }}>
+                    <span {...dragProps} onClick={e => e.stopPropagation()} style={{ cursor: 'grab', color: '#C5BDB0', fontSize: '1rem', padding: '0 2px', lineHeight: 1 }} title="Glisser pour réordonner">⠿</span>
                     <span style={{ fontSize: '0.65rem', color: T.muted, display: 'inline-block', transition: 'transform 0.15s', transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▼</span>
                     <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: T.gold, display: 'inline-block', flexShrink: 0 }} />
                     {section.titre}
@@ -670,8 +697,12 @@ function EditeurCarte({ carte, recettes, onSave, onBack, onAutoSave }) {
                   </>
                 )}
               </div>
+                )}
+              </SortableSection>
             );
           })}
+            </SortableContext>
+          </DndContext>
 
           {showAddSection ? (
             <div style={{ ...card, padding: '1rem', display: 'flex', gap: '0.5rem' }}>
@@ -699,6 +730,7 @@ export default function Cartes() {
   const [parametres, setParametres] = useState({ foodCostCible: 30, tva: 10, etablissement: 'Mon Restaurant' });
   const [vue, setVue] = useState('liste');
   const [carteActive, setCarteActive] = useState(null);
+  const [editKey, setEditKey] = useState(0);
 
   useEffect(() => {
     Promise.all([
@@ -718,6 +750,7 @@ export default function Cartes() {
   function handleAutoSave(saved) {
     setCartes(prev => prev.map(c => c.id === saved.id ? saved : c));
     setCarteActive(saved);
+    setEditKey(k => k + 1);
   }
 
   function handleDelete(id) {
@@ -747,7 +780,7 @@ export default function Cartes() {
 
   return (
     <EditeurCarte
-      key={carteActive?.id || 'new'}
+      key={`${carteActive?.id || 'new'}-${editKey}`}
       carte={carteActive}
       recettes={recettes}
       onSave={handleSave}

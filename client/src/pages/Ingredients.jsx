@@ -94,7 +94,7 @@ function HistoriqueModal({ item, onClose }) {
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3EFE8" />
                 <XAxis dataKey="date" tick={{ fontSize: 10, fill: T.muted }} tickFormatter={v => {
                   const d = new Date(v);
-                  return isNaN(d) ? v : `${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}h${String(d.getMinutes()).padStart(2,'0')}`;
+                  return isNaN(d) ? v : `${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
                 }} />
                 <YAxis tick={{ fontSize: 10, fill: T.muted }} domain={['auto', 'auto']} width={48} />
                 <Tooltip formatter={(v, n, p) => [`${v.toFixed(2)} EUR/${p.payload.unite}`, 'Prix']} />
@@ -112,7 +112,7 @@ function HistoriqueModal({ item, onClose }) {
               <tbody>
                 {[...data].reverse().map((d, i) => (
                   <tr key={i} style={{ borderBottom: '1px solid #F9F7F4' }}>
-                    <td style={{ padding: '4px 8px', color: T.muted }}>{d.date.length > 10 ? d.date.slice(0, 16).replace('T', ' ') : d.date}</td>
+                    <td style={{ padding: '4px 8px', color: T.muted }}>{d.date.length > 10 ? d.date.slice(0, 19).replace('T', ' ') : d.date}</td>
                     <td style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 700, color: T.green }}>{d.prix.toFixed(2)} EUR/{d.unite}</td>
                     <td style={{ padding: '4px 8px', color: T.muted }}>{d.fournisseur || '—'}</td>
                     <td style={{ padding: '4px 8px', textAlign: 'right' }}>
