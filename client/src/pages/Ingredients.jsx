@@ -305,16 +305,26 @@ function ImportFacture({ items, setItems }) {
   const [selected, setSelected] = useState([]);
   const [toast, setToast] = useState('');
   const [dragOver, setDragOver] = useState(false);
+  const [aliases, setAliases] = useState([]);
   const fileRef = useRef(null);
 
   const UNITES_IA = ['kg', 'L', 'piece', 'g', 'ml', 'botte', 'c.s.', 'c.c.'];
+  const inStyle = { border: '1px solid #E5E0D8', borderRadius: '4px', padding: '0.3rem 0.5rem', fontSize: '0.82rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' };
+
+  useEffect(() => {
+    fetch('/api/aliases').then(r => r.json()).then(setAliases).catch(() => {});
+  }, []);
+
+  function resolveAlias(nom) {
+    const n = nom.toLowerCase();
+    const alias = aliases.find(a => a.from.toLowerCase() === n);
+    return alias ? alias.to : nom;
+  }
 
   function handleFile(f) {
     if (!f) return;
     if (f.size > 10 * 1024 * 1024) { alert('Fichier trop volumineux (max 10 Mo)'); return; }
-    setFile(f);
-    setResults(null);
-    setSelected([]);
+    setFile(f); setResults(null); setSelected([]);
   }
 
   async function analyser() {
@@ -326,7 +336,16 @@ function ImportFacture({ items, setItems }) {
       const res = await fetch('/api/ia/analyser-facture', { method: 'POST', body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erreur serveur');
-      const produits = (data.produits || []).map((p, i) => ({ ...p, _id: i }));
+      const produits = (data.produits || []).map((p, i) => {
+        const resolvedNom = resolveAlias(p.nom);
+        const match = items.find(it => it.nom.toLowerCase() === resolvedNom.toLowerCase());
+        return {
+          ...p,
+          _id: i,
+          _action: match ? 'associate' : 'create',
+          _associateId: match?.id || null,
+        };
+      });
       setResults(produits);
       setSelected(produits.map(p => p._id));
     } catch (err) {
@@ -337,7 +356,10 @@ function ImportFacture({ items, setItems }) {
   }
 
   function updateResult(id, field, value) {
-    setResults(prev => prev.map(p => p._id === id ? { ...p, [field]: field === 'nom' || field === 'unite' ? value : parseFloat(value) || 0 } : p));
+    const strFields = ['nom', 'unite', '_action', '_associateId'];
+    setResults(prev => prev.map(p =>
+      p._id === id ? { ...p, [field]: strFields.includes(field) ? value : parseFloat(value) || 0 } : p
+    ));
   }
 
   function toggleSelect(id) {
@@ -347,40 +369,49 @@ function ImportFacture({ items, setItems }) {
   async function importer() {
     const toImport = results.filter(p => selected.includes(p._id));
     let count = 0;
+    const newAliases = [];
+
     for (const p of toImport) {
-      const existe = items.find(i => i.nom.toLowerCase() === p.nom.toLowerCase());
-      if (existe) {
-        await fetch('/api/ingredients/' + existe.id, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...existe, prixUnitaire: p.prix_unitaire }),
-        }).then(r => r.json()).then(updated => {
-          setItems(prev => prev.map(i => i.id === existe.id ? updated : i));
-        });
+      if (p._action === 'associate' && p._associateId) {
+        const existant = items.find(i => i.id === p._associateId);
+        if (existant) {
+          const updated = await fetch('/api/ingredients/' + existant.id, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...existant, prixUnitaire: p.prix_unitaire }),
+          }).then(r => r.json());
+          setItems(prev => prev.map(i => i.id === existant.id ? updated : i));
+          if (existant.nom.toLowerCase() !== p.nom.toLowerCase()) {
+            newAliases.push({ from: p.nom, to: existant.nom });
+          }
+        }
       } else {
-        await fetch('/api/ingredients', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const item = await fetch('/api/ingredients', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ nom: p.nom, categorie: 'épicerie', unite: p.unite || 'kg', prixUnitaire: p.prix_unitaire }),
-        }).then(r => r.json()).then(item => setItems(prev => [...prev, item]));
+        }).then(r => r.json());
+        setItems(prev => [...prev, item]);
       }
       count++;
     }
+
+    for (const a of newAliases) {
+      await fetch('/api/aliases', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(a),
+      });
+    }
+    if (newAliases.length > 0) setAliases(prev => [...prev, ...newAliases]);
+
     setToast(`${count} ingrédient${count > 1 ? 's' : ''} importé${count > 1 ? 's' : ''} ✓`);
     setTimeout(() => setToast(''), 3500);
-    setResults(null);
-    setFile(null);
-    setSelected([]);
+    setResults(null); setFile(null); setSelected([]);
   }
 
   const dropZoneStyle = {
     border: `2px dashed ${dragOver ? '#2D6A4F' : '#C9A84C'}`,
-    borderRadius: '12px',
-    padding: '2rem',
-    textAlign: 'center',
+    borderRadius: '12px', padding: '2rem', textAlign: 'center',
     background: dragOver ? 'rgba(45,106,79,0.05)' : 'rgba(201,168,76,0.04)',
-    cursor: 'pointer',
-    transition: 'all 0.15s',
+    cursor: 'pointer', transition: 'all 0.15s',
   };
 
   return (
@@ -394,9 +425,10 @@ function ImportFacture({ items, setItems }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
         <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', fontWeight: 700, color: T.text }}>Importer une facture</h2>
         <span style={{ fontSize: '0.72rem', background: 'rgba(201,168,76,0.12)', color: '#8B6914', border: '1px solid rgba(201,168,76,0.3)', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>IA</span>
+        {aliases.length > 0 && <span style={{ fontSize: '0.72rem', color: T.muted }}>{aliases.length} alias mémorisé{aliases.length > 1 ? 's' : ''}</span>}
       </div>
       <p style={{ color: T.muted, fontSize: '0.875rem', marginBottom: '1.25rem' }}>
-        Déposez votre facture fournisseur — l'IA détecte automatiquement les produits et leurs prix.
+        Déposez votre facture fournisseur — l'IA détecte les produits, vous choisissez de créer ou d'associer à un ingrédient existant.
       </p>
 
       {!results && (
@@ -412,7 +444,6 @@ function ImportFacture({ items, setItems }) {
             <div style={{ fontSize: '0.8rem', color: T.muted }}>ou cliquez pour choisir — JPG, PNG, PDF · max 10 Mo</div>
             <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,application/pdf" style={{ display: 'none' }} onChange={e => handleFile(e.target.files[0])} />
           </div>
-
           {file && (
             <button onClick={analyser} disabled={loading} style={{ marginTop: '1rem', width: '100%', padding: '0.7rem', background: T.green, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: loading ? 'default' : 'pointer', fontSize: '0.9rem', fontFamily: "'DM Sans', sans-serif", opacity: loading ? 0.8 : 1 }}>
               {loading ? '⏳ Analyse en cours...' : 'Analyser la facture'}
@@ -424,57 +455,82 @@ function ImportFacture({ items, setItems }) {
       {results && (
         <div style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
           <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #F3EFE8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontWeight: 600, color: T.text }}>{results.length} produit{results.length !== 1 ? 's' : ''} détecté{results.length !== 1 ? 's' : ''}</span>
+            <div>
+              <span style={{ fontWeight: 600, color: T.text }}>{results.length} produit{results.length !== 1 ? 's' : ''} détecté{results.length !== 1 ? 's' : ''}</span>
+              <span style={{ fontSize: '0.75rem', color: T.muted, marginLeft: '12px' }}>Choisissez l'action pour chaque produit avant d'importer</span>
+            </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button onClick={() => { setResults(null); setFile(null); }} style={{ padding: '0.35rem 0.85rem', border: '1px solid #E5E0D8', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '0.82rem' }}>Annuler</button>
               <button onClick={importer} disabled={selected.length === 0} style={{ padding: '0.35rem 0.85rem', border: 'none', background: T.green, color: '#fff', borderRadius: '6px', cursor: selected.length === 0 ? 'default' : 'pointer', fontSize: '0.82rem', fontWeight: 600, opacity: selected.length === 0 ? 0.5 : 1 }}>
-                Importer les sélectionnés ({selected.length})
+                Valider ({selected.length})
               </button>
             </div>
           </div>
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: '600px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: '700px' }}>
               <thead style={{ background: '#FAFAF8' }}>
                 <tr>
                   <th style={{ padding: '0.6rem 1rem', width: '40px' }}>
                     <input type="checkbox" checked={selected.length === results.length} onChange={() => setSelected(selected.length === results.length ? [] : results.map(p => p._id))} />
                   </th>
-                  {['Nom', 'Quantité', 'Unité', 'Prix unitaire', 'Prix total', 'Statut'].map(h => (
+                  {['Nom facture', 'Qté', 'Unité', 'Prix/unité', 'Action'].map(h => (
                     <th key={h} style={{ padding: '0.6rem 1rem', textAlign: 'left', color: T.muted, fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {results.map(p => {
-                  const existe = items.find(i => i.nom.toLowerCase() === p.nom.toLowerCase());
-                  return (
-                    <tr key={p._id} style={{ borderBottom: '1px solid #F9F7F4', opacity: selected.includes(p._id) ? 1 : 0.45 }}>
-                      <td style={{ padding: '0.6rem 1rem' }}>
-                        <input type="checkbox" checked={selected.includes(p._id)} onChange={() => toggleSelect(p._id)} />
-                      </td>
-                      <td style={{ padding: '0.6rem 1rem' }}>
-                        <input value={p.nom} onChange={e => updateResult(p._id, 'nom', e.target.value)} style={{ border: '1px solid #E5E0D8', borderRadius: '4px', padding: '0.3rem 0.5rem', fontSize: '0.85rem', width: '100%', fontFamily: "'DM Sans', sans-serif" }} />
-                      </td>
-                      <td style={{ padding: '0.6rem 1rem' }}>
-                        <input type="number" value={p.quantite} onChange={e => updateResult(p._id, 'quantite', e.target.value)} style={{ border: '1px solid #E5E0D8', borderRadius: '4px', padding: '0.3rem 0.5rem', fontSize: '0.85rem', width: '70px' }} />
-                      </td>
-                      <td style={{ padding: '0.6rem 1rem' }}>
-                        <select value={p.unite} onChange={e => updateResult(p._id, 'unite', e.target.value)} style={{ border: '1px solid #E5E0D8', borderRadius: '4px', padding: '0.3rem 0.5rem', fontSize: '0.85rem' }}>
-                          {UNITES_IA.map(u => <option key={u}>{u}</option>)}
+                {results.map(p => (
+                  <tr key={p._id} style={{ borderBottom: '1px solid #F9F7F4', background: selected.includes(p._id) ? '#fff' : '#FAFAF8' }}>
+                    <td style={{ padding: '0.6rem 1rem' }}>
+                      <input type="checkbox" checked={selected.includes(p._id)} onChange={() => toggleSelect(p._id)} />
+                    </td>
+                    <td style={{ padding: '0.6rem 1rem' }}>
+                      <input value={p.nom} onChange={e => updateResult(p._id, 'nom', e.target.value)} style={{ ...inStyle, width: '140px' }} />
+                    </td>
+                    <td style={{ padding: '0.6rem 1rem' }}>
+                      <input type="number" value={p.quantite} onChange={e => updateResult(p._id, 'quantite', e.target.value)} style={{ ...inStyle, width: '60px' }} />
+                    </td>
+                    <td style={{ padding: '0.6rem 1rem' }}>
+                      <select value={p.unite} onChange={e => updateResult(p._id, 'unite', e.target.value)} style={inStyle}>
+                        {UNITES_IA.map(u => <option key={u}>{u}</option>)}
+                      </select>
+                    </td>
+                    <td style={{ padding: '0.6rem 1rem' }}>
+                      <input type="number" step="0.01" value={p.prix_unitaire} onChange={e => updateResult(p._id, 'prix_unitaire', e.target.value)} style={{ ...inStyle, width: '80px' }} />
+                    </td>
+                    <td style={{ padding: '0.6rem 1rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <select
+                          value={p._action}
+                          onChange={e => {
+                            const action = e.target.value;
+                            const match = items.find(it => it.nom.toLowerCase() === p.nom.toLowerCase());
+                            updateResult(p._id, '_action', action);
+                            if (action === 'associate' && !p._associateId) {
+                              updateResult(p._id, '_associateId', match?.id || items[0]?.id || null);
+                            }
+                          }}
+                          style={{ ...inStyle, fontWeight: 600, color: p._action === 'associate' ? '#d97706' : '#16a34a', background: p._action === 'associate' ? '#FFFBF0' : '#F0FDF4' }}
+                        >
+                          <option value="create">➕ Créer comme nouveau</option>
+                          <option value="associate">🔗 Associer à un existant</option>
                         </select>
-                      </td>
-                      <td style={{ padding: '0.6rem 1rem' }}>
-                        <input type="number" step="0.01" value={p.prix_unitaire} onChange={e => updateResult(p._id, 'prix_unitaire', e.target.value)} style={{ border: '1px solid #E5E0D8', borderRadius: '4px', padding: '0.3rem 0.5rem', fontSize: '0.85rem', width: '80px' }} />
-                      </td>
-                      <td style={{ padding: '0.6rem 1rem', fontWeight: 600, color: T.green }}>{p.prix_total?.toFixed(2)} EUR</td>
-                      <td style={{ padding: '0.6rem 1rem' }}>
-                        {existe
-                          ? <span style={{ fontSize: '0.72rem', background: '#FFF3E0', color: '#d97706', border: '1px solid #FDE68A', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>Mettre à jour le prix</span>
-                          : <span style={{ fontSize: '0.72rem', background: '#F0FDF4', color: '#16a34a', border: '1px solid #BBF7D0', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>Nouveau</span>}
-                      </td>
-                    </tr>
-                  );
-                })}
+                        {p._action === 'associate' && (
+                          <select
+                            value={p._associateId || ''}
+                            onChange={e => updateResult(p._id, '_associateId', e.target.value)}
+                            style={{ ...inStyle, fontSize: '0.78rem' }}
+                          >
+                            <option value="">— Choisir l'ingrédient —</option>
+                            {[...items].sort((a, b) => a.nom.localeCompare(b.nom)).map(it => (
+                              <option key={it.id} value={it.id}>{it.nom} ({it.prixUnitaire} EUR/{it.unite})</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

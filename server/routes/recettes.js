@@ -25,7 +25,9 @@ function enrichIngredients(ingredients, userId) {
   return (ingredients || []).map(ing => {
     if (!ing.nom) return ing;
     const found = catalog.find(c => norm(c.nom) === norm(ing.nom));
-    return found ? { ...ing, prixUnitaire: found.prixUnitaire } : ing;
+    return found
+      ? { ...ing, prixUnitaire: found.prixUnitaire }
+      : { ...ing, prixUnitaire: ing.prixUnitaire ?? 0 };
   });
 }
 

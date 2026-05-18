@@ -135,16 +135,20 @@ function TileFiche({ r, cible, onDelete, onUpdateCategorie, navigate }) {
 
 export default function Recettes() {
   const [recettes, setRecettes] = useState([]);
+  const [cartes, setCartes] = useState([]);
   const [params, setParams] = useState({ foodCostCible: 30, tva: 10 });
   const [loading, setLoading] = useState(true);
   const [recherche, setRecherche] = useState('');
+  const [carteFilter, setCarteFilter] = useState('');
+  const [sectionsOpen, setSectionsOpen] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
     Promise.all([
       api.recettes.list(),
       api.parametres.get().catch(() => ({ foodCostCible: 30, tva: 10 })),
-    ]).then(([data, p]) => { setRecettes(data); setParams(p); setLoading(false); })
+      api.cartes.list().catch(() => []),
+    ]).then(([data, p, c]) => { setRecettes(data); setParams(p); setCartes(c); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
 
@@ -159,35 +163,59 @@ export default function Recettes() {
       .then(() => setRecettes(prev => prev.map(x => x.id === id ? { ...x, categorie: newCat } : x)));
   }
 
-  const filtrees = recherche
-    ? recettes.filter(r => r.nom.toLowerCase().includes(recherche.toLowerCase()) || (r.categorie || '').toLowerCase().includes(recherche.toLowerCase()))
-    : recettes;
+  function toggleSection(name) {
+    setSectionsOpen(prev => ({ ...prev, [name]: !(prev[name] ?? true) }));
+  }
+
+  // Filtre par carte : récupère les IDs de recettes dans la carte sélectionnée
+  const carteRecettesIds = carteFilter
+    ? new Set((cartes.find(c => c.id === carteFilter)?.sections || []).flatMap(s => (s.plats || []).map(p => p.recetteId)))
+    : null;
+
+  const filtrees = recettes.filter(r => {
+    const matchRecherche = !recherche || r.nom.toLowerCase().includes(recherche.toLowerCase()) || (r.categorie || '').toLowerCase().includes(recherche.toLowerCase());
+    const matchCarte = !carteFilter || carteRecettesIds?.has(r.id);
+    return matchRecherche && matchCarte;
+  });
 
   const grouped = Object.fromEntries(SECTIONS.map(s => [s, []]));
   filtrees.forEach(r => grouped[sectionFor(r.categorie)].push(r));
   const sectionsActives = SECTIONS.filter(s => grouped[s].length > 0);
+
+  const selectStyle = { padding: '0.5rem 0.75rem', border: '1px solid #E5E0D8', borderRadius: '8px', fontSize: '0.875rem', background: '#fff', outline: 'none', color: T.text, fontFamily: "'DM Sans', sans-serif", cursor: 'pointer' };
 
   if (loading) return <p style={{ color: T.muted }}>Chargement...</p>;
 
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', fontWeight: 700, color: T.text }}>
             Fiches techniques
           </h1>
           <p style={{ color: T.muted, fontSize: '0.875rem', marginTop: '2px' }}>
             {filtrees.length} fiche{filtrees.length !== 1 ? 's' : ''}
+            {carteFilter && <span style={{ marginLeft: '6px', fontSize: '0.78rem', color: T.green, fontWeight: 600 }}>· filtrées par carte</span>}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          {cartes.length > 0 && (
+            <select
+              value={carteFilter}
+              onChange={e => setCarteFilter(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="">Toutes les cartes</option>
+              {cartes.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+            </select>
+          )}
           <input
             type="search"
             placeholder="Rechercher une fiche..."
             value={recherche}
             onChange={e => setRecherche(e.target.value)}
-            style={{ padding: '0.5rem 1rem', border: '1px solid #E5E0D8', borderRadius: '8px', width: '220px', fontSize: '0.875rem', background: '#fff', outline: 'none', color: T.text, fontFamily: "'DM Sans', sans-serif" }}
+            style={{ ...selectStyle, width: '220px', cursor: 'text' }}
           />
           <button
             onClick={() => navigate('/fiches-techniques/nouvelle')}
@@ -201,28 +229,35 @@ export default function Recettes() {
       {filtrees.length === 0 && (
         <p style={{ color: T.muted }}>
           {recettes.length === 0 ? 'Aucune fiche. ' : 'Aucun résultat. '}
-          <button onClick={() => navigate('/fiches-techniques/nouvelle')} style={{ background: 'none', border: 'none', color: T.green, fontWeight: 600, cursor: 'pointer', fontSize: 'inherit', padding: 0 }}>
-            Créer une fiche
-          </button>
+          {!carteFilter && (
+            <button onClick={() => navigate('/fiches-techniques/nouvelle')} style={{ background: 'none', border: 'none', color: T.green, fontWeight: 600, cursor: 'pointer', fontSize: 'inherit', padding: 0 }}>
+              Créer une fiche
+            </button>
+          )}
         </p>
       )}
 
-      {/* Sections */}
+      {/* Sections (accordion) */}
       {sectionsActives.map(sectionName => {
         const fiches = grouped[sectionName];
+        const isOpen = sectionsOpen[sectionName] ?? true;
         return (
-          <div key={sectionName} style={{ marginBottom: '2rem' }}>
-            {/* Titre section "── NOM (N) ──" */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingTop: '16px', paddingBottom: '8px', marginBottom: '0.75rem' }}>
+          <div key={sectionName} style={{ marginBottom: '0.5rem' }}>
+            {/* En-tête cliquable */}
+            <div
+              onClick={() => toggleSection(sectionName)}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingTop: '16px', paddingBottom: '8px', marginBottom: isOpen ? '0.75rem' : '0.25rem', cursor: 'pointer', userSelect: 'none' }}
+            >
               <div style={{ flex: 1, height: '2px', background: '#2D6A4F', opacity: 0.3, borderRadius: '1px' }} />
-              <span style={{ fontSize: '16px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#2D6A4F', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: '16px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#2D6A4F', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 {sectionName} ({fiches.length})
+                <span style={{ fontSize: '11px', display: 'inline-block', transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s', color: '#2D6A4F', opacity: 0.7 }}>▼</span>
               </span>
               <div style={{ flex: 1, height: '2px', background: '#2D6A4F', opacity: 0.3, borderRadius: '1px' }} />
             </div>
 
             {/* Tuiles */}
-            {fiches.map(r => (
+            {isOpen && fiches.map(r => (
               <TileFiche
                 key={r.id}
                 r={r}

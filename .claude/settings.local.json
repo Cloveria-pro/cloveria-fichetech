@@ -7,6 +7,9 @@
       "Bash(npx kill-port *)",
       "Bash(node -e \"const fs=require\\('fs'\\); const r=JSON.parse\\(fs.readFileSync\\('c:/Users/mifsu/cloveria-n8n/cloveria-fichetech/server/data/recettes.json','utf8'\\)\\); r.slice\\(-3\\).forEach\\(rec=>{ console.log\\('---'\\); console.log\\('id:', rec.id, 'typeof:', typeof rec.id\\); console.log\\('nom:', rec.nom\\); \\(rec.ingredients||[]\\).slice\\(0,3\\).forEach\\(i=>console.log\\(' ing:', i.nom, 'qte:', i.quantite, 'unite:', i.unite, 'prix:', i.prixUnitaire\\)\\); }\\);\")",
       "Bash(node -e ' *)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\mifsu\\.claude\\projects\\c--Users-mifsu-cloveria-n8n-cloveria-fichetech\\memory"
     ]
   }
 }

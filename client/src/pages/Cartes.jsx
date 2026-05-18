@@ -191,28 +191,29 @@ function EditeurCarte({ carte, recettes, onSave, onBack }) {
             {CATEGORIES.map(c => <option key={c}>{c}</option>)}
           </select>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '60vh', overflowY: 'auto' }}>
-            {filteredRec.map(r => {
-              const deja = platsIds.includes(r.id);
+            {filteredRec.filter(r => !platsIds.includes(r.id)).map(r => {
               const cp = coutPortion(r);
               return (
-                <div key={r.id} style={{ padding: '0.6rem 0.75rem', borderRadius: '8px', background: deja ? 'rgba(45,106,79,0.06)' : '#FAFAF8', border: '1px solid ' + (deja ? 'rgba(45,106,79,0.2)' : '#F3EFE8'), opacity: deja ? 0.6 : 1 }}>
+                <div key={r.id} style={{ padding: '0.6rem 0.75rem', borderRadius: '8px', background: '#FAFAF8', border: '1px solid #F3EFE8' }}>
                   <Link to={'/fiches-techniques/' + r.id} style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.82rem', fontWeight: 600, color: T.text, marginBottom: '2px', lineHeight: 1.3, textDecoration: 'none', display: 'block' }}
                     onMouseEnter={e => e.currentTarget.style.color = T.green} onMouseLeave={e => e.currentTarget.style.color = T.text}>{r.nom}</Link>
                   <div style={{ fontSize: '0.72rem', color: T.muted, marginBottom: '6px' }}>{r.categorie} · {cp.toFixed(2)} EUR/p</div>
-                  {!deja && (
-                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                      {form.sections.map(s => (
-                        <button key={s.titre} onClick={() => addToSection(r, s.titre)}
-                          style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: '99px', border: '1px solid ' + T.gold, background: 'rgba(201,168,76,0.08)', color: '#8B6914', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
-                          + {s.titre}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {deja && <span style={{ fontSize: '0.68rem', color: T.green, fontWeight: 600 }}>✓ Dans la carte</span>}
+                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                    {form.sections.map(s => (
+                      <button key={s.titre} onClick={() => addToSection(r, s.titre)}
+                        style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: '99px', border: '1px solid ' + T.gold, background: 'rgba(201,168,76,0.08)', color: '#8B6914', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                        + {s.titre}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               );
             })}
+            {filteredRec.filter(r => !platsIds.includes(r.id)).length === 0 && (
+              <p style={{ color: T.muted, fontSize: '0.82rem', fontStyle: 'italic', textAlign: 'center', padding: '1rem 0' }}>
+                Toutes les fiches sont déjà dans la carte.
+              </p>
+            )}
           </div>
         </div>
 

@@ -8,6 +8,7 @@ import cartesRouter from './routes/cartes.js';
 import parametresRouter from './routes/parametres.js';
 import iaRouter from './routes/ia.js';
 import authRouter from './routes/auth.js';
+import aliasesRouter from './routes/aliases.js';
 import { authMiddleware } from './middleware/auth.js';
 
 const app = express();
@@ -30,6 +31,7 @@ app.use('/api/ingredients', ingredientsRouter);
 app.use('/api/cartes', cartesRouter);
 app.use('/api/parametres', parametresRouter);
 app.use('/api/ia', iaRouter);
+app.use('/api/aliases', aliasesRouter);
 
 app.listen(PORT, () => {
   console.log(`Serveur demarre sur le port ${PORT}`);
