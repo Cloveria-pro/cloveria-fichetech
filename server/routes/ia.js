@@ -79,11 +79,27 @@ router.post('/structurer', async (req, res) => {
   "tempsPreparation": number,
   "tempsCuisson": number,
   "description": "string",
-  "allergenes": ["gluten"|"lait"|"oeufs"|"arachides"|"poisson"|"crustaces"|"soja"|"fruits_a_coque"],
+  "allergenes": ["gluten"|"crustaces"|"oeufs"|"poisson"|"arachides"|"soja"|"lait"|"fruits_a_coque"|"celeri"|"moutarde"|"sesame"|"sulfites"|"lupin"|"mollusques"],
   "ingredients": [{ "nom": "string", "quantite": number, "unite": "g|kg|ml|cl|L|piece|c.s.|c.c.|botte|tranche|pincée|gousse|feuille|sachet", "prixUnitaire": 0, "tva": 10 }],
   "etapes": ["string"]
 }
-RÈGLE ABSOLUE sur tempsCuisson : si la recette ne nécessite aucune cuisson (salade, carpaccio, tartare, ceviche, gaspacho, verrine froide, sushi, tiramisu, mousse froide, etc.), le champ tempsCuisson doit être exactement 0. Ne jamais inventer ni estimer un temps de cuisson qui n'est pas réellement applicable à la recette décrite.`,
+
+RÈGLES OBLIGATOIRES SUR LES TEMPS :
+Analyse chaque ingrédient et sa technique de préparation réelle avant de renseigner les temps. Sois précis et honnête. Ne jamais mettre un temps de cuisson si aucun ingrédient n'est soumis à une source de chaleur.
+
+tempsCuisson : additionner uniquement les temps de cuisson réels (poêler, rôtir, cuire à l'eau, gratiner, caraméliser, frire, etc.).
+- Salade de tomates → 0 min
+- Ceviche → 0 min (cuisson acide, pas thermique)
+- Tartare de bœuf → 0 min
+- Carpaccio → 0 min
+- Salade avec pommes caramélisées → 10-15 min (pommes seulement)
+- Steak sauce → 10-15 min cuisson viande + sauce
+- Gratin → 20-30 min four
+
+tempsPreparation : temps réaliste proportionnel à la complexité réelle.
+- Plat simple (salade basique, tartine) → 5-15 min
+- Plat intermédiaire (sauce, découpe, montage simple) → 15-30 min
+- Plat complexe (farce, dressage élaboré, plusieurs éléments distincts) → 30-60 min+`,
       messages: [{ role: 'user', content: description }],
     });
 

@@ -7,7 +7,10 @@ import EtapesEditor from '../components/EtapesEditor.jsx';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
 
 const UNITES = ['g', 'kg', 'ml', 'L', 'piece', 'c.s.', 'c.c.', 'botte', 'tranche'];
-const ALLERGENES_LIST = ['gluten', 'lait', 'oeufs', 'arachides', 'poisson', 'crustaces', 'soja', 'fruits_a_coque'];
+const ALLERGENES_LIST = [
+  'gluten', 'crustaces', 'oeufs', 'poisson', 'arachides', 'soja', 'lait', 'fruits_a_coque',
+  'celeri', 'moutarde', 'sesame', 'sulfites', 'lupin', 'mollusques',
+];
 const CHART_COLORS = ['#2D6A4F','#C9A84C','#4F86C6','#E05C5C','#7B5EA7','#E09F3E','#8DB580','#6E9EBF','#E8A87C','#B8B0A4'];
 const TVA_OPTIONS = [
   { value: 5.5, label: '5.5% — Alim. bruts' },
