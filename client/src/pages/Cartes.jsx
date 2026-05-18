@@ -107,7 +107,7 @@ function ListeCartes({ cartes, onNew, onOpen, onDelete }) {
 
 // ─── Vue consultant ───────────────────────────────────────────────────────────
 function VueCarte({ carte, recettes, parametres, onEdit, onBack, onAutoSave }) {
-  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showAllergenesMenu, setShowAllergenesMenu] = useState(false);
   const [closedSections, setClosedSections] = useState(new Set());
   const [localSections, setLocalSections] = useState(carte?.sections || []);
   const autoSaveTimerVC = useRef(null);
@@ -134,6 +134,8 @@ function VueCarte({ carte, recettes, parametres, onEdit, onBack, onAutoSave }) {
         : s
     );
     setLocalSections(updated);
+    const prixNum = parseFloat(prix) || 0;
+    api.recettes.updatePrix(recetteId, prixNum).catch(() => {});
     clearTimeout(autoSaveTimerVC.current);
     autoSaveTimerVC.current = setTimeout(() => {
       api.cartes.update(carte.id, { ...carte, sections: updated })
@@ -223,7 +225,6 @@ function VueCarte({ carte, recettes, parametres, onEdit, onBack, onAutoSave }) {
 </body></html>`;
     const win = window.open('', '_blank', 'width=1100,height=700');
     win.document.write(html); win.document.close(); win.focus();
-    setTimeout(() => win.print(), 600);
   }
 
   // ── Export Format B (clients — élégant par catégorie) ──
@@ -257,12 +258,45 @@ ${sections}
 </body></html>`;
     const win = window.open('', '_blank', 'width=900,height=700');
     win.document.write(html); win.document.close(); win.focus();
-    setTimeout(() => win.print(), 600);
+  }
+
+  // ── Export Argumentation (A4 par catégorie — nom + description commerciale) ──
+  function exportArgumentation() {
+    const sections = allSectionsWithData
+      .filter(s => s.plats.length > 0)
+      .map(s => {
+        const plats = s.platsData.map(p => {
+          const desc = p.rec?.description_commerciale || p.rec?.description || '';
+          return `<div style="padding:12px 0;border-bottom:1px solid #F3EFE8">
+            <div style="font-family:Georgia,serif;font-size:1.05rem;font-weight:700;color:#1C2B1E;margin-bottom:4px">${p.nom}${p.prixVente > 0 ? `<span style="float:right;font-weight:400;font-size:0.9rem;color:#6B7280">${p.prixVente.toFixed(2)} €</span>` : ''}</div>
+            ${desc ? `<div style="font-size:0.88rem;color:#374151;line-height:1.6;font-style:italic">${desc}</div>` : '<div style="font-size:0.82rem;color:#9CA3AF;font-style:italic">— Description à renseigner —</div>'}
+          </div>`;
+        }).join('');
+        return `<div style="margin-bottom:28px">
+          <h2 style="font-family:Georgia,serif;font-size:1.1rem;font-weight:700;color:#2D6A4F;border-bottom:2px solid #2D6A4F;padding-bottom:6px;margin-bottom:0;text-transform:uppercase;letter-spacing:0.04em">${s.titre}</h2>
+          ${plats}
+        </div>`;
+      }).join('');
+    const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Argumentation — ${carte.nom}</title>
+<style>@page{size:A4;margin:20mm 16mm}body{font-family:"Helvetica Neue",Arial,sans-serif;color:#1C2B1E;font-size:12px;margin:0}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>
+</head><body>
+<div style="text-align:center;margin-bottom:28px;padding-bottom:14px;border-bottom:2px solid #2D6A4F">
+  <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#2D6A4F;margin-bottom:3px">${etablissement}</div>
+  <h1 style="font-family:Georgia,serif;font-size:1.6rem;margin:0 0 3px">${carte.nom}</h1>
+  <div style="font-size:0.75rem;color:#6B7280">Argumentation de vente · ${date}</div>
+</div>
+${sections}
+<div style="position:fixed;bottom:10mm;left:16mm;right:16mm;border-top:1px solid #E5E0D8;padding-top:5px;font-size:0.6rem;color:#9CA3AF;text-align:center">
+  Document usage interne — ${etablissement} · ${date}
+</div>
+</body></html>`;
+    const win = window.open('', '_blank', 'width=900,height=700');
+    win.document.write(html); win.document.close(); win.focus();
   }
 
   return (
     <div>
-      {showExportMenu && <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onClick={() => setShowExportMenu(false)} />}
+      {showAllergenesMenu && <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onClick={() => setShowAllergenesMenu(false)} />}
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
@@ -273,18 +307,18 @@ ${sections}
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
           <div style={{ position: 'relative', zIndex: 50 }}>
-            <button onClick={() => setShowExportMenu(m => !m)}
+            <button onClick={() => setShowAllergenesMenu(m => !m)}
               style={{ padding: '0.45rem 0.9rem', border: '1px solid #E5E0D8', background: '#fff', borderRadius: '8px', cursor: 'pointer', fontSize: '0.82rem', color: T.muted, fontFamily: "'DM Sans', sans-serif" }}>
               Allergènes ▾
             </button>
-            {showExportMenu && (
+            {showAllergenesMenu && (
               <div style={{ position: 'absolute', top: 'calc(100% + 4px)', right: 0, background: '#fff', border: '1px solid #E5E0D8', borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.1)', minWidth: '210px', overflow: 'hidden' }}>
-                <button onClick={() => { exportAllergenesA(); setShowExportMenu(false); }}
+                <button onClick={() => { exportAllergenesA(); setShowAllergenesMenu(false); }}
                   style={{ display: 'block', width: '100%', padding: '0.65rem 1rem', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '0.82rem', color: T.text, fontFamily: "'DM Sans', sans-serif" }}
                   onMouseEnter={e => e.currentTarget.style.background = '#FAFAF8'}
                   onMouseLeave={e => e.currentTarget.style.background = 'none'}
                 >📋 Format A — Fiche serveurs</button>
-                <button onClick={() => { exportAllergenesB(); setShowExportMenu(false); }}
+                <button onClick={() => { exportAllergenesB(); setShowAllergenesMenu(false); }}
                   style={{ display: 'block', width: '100%', padding: '0.65rem 1rem', background: 'none', borderTop: '1px solid #F3EFE8', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '0.82rem', color: T.text, fontFamily: "'DM Sans', sans-serif" }}
                   onMouseEnter={e => e.currentTarget.style.background = '#FAFAF8'}
                   onMouseLeave={e => e.currentTarget.style.background = 'none'}
@@ -292,6 +326,10 @@ ${sections}
               </div>
             )}
           </div>
+          <button onClick={exportArgumentation}
+            style={{ padding: '0.45rem 0.9rem', border: '1px solid #E5E0D8', background: '#fff', borderRadius: '8px', cursor: 'pointer', fontSize: '0.82rem', color: T.muted, fontFamily: "'DM Sans', sans-serif" }}>
+            Argumentation
+          </button>
           <button onClick={onEdit}
             style={{ padding: '0.45rem 1.1rem', background: T.green, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif" }}
             onMouseEnter={e => e.currentTarget.style.background = '#1e4d38'}
@@ -344,12 +382,15 @@ ${sections}
                               </span>
                             )}
                           </div>
-                          <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px', paddingTop: '2px' }}>
-                            <input type="number" step="0.5" min="0" value={plat.prixVente || ''}
-                              onChange={e => updatePrixVente(section.titre, plat.recetteId, e.target.value)}
-                              onClick={e => e.stopPropagation()}
-                              style={{ width: '72px', padding: '0.3rem 0.5rem', border: '1px solid #E5E0D8', borderRadius: '6px', fontSize: '0.9rem', fontFamily: "'Playfair Display', serif", fontWeight: 700, color: T.text, textAlign: 'right', outline: 'none' }} />
-                            <span style={{ fontSize: '0.85rem', color: T.muted }}>€</span>
+                          <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', paddingTop: '2px' }}>
+                            <span style={{ fontSize: '0.62rem', color: T.muted, fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Prix TTC</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <input type="number" step="0.5" min="0" value={plat.prixVente || ''}
+                                onChange={e => updatePrixVente(section.titre, plat.recetteId, e.target.value)}
+                                onClick={e => e.stopPropagation()}
+                                style={{ width: '72px', padding: '0.3rem 0.5rem', border: '1px solid #E5E0D8', borderRadius: '6px', fontSize: '0.9rem', fontFamily: "'Playfair Display', serif", fontWeight: 700, color: T.text, textAlign: 'right', outline: 'none' }} />
+                              <span style={{ fontSize: '0.85rem', color: T.muted }}>€</span>
+                            </div>
                           </div>
                         </div>
                       );

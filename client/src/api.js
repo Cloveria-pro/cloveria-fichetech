@@ -38,6 +38,7 @@ export const api = {
     get: (id) => request(`/recettes/${id}`),
     create: (data) => request('/recettes', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => request(`/recettes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    updatePrix: (id, prix) => request(`/recettes/${id}/prix`, { method: 'PUT', body: JSON.stringify({ prix }) }),
     delete: (id) => request(`/recettes/${id}`, { method: 'DELETE' })
   },
   cartes: {

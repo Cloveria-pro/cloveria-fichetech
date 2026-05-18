@@ -58,6 +58,35 @@ router.put('/:id', async (req, res) => {
   res.json(updated);
 });
 
+router.put('/:id/prix', async (req, res) => {
+  const { prix } = req.body;
+  if (prix == null) return res.status(400).json({ error: 'prix requis' });
+  const db = await getDb();
+  const prixNum = parseFloat(prix) || 0;
+
+  const col = db.collection('recettes');
+  const recette = await col.findOne({ id: req.params.id, user_id: req.userId }, PROJ);
+  if (!recette) return res.status(404).json({ error: 'Introuvable' });
+
+  const updatedRecette = { ...recette, prixVentePratiqueTTC: prixNum, updatedAt: new Date().toISOString() };
+  await col.replaceOne({ id: req.params.id, user_id: req.userId }, updatedRecette);
+
+  const cartes = await db.collection('cartes').find({ user_id: req.userId }, PROJ).toArray();
+  for (const carte of cartes) {
+    let changed = false;
+    const sections = (carte.sections || []).map(s => ({
+      ...s,
+      plats: s.plats.map(p => {
+        if (p.recetteId === req.params.id) { changed = true; return { ...p, prixVente: prixNum }; }
+        return p;
+      }),
+    }));
+    if (changed) await db.collection('cartes').replaceOne({ id: carte.id, user_id: req.userId }, { ...carte, sections });
+  }
+
+  res.json({ recette: updatedRecette });
+});
+
 router.delete('/:id', async (req, res) => {
   const db = await getDb();
   const result = await db.collection('recettes').deleteOne({ id: req.params.id, user_id: req.userId });

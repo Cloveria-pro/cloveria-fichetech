@@ -116,6 +116,7 @@ export default function FicheTechnique() {
 
   function savePrixVentePratiqueTTC(currentForm) {
     api.recettes.update(id, currentForm).then(data => setRecette(data));
+    api.recettes.updatePrix(id, currentForm.prixVentePratiqueTTC ?? 0).catch(() => {});
   }
 
   function retirerDeCarte(carte, sectionTitre) {

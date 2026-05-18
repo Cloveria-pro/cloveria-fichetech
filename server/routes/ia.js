@@ -93,7 +93,17 @@ Analyse chaque ingrédient de la recette un par un. Le temps de cuisson est la s
 RÈGLE ABSOLUE sur les temps de préparation :
 Sois réaliste et proportionnel à la complexité. Salade simple = 5-10 min. Plat avec sauce = 20-30 min. Plat complexe avec plusieurs éléments = 45-60 min+.
 
-description_commerciale : une à deux phrases en français courant et chaleureux, sans jargon technique, que le serveur peut réciter au client. Parle des saveurs, textures, expérience gustative. Ne jamais décrire les étapes de préparation. Exemples : "Un fondant au chocolat Valrhona servi chaud avec son cœur coulant, accompagné de framboises fraîches du moment." / "Notre magret de canard rôti nappé d'une sauce miel-balsamique, accompagné d'une purée de patate douce maison." / "Une salade fraîche de pastèque et feta avec feuilles de menthe et huile d'olive — légère et parfumée."
+description_commerciale : Écris 2 à 3 phrases simples et naturelles pour présenter ce plat à un client. Le ton doit être chaleureux et accessible, comme un serveur sympa qui parle normalement — pas trop chic, pas trop technique. Donne envie en parlant des goûts et des textures.
+
+Exemples de BONNES descriptions :
+- "Un petit cromesquis de foie gras avec une touche de gelée de Sauternes. Fondant dedans, croustillant dehors — parfait pour commencer."
+- "Un tartare de bœuf bien assaisonné avec des câpres, des herbes fraîches et un filet d'huile d'olive. Simple, frais et généreux."
+- "Notre panna cotta maison avec un coulis de fruits rouges du moment. Légère, crémeuse, et pas trop sucrée."
+
+Exemples à NE JAMAIS faire :
+- Tout ce qui contient des degrés, des temps, des techniques de cuisson → INTERDIT
+- Les mots : sublimé, nappé, réalisé, élaboré, cuisson, rôti (sauf si c'est le nom du plat), thermoplongeur, bain-marie, déglacer → INTERDIT
+- Phrases trop longues ou trop pompeuses → INTERDIT
 
 Pour les ingrédients, utilise les noms français courants et professionnels. Indique des quantités réalistes pour le nombre de portions demandé.`,
       messages: [{ role: 'user', content: description }],
@@ -128,7 +138,15 @@ router.post('/description-commerciale', async (req, res) => {
   const userMsg = `Plat : "${nom}"${portions ? `, ${portions} portions` : ''}. Ingrédients : ${ingList || 'non spécifiés'}.
 
 Génère UNIQUEMENT ce JSON : { "description_commerciale": "string" }
-Une à deux phrases en français courant et chaleureux, sans jargon technique. Saveurs, textures, expérience gustative. Ton appétissant et vendeur, comme ce qu'un serveur récite au client. Ne décris jamais les étapes de préparation.`;
+
+Écris 2 à 3 phrases simples et naturelles pour présenter ce plat à un client. Le ton doit être chaleureux et accessible, comme un serveur sympa qui parle normalement — pas trop chic, pas trop technique. Donne envie en parlant des goûts et des textures.
+
+Exemples de BONNES descriptions :
+- "Un petit cromesquis de foie gras avec une touche de gelée de Sauternes. Fondant dedans, croustillant dehors — parfait pour commencer."
+- "Un tartare de bœuf bien assaisonné avec des câpres, des herbes fraîches et un filet d'huile d'olive. Simple, frais et généreux."
+- "Notre panna cotta maison avec un coulis de fruits rouges du moment. Légère, crémeuse, et pas trop sucrée."
+
+INTERDIT absolument : degrés de température, temps de cuisson, thermoplongeur, bain-marie, déglacer, sublimé, nappé, réalisé, élaboré, rôti (sauf si c'est le nom du plat). Pas de phrases longues ou pompeuses.`;
 
   try {
     const message = await client.messages.create({
