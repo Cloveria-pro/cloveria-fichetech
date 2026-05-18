@@ -1,31 +1,21 @@
 import express from 'express';
-import { readFileSync, writeFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const PATH = join(__dirname, '../data/historique_prix.json');
-
-function readDB() {
-  try { return JSON.parse(readFileSync(PATH, 'utf-8')); } catch { return []; }
-}
-function writeDB(data) { writeFileSync(PATH, JSON.stringify(data, null, 2), 'utf-8'); }
+import { getDb } from '../db.js';
 
 const router = express.Router();
+const PROJ = { projection: { _id: 0 } };
 
-router.get('/', (req, res) => {
-  const all = readDB();
-  const nom = req.query.nom;
-  const filtered = nom
-    ? all.filter(e => e.user_id === req.userId && e.nom.toLowerCase() === nom.toLowerCase())
-    : all.filter(e => e.user_id === req.userId);
-  res.json(filtered.sort((a, b) => new Date(a.date) - new Date(b.date)));
+router.get('/', async (req, res) => {
+  const db = await getDb();
+  const filter = { user_id: req.userId };
+  if (req.query.nom) filter.nom = { $regex: new RegExp(`^${req.query.nom}$`, 'i') };
+  const items = await db.collection('historique_prix').find(filter, PROJ).toArray();
+  res.json(items.sort((a, b) => new Date(a.date) - new Date(b.date)));
 });
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { nom, prix, unite, fournisseur } = req.body;
   if (!nom || prix == null) return res.status(400).json({ error: 'nom et prix requis' });
-  const db = readDB();
+  const db = await getDb();
   const entry = {
     user_id: req.userId,
     nom,
@@ -34,19 +24,17 @@ router.post('/', (req, res) => {
     unite: unite || 'kg',
     fournisseur: fournisseur || '',
   };
-  db.push(entry);
-  writeDB(db);
+  await db.collection('historique_prix').insertOne(entry);
+  delete entry._id;
   res.status(201).json(entry);
 });
 
-router.delete('/', (req, res) => {
+router.delete('/', async (req, res) => {
   const { nom, date } = req.query;
   if (!nom || !date) return res.status(400).json({ error: 'nom et date requis' });
-  const db = readDB();
-  const idx = db.findIndex(e => e.user_id === req.userId && e.nom === nom && e.date === date);
-  if (idx === -1) return res.status(404).json({ error: 'Introuvable' });
-  db.splice(idx, 1);
-  writeDB(db);
+  const db = await getDb();
+  const result = await db.collection('historique_prix').deleteOne({ user_id: req.userId, nom, date });
+  if (result.deletedCount === 0) return res.status(404).json({ error: 'Introuvable' });
   res.status(204).send();
 });
 

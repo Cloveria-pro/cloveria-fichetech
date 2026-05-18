@@ -1,65 +1,50 @@
 import express from 'express';
-import { readFileSync, writeFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { getDb } from '../db.js';
 
 const router = express.Router();
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DB_PATH = join(__dirname, '../data/ingredients.json');
-const HIST_PATH = join(__dirname, '../data/historique_prix.json');
+const PROJ = { projection: { _id: 0 } };
 
-function readHist() {
-  try { return JSON.parse(readFileSync(HIST_PATH, 'utf-8')); } catch { return []; }
-}
-function appendHist(entry) {
-  const hist = readHist();
-  hist.push(entry);
-  writeFileSync(HIST_PATH, JSON.stringify(hist, null, 2), 'utf-8');
-}
-
-function readDB() { return JSON.parse(readFileSync(DB_PATH, 'utf-8')); }
-function writeDB(data) { writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf-8'); }
-
-router.get('/', (req, res) => {
-  res.json(readDB().filter(i => i.user_id === req.userId));
+router.get('/', async (req, res) => {
+  const db = await getDb();
+  const items = await db.collection('ingredients').find({ user_id: req.userId }, PROJ).toArray();
+  res.json(items);
 });
 
-router.post('/', (req, res) => {
-  const db = readDB();
+router.post('/', async (req, res) => {
+  const db = await getDb();
   const item = { id: uuidv4(), user_id: req.userId, ...req.body, createdAt: new Date().toISOString() };
-  db.push(item);
-  writeDB(db);
+  await db.collection('ingredients').insertOne(item);
+  delete item._id;
   res.status(201).json(item);
 });
 
-router.put('/:id', (req, res) => {
-  const db = readDB();
-  const idx = db.findIndex(r => r.id === req.params.id && r.user_id === req.userId);
-  if (idx === -1) return res.status(404).json({ error: 'Introuvable' });
-  const prev = db[idx];
-  db[idx] = { ...prev, ...req.body, id: req.params.id, user_id: req.userId };
-  writeDB(db);
+router.put('/:id', async (req, res) => {
+  const db = await getDb();
+  const col = db.collection('ingredients');
+  const existing = await col.findOne({ id: req.params.id, user_id: req.userId }, PROJ);
+  if (!existing) return res.status(404).json({ error: 'Introuvable' });
+  const updated = { ...existing, ...req.body, id: req.params.id, user_id: req.userId };
+  await col.replaceOne({ id: req.params.id, user_id: req.userId }, updated);
+
   const newPrix = parseFloat(req.body.prixUnitaire);
-  if (!isNaN(newPrix) && newPrix !== prev.prixUnitaire) {
-    appendHist({
+  if (!isNaN(newPrix) && newPrix !== existing.prixUnitaire) {
+    await db.collection('historique_prix').insertOne({
       user_id: req.userId,
-      nom: db[idx].nom,
+      nom: updated.nom,
       date: new Date().toISOString(),
       prix: newPrix,
-      unite: db[idx].unite,
+      unite: updated.unite,
       fournisseur: req.body.fournisseur || '',
     });
   }
-  res.json(db[idx]);
+  res.json(updated);
 });
 
-router.delete('/:id', (req, res) => {
-  const db = readDB();
-  const idx = db.findIndex(r => r.id === req.params.id && r.user_id === req.userId);
-  if (idx === -1) return res.status(404).json({ error: 'Introuvable' });
-  db.splice(idx, 1);
-  writeDB(db);
+router.delete('/:id', async (req, res) => {
+  const db = await getDb();
+  const result = await db.collection('ingredients').deleteOne({ id: req.params.id, user_id: req.userId });
+  if (result.deletedCount === 0) return res.status(404).json({ error: 'Introuvable' });
   res.status(204).send();
 });
 

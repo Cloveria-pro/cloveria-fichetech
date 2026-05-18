@@ -2,21 +2,18 @@ import '../env.js';
 import express from 'express';
 import multer from 'multer';
 import Anthropic from '@anthropic-ai/sdk';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __routedir = dirname(fileURLToPath(import.meta.url));
-const INGREDIENTS_PATH = join(__routedir, '../data/ingredients.json');
+import { getDb } from '../db.js';
 
 function normalize(str) {
   return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
-function matchIngredientPrice(nom, userId) {
+async function matchIngredientPrice(nom, userId) {
   try {
-    const all = JSON.parse(readFileSync(INGREDIENTS_PATH, 'utf-8'));
-    const pool = all.filter(i => i.user_id === userId || i.user_id === 'demo');
+    const db = await getDb();
+    const pool = await db.collection('ingredients')
+      .find({ $or: [{ user_id: userId }, { user_id: 'demo' }] }, { projection: { _id: 0 } })
+      .toArray();
     const normalizedNom = normalize(nom);
     return pool.find(i => normalize(i.nom) === normalizedNom) || null;
   } catch {
@@ -96,13 +93,11 @@ router.post('/structurer', async (req, res) => {
     const result = JSON.parse(jsonMatch[0]);
 
     if (Array.isArray(result.ingredients)) {
-      result.ingredients = result.ingredients.map(ing => {
-        const found = matchIngredientPrice(ing.nom, req.userId);
+      result.ingredients = await Promise.all(result.ingredients.map(async ing => {
+        const found = await matchIngredientPrice(ing.nom, req.userId);
         if (!found) return ing;
-        // Stocke le prix catalogue de référence (€/kg, €/L, €/piece).
-        // La conversion d'unités se fait côté client via coutIng().
         return { ...ing, prixUnitaire: found.prixUnitaire };
-      });
+      }));
     }
 
     res.json(result);

@@ -1,49 +1,45 @@
 import express from 'express';
-import { readFileSync, writeFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { getDb } from '../db.js';
 
 const router = express.Router();
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DB_PATH = join(__dirname, '../data/cartes.json');
+const PROJ = { projection: { _id: 0 } };
 
-function readDB() { return JSON.parse(readFileSync(DB_PATH, 'utf-8')); }
-function writeDB(data) { writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf-8'); }
-
-router.get('/', (req, res) => {
-  res.json(readDB().filter(c => c.user_id === req.userId));
+router.get('/', async (req, res) => {
+  const db = await getDb();
+  const items = await db.collection('cartes').find({ user_id: req.userId }, PROJ).toArray();
+  res.json(items);
 });
 
-router.get('/:id', (req, res) => {
-  const item = readDB().find(r => r.id === req.params.id && r.user_id === req.userId);
+router.get('/:id', async (req, res) => {
+  const db = await getDb();
+  const item = await db.collection('cartes').findOne({ id: req.params.id, user_id: req.userId }, PROJ);
   if (!item) return res.status(404).json({ error: 'Introuvable' });
   res.json(item);
 });
 
-router.post('/', (req, res) => {
-  const db = readDB();
+router.post('/', async (req, res) => {
+  const db = await getDb();
   const item = { id: uuidv4(), user_id: req.userId, ...req.body, createdAt: new Date().toISOString() };
-  db.push(item);
-  writeDB(db);
+  await db.collection('cartes').insertOne(item);
+  delete item._id;
   res.status(201).json(item);
 });
 
-router.put('/:id', (req, res) => {
-  const db = readDB();
-  const idx = db.findIndex(r => r.id === req.params.id && r.user_id === req.userId);
-  if (idx === -1) return res.status(404).json({ error: 'Introuvable' });
-  db[idx] = { ...db[idx], ...req.body, id: req.params.id, user_id: req.userId };
-  writeDB(db);
-  res.json(db[idx]);
+router.put('/:id', async (req, res) => {
+  const db = await getDb();
+  const col = db.collection('cartes');
+  const existing = await col.findOne({ id: req.params.id, user_id: req.userId }, PROJ);
+  if (!existing) return res.status(404).json({ error: 'Introuvable' });
+  const updated = { ...existing, ...req.body, id: req.params.id, user_id: req.userId };
+  await col.replaceOne({ id: req.params.id, user_id: req.userId }, updated);
+  res.json(updated);
 });
 
-router.delete('/:id', (req, res) => {
-  const db = readDB();
-  const idx = db.findIndex(r => r.id === req.params.id && r.user_id === req.userId);
-  if (idx === -1) return res.status(404).json({ error: 'Introuvable' });
-  db.splice(idx, 1);
-  writeDB(db);
+router.delete('/:id', async (req, res) => {
+  const db = await getDb();
+  const result = await db.collection('cartes').deleteOne({ id: req.params.id, user_id: req.userId });
+  if (result.deletedCount === 0) return res.status(404).json({ error: 'Introuvable' });
   res.status(204).send();
 });
 

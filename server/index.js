@@ -2,6 +2,7 @@ import './env.js';
 
 import express from 'express';
 import cors from 'cors';
+import { getDb } from './db.js';
 import recettesRouter from './routes/recettes.js';
 import ingredientsRouter from './routes/ingredients.js';
 import cartesRouter from './routes/cartes.js';
@@ -35,6 +36,14 @@ app.use('/api/ia', iaRouter);
 app.use('/api/aliases', aliasesRouter);
 app.use('/api/historique-prix', historiquePrixRouter);
 
-app.listen(PORT, () => {
-  console.log(`Serveur demarre sur le port ${PORT}`);
-});
+// Fail fast: connect to MongoDB before accepting requests
+getDb()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Serveur demarre sur le port ${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error('[MongoDB] Connexion impossible:', err.message);
+    process.exit(1);
+  });
