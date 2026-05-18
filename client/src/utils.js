@@ -1,8 +1,10 @@
 import { calculerCoutIngredient } from './conversions.js';
 
 export function coutIng(ing) {
-  const { quantite = 0, prixUnitaire = 0, unite = '' } = ing;
-  return calculerCoutIngredient(quantite, unite, prixUnitaire);
+  const { quantite = 0, prixUnitaire = 0, unite = '', rendement = 100 } = ing;
+  const base = calculerCoutIngredient(quantite, unite, prixUnitaire);
+  const r = (rendement > 0 && rendement <= 100) ? rendement : 100;
+  return r < 100 ? base / (r / 100) : base;
 }
 
 export function coutIngTTC(ing) {

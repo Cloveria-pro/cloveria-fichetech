@@ -490,7 +490,7 @@ export default function FicheTechnique() {
                     <td style={{ padding: '0.6rem 0.75rem' }}>
                       {editMode
                         ? <IngredientAutocomplete value={ing.nom} catalog={catalog} sousRecettes={sousRecettes} onChange={fields => updateIngredient(idx, { nom: fields.nom !== undefined ? fields.nom : ing.nom, ...(fields.prixUnitaire !== undefined ? { prixUnitaire: fields.prixUnitaire } : {}), ...(fields.unite !== undefined ? { unite: fields.unite } : {}) })} />
-                        : <span style={{ fontWeight: 500 }}>{ing.nom}</span>}
+                        : <span style={{ fontWeight: 500 }}>{ing.nom}{ing.rendement && ing.rendement < 100 && <span style={{ marginLeft: '6px', fontSize: '0.68rem', fontWeight: 700, padding: '1px 5px', borderRadius: '3px', background: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A' }}>{ing.rendement}%</span>}</span>}
                     </td>
                     <td style={{ padding: '0.6rem 0.75rem' }}>
                       {editMode

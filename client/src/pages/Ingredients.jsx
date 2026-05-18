@@ -25,7 +25,7 @@ function Badge({ cat }) {
   return <span style={{ fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: '99px', background: bg, color }}>{cat}</span>;
 }
 
-const EMPTY = { nom: '', categorie: 'épicerie', unite: 'kg', prixUnitaire: '', tva: 10, fournisseur: '', fournisseurs: [] };
+const EMPTY = { nom: '', categorie: 'épicerie', unite: 'kg', prixUnitaire: '', tva: 10, fournisseur: '', fournisseurs: [], rendement: 100 };
 
 /* ─── Modal historique des prix ─────────────────────────────────────────── */
 function HistoriqueModal({ item, onClose, recettes, params }) {
@@ -353,6 +353,7 @@ export default function Ingredients() {
       prixUnitaire: item.prixUnitaire, tva: item.tva ?? 10,
       fournisseur: item.fournisseur || '',
       fournisseurs: item.fournisseurs || [],
+      rendement: item.rendement ?? 100,
     };
     setEditId(item.id);
     setEditForm(form);
@@ -514,6 +515,7 @@ export default function Ingredients() {
                 </th>
               ))}
               <th style={thStyle}>TVA</th>
+              <th style={thStyle}>Rendement</th>
               <th style={{ ...thStyle, textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
@@ -551,6 +553,14 @@ export default function Ingredients() {
                       {TVA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                   </td>
+                  <td style={tdStyle}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <input type="number" min="1" max="100" step="1" value={editForm.rendement ?? 100}
+                        onChange={e => updateEditForm(f => ({ ...f, rendement: parseFloat(e.target.value) || 100 }))}
+                        style={{ ...inputStyle, width: '60px' }} />
+                      <span style={{ color: T.muted, fontSize: '0.8rem' }}>%</span>
+                    </div>
+                  </td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>
                     <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
                       <button onClick={cancelEdit} style={{ ...btnSm, border: '1px solid #E5E0D8', background: '#fff' }}>Annuler</button>
@@ -576,6 +586,12 @@ export default function Ingredients() {
                   <td style={{ ...tdStyle, color: T.muted, fontSize: '0.82rem' }}>
                     {(item.tva ?? 10) + '%'}
                   </td>
+                  <td style={{ ...tdStyle, fontSize: '0.82rem' }}>
+                    {(item.rendement ?? 100) < 100
+                      ? <span style={{ fontWeight: 600, color: '#d97706' }}>{item.rendement}%</span>
+                      : <span style={{ color: '#D1C4B0' }}>—</span>
+                    }
+                  </td>
                   <td style={{ ...tdStyle, textAlign: 'right' }} onClick={e => e.stopPropagation()}>
                     <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', alignItems: 'center' }}>
                       <button
@@ -593,7 +609,7 @@ export default function Ingredients() {
               )
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={7} style={{ ...tdStyle, textAlign: 'center', color: T.muted, padding: '2rem' }}>Aucun ingrédient trouvé</td></tr>
+              <tr><td colSpan={8} style={{ ...tdStyle, textAlign: 'center', color: T.muted, padding: '2rem' }}>Aucun ingrédient trouvé</td></tr>
             )}
           </tbody>
           {/* Formulaire ajout */}
@@ -601,7 +617,7 @@ export default function Ingredients() {
             <tfoot>
               {dupWarning && (
                 <tr style={{ background: '#FFF7ED', borderTop: '2px solid #FED7AA' }}>
-                  <td colSpan={7} style={{ padding: '0.75rem 1rem' }}>
+                  <td colSpan={8} style={{ padding: '0.75rem 1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '0.85rem', color: '#92400e', flex: 1 }}>
                         ⚠️ Un ingrédient similaire existe déjà : <strong>{dupWarning.nom}</strong> ({dupWarning.prixUnitaire} EUR/{dupWarning.unite}
@@ -622,7 +638,7 @@ export default function Ingredients() {
               )}
               {catalogSimilar.length > 0 && (
                 <tr style={{ background: '#F0FDF4', borderTop: '1px solid #BBF7D0' }}>
-                  <td colSpan={7} style={{ padding: '0.5rem 1rem' }}>
+                  <td colSpan={8} style={{ padding: '0.5rem 1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '0.72rem', color: '#166534', fontWeight: 600, whiteSpace: 'nowrap' }}>Déjà dans le catalogue :</span>
                       {catalogSimilar.map(it => (
@@ -639,7 +655,7 @@ export default function Ingredients() {
               )}
               {showNomSuggestions && nomSuggestions.length > 0 && (
                 <tr style={{ background: '#FFFBF5', borderTop: '1px solid #F3EFE8' }}>
-                  <td colSpan={7} style={{ padding: '0.5rem 1rem' }}>
+                  <td colSpan={8} style={{ padding: '0.5rem 1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '0.72rem', color: '#9CA3AF', whiteSpace: 'nowrap' }}>Utilisé dans des fiches :</span>
                       {nomSuggestions.map(name => (
@@ -685,6 +701,15 @@ export default function Ingredients() {
                   <select value={addForm.tva ?? 10} onChange={e => setAddForm(f => ({ ...f, tva: parseFloat(e.target.value) }))} style={{ ...inputStyle, width: '70px' }}>
                     {TVA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
+                </td>
+                <td style={{ padding: '0.75rem 1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <input type="number" min="1" max="100" step="1" placeholder="100"
+                      value={addForm.rendement === 100 ? '' : (addForm.rendement ?? '')}
+                      onChange={e => setAddForm(f => ({ ...f, rendement: parseFloat(e.target.value) || 100 }))}
+                      style={{ ...inputStyle, width: '60px' }} />
+                    <span style={{ color: T.muted, fontSize: '0.8rem' }}>%</span>
+                  </div>
                 </td>
                 <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
                   <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>

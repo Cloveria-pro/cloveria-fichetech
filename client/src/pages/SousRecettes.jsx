@@ -204,8 +204,14 @@ export default function SousRecettes() {
                           {UNITES_ING.map(u => <option key={u} value={u}>{u}</option>)}
                         </select>
                       </td>
-                      <td style={{ padding: '0.5rem 0.75rem', color: T.muted, fontSize: '0.82rem' }}>
-                        {ing.prixUnitaire > 0 ? `${ing.prixUnitaire} EUR/${ing.unite}` : <span style={{ color: '#D1C4B0' }}>—</span>}
+                      <td style={{ padding: '0.5rem 0.75rem' }}>
+                        <input
+                          type="number" step="0.001" min="0"
+                          value={ing.prixUnitaire || ''}
+                          placeholder="Prix/unité"
+                          onChange={e => updateIng(idx, { prixUnitaire: parseFloat(e.target.value) || 0 })}
+                          style={{ ...inputStyle, width: '90px' }}
+                        />
                       </td>
                       <td style={{ padding: '0.5rem 0.75rem', fontWeight: 600, color: T.green }}>
                         {coutIng(ing).toFixed(3)} EUR
