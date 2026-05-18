@@ -129,6 +129,7 @@ export default function Ingredients() {
   const [missingFromCatalog, setMissingFromCatalog] = useState([]);
   const [showNomSuggestions, setShowNomSuggestions] = useState(false);
   const [histItem, setHistItem] = useState(null);
+  const [dupWarning, setDupWarning] = useState(null);
   const autoSaveTimer = useRef(null);
   const latestEdit = useRef({ id: null, form: {} });
 
@@ -232,8 +233,13 @@ export default function Ingredients() {
     api.ingredients.delete(id).then(() => setItems(prev => prev.filter(i => i.id !== id)));
   }
 
-  function ajouter() {
+  function ajouter(forceCreate = false) {
     if (!addForm.nom.trim()) return;
+    if (!forceCreate) {
+      const similar = items.find(i => i.nom.toLowerCase() === addForm.nom.toLowerCase().trim());
+      if (similar) { setDupWarning(similar); return; }
+    }
+    setDupWarning(null);
     api.ingredients.create({ ...addForm, prixUnitaire: parseFloat(addForm.prixUnitaire) || 0, tva: parseFloat(addForm.tva) || 10 })
       .then(item => {
         pushUndo(items);
@@ -242,6 +248,22 @@ export default function Ingredients() {
         setAddForm(EMPTY);
         setShowAdd(false);
       });
+  }
+
+  function updateDuplicate() {
+    if (!dupWarning) return;
+    const updatedData = {
+      ...dupWarning,
+      ...(addForm.prixUnitaire ? { prixUnitaire: parseFloat(addForm.prixUnitaire) || 0 } : {}),
+      ...(addForm.fournisseur ? { fournisseur: addForm.fournisseur } : {}),
+    };
+    api.ingredients.update(dupWarning.id, updatedData).then(updated => {
+      pushUndo(items);
+      setItems(prev => prev.map(i => i.id === dupWarning.id ? updated : i));
+      setDupWarning(null);
+      setAddForm(EMPTY);
+      setShowAdd(false);
+    });
   }
 
   const nomSuggestions = missingFromCatalog.filter(n =>
@@ -398,6 +420,27 @@ export default function Ingredients() {
           {/* Formulaire ajout */}
           {showAdd && (
             <tfoot>
+              {dupWarning && (
+                <tr style={{ background: '#FFF7ED', borderTop: '2px solid #FED7AA' }}>
+                  <td colSpan={7} style={{ padding: '0.75rem 1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.85rem', color: '#92400e', flex: 1 }}>
+                        ⚠️ Un ingrédient similaire existe déjà : <strong>{dupWarning.nom}</strong> ({dupWarning.prixUnitaire} EUR/{dupWarning.unite}
+                        {dupWarning.fournisseur ? ` · ${dupWarning.fournisseur}` : ''}).
+                        Mettre à jour son prix plutôt que créer un doublon ?
+                      </span>
+                      <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                        <button onClick={updateDuplicate} style={{ ...btnSm, border: 'none', background: '#d97706', color: '#fff', fontWeight: 600 }}>
+                          Mettre à jour
+                        </button>
+                        <button onClick={() => { setDupWarning(null); ajouter(true); }} style={{ ...btnSm, border: '1px solid #E5E0D8', background: '#fff' }}>
+                          Créer quand même
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
               {showNomSuggestions && nomSuggestions.length > 0 && (
                 <tr style={{ background: '#FFFBF5', borderTop: '1px solid #F3EFE8' }}>
                   <td colSpan={7} style={{ padding: '0.5rem 1rem' }}>
@@ -416,7 +459,7 @@ export default function Ingredients() {
               <tr style={{ background: 'rgba(45,106,79,0.04)', borderTop: '2px solid #E5E0D8' }}>
                 <td style={{ padding: '0.75rem 1rem' }}>
                   <input placeholder="Nom *" value={addForm.nom}
-                    onChange={e => { setAddForm(f => ({ ...f, nom: e.target.value })); setShowNomSuggestions(true); }}
+                    onChange={e => { setAddForm(f => ({ ...f, nom: e.target.value })); setShowNomSuggestions(true); setDupWarning(null); }}
                     onFocus={() => setShowNomSuggestions(true)}
                     onBlur={() => setTimeout(() => setShowNomSuggestions(false), 150)}
                     style={inputStyle} autoFocus />

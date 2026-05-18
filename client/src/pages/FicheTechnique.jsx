@@ -56,13 +56,18 @@ export default function FicheTechnique() {
   const [couverts, setCouverts] = useState(null);
   const [catalog, setCatalog] = useState([]);
   const [parametres, setParametres] = useState({ foodCostCible: 30, tva: 10, etablissement: 'Restaurant CloverIA' });
+  const [cartes, setCartes] = useState([]);
+  const [selectedCarteId, setSelectedCarteId] = useState('');
+  const [selectedSection, setSelectedSection] = useState('');
 
   useEffect(() => {
     Promise.all([
       api.recettes.get(id),
       api.parametres.get().catch(() => ({ foodCostCible: 30, tva: 10 })),
       api.ingredients.list().catch(() => []),
-    ]).then(([data, params, cats]) => {
+      api.cartes.list().catch(() => []),
+    ]).then(([data, params, cats, cartesData]) => {
+      setCartes(cartesData);
       console.log('[FicheTechnique] data loaded:', data);
       const etapes = Array.isArray(data.etapes) ? data.etapes
         : typeof data.etapes === 'string' ? data.etapes.split('\n').map(s => s.trim()).filter(Boolean)
@@ -103,6 +108,36 @@ export default function FicheTechnique() {
 
   function savePrixVentePratiqueTTC(currentForm) {
     api.recettes.update(id, currentForm).then(data => setRecette(data));
+  }
+
+  function retirerDeCarte(carte, sectionTitre) {
+    const updatedCarte = {
+      ...carte,
+      sections: carte.sections.map(s =>
+        s.titre === sectionTitre ? { ...s, plats: s.plats.filter(p => p.recetteId !== id) } : s
+      ),
+    };
+    api.cartes.update(carte.id, updatedCarte).then(saved => setCartes(prev => prev.map(c => c.id === saved.id ? saved : c)));
+  }
+
+  function ajouterACarte() {
+    const carte = cartes.find(c => c.id === selectedCarteId);
+    if (!carte || !selectedSection) return;
+    const cp = form.portions > 0 ? (form.ingredients || []).reduce((acc, i) => acc + coutIng(i), 0) / form.portions : 0;
+    const prixVente = recette.prixVente || parseFloat((cp / 0.30).toFixed(2));
+    const updatedCarte = {
+      ...carte,
+      sections: carte.sections.map(s =>
+        s.titre === selectedSection
+          ? { ...s, plats: [...s.plats, { recetteId: id, nom: recette.nom, prixVente }] }
+          : s
+      ),
+    };
+    api.cartes.update(selectedCarteId, updatedCarte).then(saved => {
+      setCartes(prev => prev.map(c => c.id === saved.id ? saved : c));
+      setSelectedCarteId('');
+      setSelectedSection('');
+    });
   }
 
   async function exportPDF() {
@@ -218,6 +253,16 @@ export default function FicheTechnique() {
   const donutData = (form.ingredients || [])
     .map((i, idx) => ({ name: i.nom || `#${idx + 1}`, value: parseFloat(coutIng(i).toFixed(4)), color: CHART_COLORS[idx % CHART_COLORS.length] }))
     .filter(d => d.value > 0);
+
+  const cartesContenant = cartes.flatMap(carte =>
+    (carte.sections || []).flatMap(section =>
+      section.plats.filter(p => p.recetteId === id).map(() => ({ carte, section }))
+    )
+  );
+
+  const sectionsDisponibles = selectedCarteId
+    ? (cartes.find(c => c.id === selectedCarteId)?.sections || []).filter(s => !s.plats.find(p => p.recetteId === id))
+    : [];
 
   const btnPrimary = { padding: '0.5rem 1.25rem', borderRadius: '8px', border: 'none', background: T.green, color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif" };
   const btnSecondary = { padding: '0.5rem 1.25rem', borderRadius: '8px', border: '1px solid #E5E0D8', background: '#fff', color: T.text, cursor: 'pointer', fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif" };
@@ -542,6 +587,50 @@ export default function FicheTechnique() {
             </div>
           </>
         )}
+      </div>
+
+      {/* Présence dans les cartes */}
+      <div style={{ ...card, padding: '1.5rem', marginBottom: '1rem' }}>
+        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text, marginBottom: '1rem' }}>Cartes</h3>
+        {cartesContenant.length === 0 ? (
+          <p style={{ color: T.muted, fontSize: '0.875rem', fontStyle: 'italic', marginBottom: '1rem' }}>Cette fiche n'est assignée à aucune carte.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '1rem' }}>
+            {cartesContenant.map(({ carte, section }) => (
+              <div key={carte.id + '-' + section.titre} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.75rem', background: '#FAFAF8', borderRadius: '8px', border: '1px solid #F3EFE8' }}>
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontWeight: 600, color: T.text, fontSize: '0.875rem' }}>{carte.nom}</span>
+                  <span style={{ color: T.muted, fontSize: '0.82rem', marginLeft: '8px' }}>→ {section.titre}</span>
+                </div>
+                <button onClick={() => retirerDeCarte(carte, section.titre)}
+                  style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '0.8rem', padding: '2px 6px' }}
+                  onMouseEnter={e => e.currentTarget.style.color = '#dc2626'}
+                  onMouseLeave={e => e.currentTarget.style.color = '#D1C4B0'}
+                >Retirer</button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <select value={selectedCarteId} onChange={e => { setSelectedCarteId(e.target.value); setSelectedSection(''); }}
+            style={{ ...inputStyle, width: 'auto', fontSize: '0.82rem' }}>
+            <option value="">— Ajouter à une carte —</option>
+            {cartes.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+          </select>
+          {selectedCarteId && (
+            <select value={selectedSection} onChange={e => setSelectedSection(e.target.value)}
+              style={{ ...inputStyle, width: 'auto', fontSize: '0.82rem' }}>
+              <option value="">— Section —</option>
+              {sectionsDisponibles.map(s => <option key={s.titre} value={s.titre}>{s.titre}</option>)}
+            </select>
+          )}
+          {selectedCarteId && selectedSection && (
+            <button onClick={ajouterACarte}
+              style={{ padding: '0.4rem 0.9rem', background: T.green, color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.82rem', fontFamily: "'DM Sans', sans-serif" }}>
+              + Ajouter
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Allergènes */}

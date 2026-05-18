@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+﻿import { useEffect, useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
 import { coutIng } from '../utils.js';
@@ -80,7 +80,7 @@ function ListeCartes({ cartes, onNew, onOpen, onDelete }) {
 }
 
 // ─── Éditeur de carte ─────────────────────────────────────────────────────────
-function EditeurCarte({ carte, recettes, onSave, onBack }) {
+function EditeurCarte({ carte, recettes, onSave, onBack, onAutoSave }) {
   const [form, setForm] = useState(carte || {
     nom: '', saison: SAISONS[0],
     sections: SECTIONS_DEFAULT.map(t => ({ titre: t, plats: [] })),
@@ -96,6 +96,22 @@ function EditeurCarte({ carte, recettes, onSave, onBack }) {
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState(false);
   const width = useWindowWidth();
+  const autoSaveTimer = useRef(null);
+  const latestForm = useRef(form);
+
+  function setFormAutoSave(updater) {
+    setForm(prev => {
+      const newForm = typeof updater === 'function' ? updater(prev) : updater;
+      latestForm.current = newForm;
+      if (carte?.id) {
+        clearTimeout(autoSaveTimer.current);
+        autoSaveTimer.current = setTimeout(() => {
+          api.cartes.update(carte.id, latestForm.current).then(saved => onAutoSave?.(saved)).catch(() => {});
+        }, 800);
+      }
+      return newForm;
+    });
+  }
   const isMobile = width < 768;
   const [nouvSection, setNouvSection] = useState('');
   const [showAddSection, setShowAddSection] = useState(false);
@@ -110,7 +126,7 @@ function EditeurCarte({ carte, recettes, onSave, onBack }) {
   function addToSection(recette, sectionTitre) {
     const cp = coutPortion(recette);
     const prixVente = recette.prixVente || parseFloat((cp / 0.30).toFixed(2));
-    setForm(f => ({
+    setFormAutoSave(f => ({
       ...f,
       sections: f.sections.map(s =>
         s.titre === sectionTitre
@@ -121,7 +137,7 @@ function EditeurCarte({ carte, recettes, onSave, onBack }) {
   }
 
   function removePlat(sectionTitre, recetteId) {
-    setForm(f => ({
+    setFormAutoSave(f => ({
       ...f,
       sections: f.sections.map(s =>
         s.titre === sectionTitre ? { ...s, plats: s.plats.filter(p => p.recetteId !== recetteId) } : s
@@ -130,7 +146,7 @@ function EditeurCarte({ carte, recettes, onSave, onBack }) {
   }
 
   function updatePrix(sectionTitre, recetteId, prix) {
-    setForm(f => ({
+    setFormAutoSave(f => ({
       ...f,
       sections: f.sections.map(s =>
         s.titre === sectionTitre
@@ -142,13 +158,13 @@ function EditeurCarte({ carte, recettes, onSave, onBack }) {
 
   function ajouterSection() {
     if (!nouvSection.trim()) return;
-    setForm(f => ({ ...f, sections: [...f.sections, { titre: nouvSection.trim(), plats: [] }] }));
+    setFormAutoSave(f => ({ ...f, sections: [...f.sections, { titre: nouvSection.trim(), plats: [] }] }));
     setNouvSection(''); setShowAddSection(false);
   }
 
   function supprimerSection(titre) {
     if (!confirm(`Supprimer la section "${titre}" ?`)) return;
-    setForm(f => ({ ...f, sections: f.sections.filter(s => s.titre !== titre) }));
+    setFormAutoSave(f => ({ ...f, sections: f.sections.filter(s => s.titre !== titre) }));
   }
 
   async function sauvegarder() {
@@ -171,12 +187,9 @@ function EditeurCarte({ carte, recettes, onSave, onBack }) {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: '0.875rem' }}>← Retour</button>
-        <div style={{ flex: 1, display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+        <div style={{ flex: 1 }}>
           <input value={form.nom} onChange={e => setForm(f => ({ ...f, nom: e.target.value }))}
-            placeholder="Nom de la carte..." style={{ ...inputStyle, fontFamily: "'Playfair Display', serif", fontSize: '1.1rem', fontWeight: 700, flex: 1 }} />
-          <select value={form.saison} onChange={e => setForm(f => ({ ...f, saison: e.target.value }))} style={{ ...inputStyle, width: 'auto' }}>
-            {SAISONS.map(s => <option key={s}>{s}</option>)}
-          </select>
+            placeholder="Nom de la carte..." style={{ ...inputStyle, fontFamily: "'Playfair Display', serif", fontSize: '1.1rem', fontWeight: 700 }} />
         </div>
         <button onClick={sauvegarder} disabled={saving} style={{ padding: '0.55rem 1.5rem', background: T.green, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' }}
           onMouseEnter={e => { if (!saving) e.currentTarget.style.background = '#1e4d38'; }}
@@ -307,6 +320,10 @@ export default function Cartes() {
     setCarteActive(null);
   }
 
+  function handleAutoSave(saved) {
+    setCartes(prev => prev.map(c => c.id === saved.id ? saved : c));
+  }
+
   function handleDelete(id) {
     if (!confirm('Supprimer cette carte ?')) return;
     api.cartes.delete(id).then(() =>
@@ -330,6 +347,7 @@ export default function Cartes() {
       recettes={recettes}
       onSave={handleSave}
       onBack={() => { setVue('liste'); setCarteActive(null); }}
+      onAutoSave={handleAutoSave}
     />
   );
 }
