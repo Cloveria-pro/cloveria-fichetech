@@ -94,10 +94,10 @@ export default function FicheTechnique() {
   const [parametres, setParametres] = useState({ foodCostCible: 30, tva: 10, etablissement: 'Restaurant CloverIA' });
   const [cartes, setCartes] = useState([]);
   const [aliases, setAliases] = useState([]);
+  const [sousRecettes, setSousRecettes] = useState([]);
   const [selectedCarteId, setSelectedCarteId] = useState('');
   const [selectedSection, setSelectedSection] = useState('');
   const [showCarteAdd, setShowCarteAdd] = useState(false);
-  const [generatingDesc, setGeneratingDesc] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -106,9 +106,11 @@ export default function FicheTechnique() {
       api.ingredients.list().catch(() => []),
       api.cartes.list().catch(() => []),
       api.aliases.list().catch(() => []),
-    ]).then(([data, params, cats, cartesData, aliasesData]) => {
+      api.sousRecettes.list().catch(() => []),
+    ]).then(([data, params, cats, cartesData, aliasesData, srsData]) => {
       setCartes(cartesData);
       setAliases(aliasesData);
+      setSousRecettes(srsData);
       console.log('[FicheTechnique] data loaded:', data);
       const etapes = Array.isArray(data.etapes) ? data.etapes
         : typeof data.etapes === 'string' ? data.etapes.split('\n').map(s => s.trim()).filter(Boolean)
@@ -198,26 +200,6 @@ export default function FicheTechnique() {
     const exact = cat.find(c => c.nom.toLowerCase() === n);
     if (exact) return null;
     return cat.find(c => c.prixUnitaire > 0 && (c.nom.toLowerCase().includes(n) || n.includes(c.nom.toLowerCase()))) || null;
-  }
-
-  async function genererDescriptionCommerciale() {
-    setGeneratingDesc(true);
-    try {
-      const result = await api.ia.descriptionCommerciale({
-        nom: recette.nom,
-        ingredients: recette.ingredients,
-        portions: recette.portions,
-      });
-      const updated = { ...form, description_commerciale: result.description_commerciale };
-      setForm(updated);
-      const saved = await api.recettes.update(id, updated);
-      setRecette(saved);
-      setForm(saved);
-    } catch (err) {
-      alert('Erreur IA : ' + err.message);
-    } finally {
-      setGeneratingDesc(false);
-    }
   }
 
   async function associerIngredient(idx, suggestion) {
@@ -456,13 +438,16 @@ export default function FicheTechnique() {
       {/* Stats rapides + Couverts */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
         {[
-          { label: 'Temps prep', value: (form.tempsPreparation || 0) + ' min' },
-          { label: 'Temps cuisson', value: (form.tempsCuisson || 0) + ' min' },
-          { label: 'Portions recette', value: form.portions || '—' },
-        ].map(({ label, value }) => (
+          { label: 'Temps prep', field: 'tempsPreparation', display: (form.tempsPreparation || 0) + ' min' },
+          { label: 'Temps cuisson', field: 'tempsCuisson', display: (form.tempsCuisson || 0) + ' min' },
+          { label: 'Portions recette', field: 'portions', display: String(form.portions || '—') },
+        ].map(({ label, field, display }) => (
           <div key={label} style={{ ...card, padding: '1rem 1.25rem' }}>
             <div style={{ fontSize: '0.72rem', color: T.muted, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600, marginBottom: '4px' }}>{label}</div>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.4rem', fontWeight: 700, color: T.text }}>{value}</div>
+            {editMode
+              ? <input type="number" min="0" value={form[field] || ''} onChange={e => setForm(f => ({ ...f, [field]: parseFloat(e.target.value) || 0 }))} style={{ ...inputStyle, width: '80px', fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', fontWeight: 700, padding: '0.25rem 0.4rem' }} />
+              : <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.4rem', fontWeight: 700, color: T.text }}>{display}</div>
+            }
           </div>
         ))}
         <div style={{ ...card, padding: '1rem 1.25rem', border: '2px solid rgba(201,168,76,0.35)' }}>
@@ -473,54 +458,6 @@ export default function FicheTechnique() {
               style={{ ...inputStyle, width: '52px', textAlign: 'center', fontFamily: "'Playfair Display', serif", fontSize: '1.4rem', fontWeight: 700, padding: '0' }} />
             <button onClick={() => setCouverts(c => c + 1)} style={{ width: '26px', height: '26px', border: '1px solid #E5E0D8', borderRadius: '4px', background: '#fff', cursor: 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.text, flexShrink: 0 }}>+</button>
           </div>
-        </div>
-      </div>
-
-      {/* Informations */}
-      <div style={{ ...card, padding: '1.5rem', marginBottom: '1rem' }}>
-        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text, marginBottom: '1.25rem' }}>Informations générales</h3>
-        {editMode && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
-            <div>
-              <label style={labelStyle}>Catégorie</label>
-              <select value={form.categorie || 'Autre'} onChange={e => setForm(f => ({ ...f, categorie: e.target.value }))} style={inputStyle}>
-                {['Amuse-bouche', 'Entrée', 'Plat viande', 'Plat poisson', 'Plat végétarien', 'Dessert', 'Autre'].map(c => <option key={c}>{c}</option>)}
-              </select>
-            </div>
-            {[
-              { label: 'Nb. de portions', field: 'portions', type: 'number' },
-              { label: 'Prép (min)', field: 'tempsPreparation', type: 'number' },
-              { label: 'Cuisson (min)', field: 'tempsCuisson', type: 'number' },
-              { label: 'Prix vente HT (EUR)', field: 'prixVente', type: 'number', step: '0.01' },
-            ].map(({ label, field, type, step }) => (
-              <div key={field}>
-                <label style={labelStyle}>{label}</label>
-                <input type={type || 'text'} step={step} value={form[field] || ''} onChange={e => setForm(f => ({ ...f, [field]: type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value }))} style={inputStyle} />
-              </div>
-            ))}
-          </div>
-        )}
-        <div>
-          <label style={labelStyle}>Description (usage interne chef)</label>
-          {editMode
-            ? <textarea value={form.description || ''} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} style={{ ...inputStyle, minHeight: '70px', resize: 'vertical' }} />
-            : <p style={{ color: '#374151', lineHeight: 1.6, fontSize: '0.9rem' }}>{recette.description || '—'}</p>}
-        </div>
-        <div style={{ marginTop: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '5px' }}>
-            <label style={{ ...labelStyle, marginBottom: 0 }}>Description commerciale (vue carte client)</label>
-            {!editMode && (
-              <button onClick={genererDescriptionCommerciale} disabled={generatingDesc}
-                style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '4px', background: generatingDesc ? '#F3EFE8' : 'rgba(201,168,76,0.1)', color: '#8B6914', border: '1px solid rgba(201,168,76,0.35)', cursor: generatingDesc ? 'default' : 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, whiteSpace: 'nowrap' }}>
-                {generatingDesc ? '⏳ Génération...' : '✨ Générer avec l\'IA'}
-              </button>
-            )}
-          </div>
-          {editMode
-            ? <textarea value={form.description_commerciale || ''} onChange={e => setForm(f => ({ ...f, description_commerciale: e.target.value }))} placeholder="Description appétissante pour le client..." style={{ ...inputStyle, minHeight: '70px', resize: 'vertical' }} />
-            : recette.description_commerciale
-              ? <p style={{ color: '#374151', lineHeight: 1.6, fontSize: '0.9rem', fontStyle: 'italic' }}>{recette.description_commerciale}</p>
-              : <p style={{ color: T.muted, fontSize: '0.85rem', fontStyle: 'italic' }}>Aucune description commerciale — cliquez sur "Générer avec l'IA" pour en créer une automatiquement.</p>}
         </div>
       </div>
 
@@ -552,7 +489,7 @@ export default function FicheTechnique() {
                   <tr style={{ borderBottom: suggestion ? 'none' : '1px solid #F9F7F4' }}>
                     <td style={{ padding: '0.6rem 0.75rem' }}>
                       {editMode
-                        ? <IngredientAutocomplete value={ing.nom} catalog={catalog} onChange={fields => updateIngredient(idx, { nom: fields.nom !== undefined ? fields.nom : ing.nom, ...(fields.prixUnitaire !== undefined ? { prixUnitaire: fields.prixUnitaire } : {}), ...(fields.unite !== undefined ? { unite: fields.unite } : {}) })} />
+                        ? <IngredientAutocomplete value={ing.nom} catalog={catalog} sousRecettes={sousRecettes} onChange={fields => updateIngredient(idx, { nom: fields.nom !== undefined ? fields.nom : ing.nom, ...(fields.prixUnitaire !== undefined ? { prixUnitaire: fields.prixUnitaire } : {}), ...(fields.unite !== undefined ? { unite: fields.unite } : {}) })} />
                         : <span style={{ fontWeight: 500 }}>{ing.nom}</span>}
                     </td>
                     <td style={{ padding: '0.6rem 0.75rem' }}>

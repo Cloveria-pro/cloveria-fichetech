@@ -65,6 +65,13 @@ export const api = {
     create: (data) => request('/historique-prix', { method: 'POST', body: JSON.stringify(data) }),
     delete: (nom, date) => request(`/historique-prix?nom=${encodeURIComponent(nom)}&date=${encodeURIComponent(date)}`, { method: 'DELETE' }),
   },
+  sousRecettes: {
+    list: () => request('/sous-recettes'),
+    get: (id) => request(`/sous-recettes/${id}`),
+    create: (data) => request('/sous-recettes', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => request(`/sous-recettes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => request(`/sous-recettes/${id}`, { method: 'DELETE' }),
+  },
 };
 
 export function saveToken(token) {

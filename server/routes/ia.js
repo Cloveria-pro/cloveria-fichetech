@@ -93,7 +93,7 @@ Analyse chaque ingrédient de la recette un par un. Le temps de cuisson est la s
 RÈGLE ABSOLUE sur les temps de préparation :
 Sois réaliste et proportionnel à la complexité. Salade simple = 5-10 min. Plat avec sauce = 20-30 min. Plat complexe avec plusieurs éléments = 45-60 min+.
 
-description_commerciale : 2 à 3 phrases simples et naturelles pour donner envie au client. Parle UNIQUEMENT du résultat dans l'assiette — goûts, textures, ce que ça évoque — jamais de comment c'est fait. Ton naturel et chaleureux, comme un ami qui recommande un plat. JAMAIS de termes techniques, JAMAIS de méthodes de cuisson, JAMAIS de températures ou de temps. JAMAIS les mots : sublimé, nappé, réalisé, élaboré, déglacer, thermoplongeur, bain-marie, blanchir, monter, infuser, chiffonnade, fouetter, incorporer, blanchiment, mélanger, tamiser, beurrer, chemiser.
+description_commerciale : 2 à 3 phrases simples et naturelles pour donner envie au client. Parle UNIQUEMENT du résultat dans l'assiette — goûts, textures, ce que ça évoque. Jamais de comment c'est fait, jamais de gestes de cuisine, jamais d'ustensiles, jamais de températures, jamais de temps de cuisson. Ton naturel et chaleureux, comme un ami qui recommande un plat. JAMAIS les mots ni leurs dérivés : sublimé, nappé, réalisé, élaboré, déglacer, thermoplongeur, bain-marie, blanchir, monter, infuser, chiffonnade, fouetter, incorporer, blanchiment, mélanger, tamiser, beurrer, chemiser, cuire, rôtir, tapisser, déposer, enfourner, préparer.
 
 Exemples corrects :
 - Cromesquis foie gras : "Un petit bouchée croustillante avec du foie gras fondant à l'intérieur et une touche sucrée de gelée de Sauternes. Parfait pour démarrer le repas."
@@ -136,7 +136,7 @@ router.post('/description-commerciale', async (req, res) => {
 
 Génère UNIQUEMENT ce JSON : { "description_commerciale": "string" }
 
-2 à 3 phrases simples et naturelles pour donner envie au client. Parle UNIQUEMENT du résultat dans l'assiette — goûts, textures, ce que ça évoque — jamais de comment c'est fait. Ton naturel et chaleureux, comme un ami qui recommande un plat. JAMAIS de termes techniques, JAMAIS de méthodes de cuisson, JAMAIS de températures ou de temps. JAMAIS les mots : sublimé, nappé, réalisé, élaboré, déglacer, thermoplongeur, bain-marie, blanchir, monter, infuser, chiffonnade, fouetter, incorporer, blanchiment, mélanger, tamiser, beurrer, chemiser.
+2 à 3 phrases simples et naturelles pour donner envie au client. Parle UNIQUEMENT du résultat dans l'assiette — goûts, textures, ce que ça évoque. Jamais de comment c'est fait, jamais de gestes de cuisine, jamais d'ustensiles, jamais de températures, jamais de temps de cuisson. Ton naturel et chaleureux, comme un ami qui recommande un plat. JAMAIS les mots ni leurs dérivés : sublimé, nappé, réalisé, élaboré, déglacer, thermoplongeur, bain-marie, blanchir, monter, infuser, chiffonnade, fouetter, incorporer, blanchiment, mélanger, tamiser, beurrer, chemiser, cuire, rôtir, tapisser, déposer, enfourner, préparer.
 
 Exemples corrects :
 - "Un burger avec un steak maison, des légumes frais et notre sauce maison. Costaud et vraiment bon."
