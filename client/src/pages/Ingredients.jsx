@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { api, API_URL, authHeaders } from '../api.js';
+import { calculerCoutIngredient } from '../conversions.js';
 
 const CATEGORIES = ['viande', 'poisson', 'légume', 'produit laitier', 'épice', 'condiment', 'épicerie', 'épicerie fine', 'fruit', 'autre'];
 const UNITES = ['kg', 'L', 'piece', 'g', 'ml', 'botte', 'c.s.', 'c.c.'];
@@ -27,7 +28,7 @@ function Badge({ cat }) {
 const EMPTY = { nom: '', categorie: 'épicerie', unite: 'kg', prixUnitaire: '', tva: 10, fournisseur: '', fournisseurs: [] };
 
 /* ─── Modal historique des prix ─────────────────────────────────────────── */
-function HistoriqueModal({ item, onClose }) {
+function HistoriqueModal({ item, onClose, recettes, params }) {
   const [data, setData] = useState([]);
 
   useEffect(() => {
@@ -128,6 +129,63 @@ function HistoriqueModal({ item, onClose }) {
             </table>
           </>
         )}
+
+        {/* ── Impact sur les fiches techniques ── */}
+        {(() => {
+          const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+          const tva = params?.tva ?? 10;
+          const cible = params?.foodCostCible ?? 30;
+          const impacted = (recettes || []).filter(r =>
+            (r.ingredients || []).some(ing => norm(ing.nom) === norm(item.nom))
+          );
+          if (impacted.length === 0) return null;
+
+          // Détecter hausse récente depuis l'historique chargé
+          const prixPrecedent = data.length >= 2 ? data[data.length - 2].prix : null;
+          const prixActuel = data.length >= 1 ? data[data.length - 1].prix : null;
+          const hausse = prixPrecedent && prixActuel && prixActuel > prixPrecedent;
+
+          return (
+            <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid #F3EFE8' }}>
+              <div style={{ fontSize: '0.72rem', color: T.muted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>
+                Impact sur vos fiches
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {impacted.map(r => {
+                  const ing = (r.ingredients || []).find(i => norm(i.nom) === norm(item.nom));
+                  if (!ing) return null;
+                  const portions = r.portions || 1;
+                  const totalTTC = (r.ingredients || []).reduce((acc, i) =>
+                    acc + calculerCoutIngredient(i.quantite, i.unite, i.prixUnitaire) * (1 + (i.tva ?? tva) / 100), 0
+                  );
+                  const coutPortionTTC = totalTTC / portions;
+                  const pv = r.prixVentePratiqueTTC || 0;
+                  const fc = pv > 0 ? (coutPortionTTC / pv * 100) : null;
+                  const perteMarge = hausse && prixPrecedent && prixActuel
+                    ? (calculerCoutIngredient(ing.quantite, ing.unite, prixActuel) - calculerCoutIngredient(ing.quantite, ing.unite, prixPrecedent)) / portions
+                    : null;
+                  const fcColor = !fc ? T.muted : fc < cible ? '#16a34a' : fc <= cible + 5 ? '#d97706' : '#dc2626';
+                  return (
+                    <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem', background: '#FAFAF8', borderRadius: '6px', border: '1px solid #F3EFE8', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 600, color: T.text, fontSize: '0.85rem', flex: 1 }}>{r.nom}</span>
+                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexShrink: 0 }}>
+                        <span style={{ fontSize: '0.78rem', color: T.muted }}>{coutPortionTTC.toFixed(2)} EUR/couvert</span>
+                        {fc !== null && (
+                          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: fcColor }}>FC {fc.toFixed(1)}%</span>
+                        )}
+                        {perteMarge !== null && perteMarge > 0 && (
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#dc2626', background: '#FEE2E2', padding: '1px 6px', borderRadius: '4px', border: '1px solid #FECACA', whiteSpace: 'nowrap' }}>
+                            −{perteMarge.toFixed(3)} EUR/couvert
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
@@ -234,6 +292,8 @@ export default function Ingredients() {
   const [histItem, setHistItem] = useState(null);
   const [dupWarning, setDupWarning] = useState(null);
   const [showComparaison, setShowComparaison] = useState(false);
+  const [recettes, setRecettes] = useState([]);
+  const [params, setParams] = useState({ foodCostCible: 30, tva: 10 });
   const autoSaveTimer = useRef(null);
   const latestEdit = useRef({ id: null, form: {} });
 
@@ -246,8 +306,11 @@ export default function Ingredients() {
     Promise.all([
       api.ingredients.list(),
       api.recettes.list().catch(() => []),
-    ]).then(([ings, recs]) => {
+      api.parametres.get().catch(() => ({ foodCostCible: 30, tva: 10 })),
+    ]).then(([ings, recs, prms]) => {
       setItems(ings);
+      setRecettes(recs);
+      setParams(prms);
       const catalogNorms = new Set(ings.map(i => i.nom.toLowerCase()));
       const missing = new Set();
       recs.forEach(r => (r.ingredients || []).forEach(i => {
@@ -384,7 +447,7 @@ export default function Ingredients() {
 
   return (
     <div>
-      {histItem && <HistoriqueModal item={histItem} onClose={() => setHistItem(null)} />}
+      {histItem && <HistoriqueModal item={histItem} onClose={() => setHistItem(null)} recettes={recettes} params={params} />}
 
       {showComparaison ? (
         <ComparaisonFournisseurs items={items} onClose={() => setShowComparaison(false)} />

@@ -101,6 +101,61 @@ export default function Dashboard() {
 
   const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
+  const actionsJour = (() => {
+    const actions = [];
+
+    // Type 1 — fiches FC > cible (trié par dépassement × prix = impact €/couvert)
+    foodCosts
+      .filter(r => r.fc > cible)
+      .map(r => ({
+        type: 'danger',
+        impact: (r.fc - cible) / 100 * (r.prixVentePratiqueTTC || 0),
+        label: `"${r.nom}" — food cost à ${r.fc.toFixed(1)}% (cible : ${cible}%)`,
+        link: `/fiches-techniques/${r.id}`,
+        linkLabel: 'Ouvrir la fiche',
+      }))
+      .sort((a, b) => b.impact - a.impact)
+      .forEach(a => actions.push(a));
+
+    // Type 2 — hausses de prix récentes impactant des fiches
+    const histByNom = {};
+    historique.forEach(h => { if (!histByNom[h.nom]) histByNom[h.nom] = []; histByNom[h.nom].push(h); });
+    const m1ago = new Date(); m1ago.setMonth(m1ago.getMonth() - 1);
+    Object.entries(histByNom).forEach(([nom, entries]) => {
+      const sorted = [...entries].sort((a, b) => new Date(a.date) - new Date(b.date));
+      const last = sorted[sorted.length - 1];
+      const ref = sorted.find(e => new Date(e.date) >= m1ago);
+      if (!ref || !last || ref === last) return;
+      const pct = (last.prix - ref.prix) / ref.prix * 100;
+      if (pct <= 5) return;
+      const impacted = recettes.filter(r =>
+        (r.ingredients || []).some(ing => (ing.nom || '').toLowerCase() === nom.toLowerCase())
+      );
+      if (impacted.length === 0) return;
+      actions.push({
+        type: 'warning',
+        impact: pct * impacted.length,
+        label: `${nom} en hausse de +${pct.toFixed(0)}% — ${impacted.length} fiche${impacted.length > 1 ? 's' : ''} impactée${impacted.length > 1 ? 's' : ''}`,
+        link: '/ingredients',
+        linkLabel: 'Voir les ingrédients',
+      });
+    });
+
+    // Type 3 — fiches sans prix de vente
+    const sansPrix = recettes.filter(r => !(r.prixVentePratiqueTTC > 0));
+    if (sansPrix.length > 0) {
+      actions.push({
+        type: 'info',
+        impact: -1,
+        label: `${sansPrix.length} fiche${sansPrix.length > 1 ? 's' : ''} sans prix de vente — le food cost ne peut pas être calculé`,
+        link: '/fiches-techniques',
+        linkLabel: 'Voir les fiches',
+      });
+    }
+
+    return actions.sort((a, b) => b.impact - a.impact).slice(0, 3);
+  })();
+
   const alertes = (() => {
     const now = new Date();
     const m1ago = new Date(now); m1ago.setMonth(m1ago.getMonth() - 1);
@@ -155,6 +210,43 @@ export default function Dashboard() {
             Voir toutes les fiches →
           </Link>
         </div>
+      </div>
+
+      {/* Actions du jour */}
+      <div style={{ ...card, padding: '1.25rem 1.5rem', marginBottom: '1.5rem', borderLeft: `3px solid ${actionsJour.length === 0 ? T.green : actionsJour[0].type === 'danger' ? T.red : actionsJour[0].type === 'warning' ? T.orange : '#6B7280'}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: actionsJour.length > 0 ? '1rem' : 0 }}>
+          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, color: T.text, margin: 0 }}>
+            Actions du jour
+          </h3>
+          {actionsJour.length > 0 && (
+            <span style={{ background: '#FEF9EC', color: '#92400E', fontSize: '0.7rem', fontWeight: 700, padding: '2px 7px', borderRadius: '99px', border: '1px solid #F6E8B8' }}>
+              {actionsJour.length}
+            </span>
+          )}
+        </div>
+        {actionsJour.length === 0 ? (
+          <p style={{ margin: 0, color: T.green, fontWeight: 600, fontSize: '0.875rem' }}>
+            ✓ Tout est en ordre — votre rentabilité est sous contrôle.
+          </p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            {actionsJour.map((a, i) => {
+              const bg = a.type === 'danger' ? '#FEE2E2' : a.type === 'warning' ? '#FEF9EC' : '#F1F5F9';
+              const border = a.type === 'danger' ? '#FECACA' : a.type === 'warning' ? '#F6E8B8' : '#E5E0D8';
+              const textColor = a.type === 'danger' ? '#991B1B' : a.type === 'warning' ? '#92400E' : '#374151';
+              return (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.6rem 0.875rem', background: bg, border: `1px solid ${border}`, borderRadius: '8px', gap: '1rem', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.875rem', color: textColor, fontWeight: 500, flex: 1 }}>
+                    {a.type === 'danger' ? '🔴' : a.type === 'warning' ? '⚠️' : '📋'} {a.label}
+                  </span>
+                  <Link to={a.link} style={{ fontSize: '0.82rem', fontWeight: 600, color: a.type === 'danger' ? T.red : a.type === 'warning' ? T.orange : T.muted, textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                    {a.linkLabel} →
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* KPI Cards */}
