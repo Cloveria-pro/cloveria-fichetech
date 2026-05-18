@@ -39,4 +39,15 @@ router.post('/', (req, res) => {
   res.status(201).json(entry);
 });
 
+router.delete('/', (req, res) => {
+  const { nom, date } = req.query;
+  if (!nom || !date) return res.status(400).json({ error: 'nom et date requis' });
+  const db = readDB();
+  const idx = db.findIndex(e => e.user_id === req.userId && e.nom === nom && e.date === date);
+  if (idx === -1) return res.status(404).json({ error: 'Introuvable' });
+  db.splice(idx, 1);
+  writeDB(db);
+  res.status(204).send();
+});
+
 export default router;

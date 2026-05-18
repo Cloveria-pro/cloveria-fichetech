@@ -48,18 +48,24 @@ function FcBar({ pct }) {
 export default function Dashboard() {
   const [recettes, setRecettes] = useState([]);
   const [params, setParams] = useState({ foodCostCible: 30, tva: 10 });
+  const [ingredients, setIngredients] = useState([]);
+  const [historique, setHistorique] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
   const width = useWindowWidth();
 
   async function charger() {
-    const [data, p] = await Promise.all([
+    const [data, p, ings, hist] = await Promise.all([
       api.recettes.list(),
       api.parametres.get().catch(() => ({ foodCostCible: 30, tva: 10 })),
+      api.ingredients.list().catch(() => []),
+      api.historiquePrix.list().catch(() => []),
     ]);
     setRecettes(data);
     setParams(p);
+    setIngredients(ings);
+    setHistorique(hist);
   }
 
   useEffect(() => {
@@ -94,6 +100,34 @@ export default function Dashboard() {
     : 0;
 
   const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  const alertes = (() => {
+    const now = new Date();
+    const m1ago = new Date(now); m1ago.setMonth(m1ago.getMonth() - 1);
+    const d30ago = new Date(now); d30ago.setDate(d30ago.getDate() - 30);
+    const histByNom = {};
+    historique.forEach(h => { if (!histByNom[h.nom]) histByNom[h.nom] = []; histByNom[h.nom].push(h); });
+    const prixHausses = [];
+    Object.entries(histByNom).forEach(([nom, entries]) => {
+      const sorted = [...entries].sort((a, b) => new Date(a.date) - new Date(b.date));
+      const last = sorted[sorted.length - 1];
+      const ref = sorted.find(e => new Date(e.date) >= m1ago);
+      if (ref && last && ref !== last) {
+        const pct = (last.prix - ref.prix) / ref.prix * 100;
+        if (pct > 5) prixHausses.push({ nom, pct, from: ref.prix, to: last.prix, unite: last.unite });
+      }
+    });
+    const lastHistDate = {};
+    historique.forEach(h => { if (!lastHistDate[h.nom] || h.date > lastHistDate[h.nom]) lastHistDate[h.nom] = h.date; });
+    const staleIngs = ingredients.filter(ing => {
+      if (ing.prixUnitaire === 0) return false;
+      const last = lastHistDate[ing.nom];
+      return !last || new Date(last) < d30ago;
+    }).slice(0, 6);
+    const fcCritiques = foodCosts.filter(r => r.fc > cible + 5);
+    return { prixHausses, staleIngs, fcCritiques };
+  })();
+  const nbAlertes = alertes.prixHausses.length + alertes.staleIngs.length + alertes.fcCritiques.length;
 
   return (
     <div>
@@ -261,6 +295,52 @@ export default function Dashboard() {
           ))}
         </div>
       </div>
+
+      {/* Alertes prix */}
+      {nbAlertes > 0 && (
+        <div style={{ ...card, padding: '1.5rem', marginBottom: '1.5rem', borderLeft: '3px solid #D97706' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1.25rem' }}>
+            <span style={{ fontSize: '1rem' }}>⚠️</span>
+            <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, color: T.text }}>Alertes prix</h3>
+            <span style={{ background: '#FEF9EC', color: '#92400E', fontSize: '0.7rem', fontWeight: 700, padding: '2px 7px', borderRadius: '99px', border: '1px solid #F6E8B8' }}>{nbAlertes}</span>
+          </div>
+          {alertes.prixHausses.length > 0 && (
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={{ fontSize: '0.72rem', color: T.muted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Hausses &gt;5% (30 derniers jours)</div>
+              {alertes.prixHausses.map(h => (
+                <div key={h.nom} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.45rem 0.75rem', background: '#FEF9EC', borderRadius: '6px', marginBottom: '4px', border: '1px solid #F6E8B8' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: T.text }}>{h.nom}</span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#DC2626' }}>▲ {h.pct.toFixed(1)}% ({h.from.toFixed(2)} → {h.to.toFixed(2)} EUR/{h.unite})</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {alertes.fcCritiques.length > 0 && (
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={{ fontSize: '0.72rem', color: T.muted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Food cost critique (&gt;{cible + 5}%)</div>
+              {alertes.fcCritiques.map(r => (
+                <div key={r.id} onClick={() => navigate('/fiches-techniques/' + r.id)}
+                  style={{ display: 'flex', justifyContent: 'space-between', padding: '0.45rem 0.75rem', background: '#FEE2E2', borderRadius: '6px', marginBottom: '4px', cursor: 'pointer', border: '1px solid #FECACA' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: T.text }}>{r.nom}</span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#DC2626' }}>{r.fc.toFixed(1)}%</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {alertes.staleIngs.length > 0 && (
+            <div>
+              <div style={{ fontSize: '0.72rem', color: T.muted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Prix non mis à jour depuis 30+ jours</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {alertes.staleIngs.map(ing => (
+                  <span key={ing.id} onClick={() => navigate('/ingredients')} style={{ fontSize: '0.78rem', padding: '3px 8px', background: '#F1F5F9', borderRadius: '4px', color: T.muted, border: '1px solid #E5E0D8', cursor: 'pointer' }}>
+                    {ing.nom}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Recentes */}
       <div style={{ ...card, padding: '1.5rem' }}>

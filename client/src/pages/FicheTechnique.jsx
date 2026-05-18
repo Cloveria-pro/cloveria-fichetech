@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { api } from '../api.js';
@@ -57,6 +57,7 @@ export default function FicheTechnique() {
   const [catalog, setCatalog] = useState([]);
   const [parametres, setParametres] = useState({ foodCostCible: 30, tva: 10, etablissement: 'Restaurant CloverIA' });
   const [cartes, setCartes] = useState([]);
+  const [aliases, setAliases] = useState([]);
   const [selectedCarteId, setSelectedCarteId] = useState('');
   const [selectedSection, setSelectedSection] = useState('');
   const [showCarteAdd, setShowCarteAdd] = useState(false);
@@ -67,8 +68,10 @@ export default function FicheTechnique() {
       api.parametres.get().catch(() => ({ foodCostCible: 30, tva: 10 })),
       api.ingredients.list().catch(() => []),
       api.cartes.list().catch(() => []),
-    ]).then(([data, params, cats, cartesData]) => {
+      api.aliases.list().catch(() => []),
+    ]).then(([data, params, cats, cartesData, aliasesData]) => {
       setCartes(cartesData);
+      setAliases(aliasesData);
       console.log('[FicheTechnique] data loaded:', data);
       const etapes = Array.isArray(data.etapes) ? data.etapes
         : typeof data.etapes === 'string' ? data.etapes.split('\n').map(s => s.trim()).filter(Boolean)
@@ -140,6 +143,35 @@ export default function FicheTechnique() {
       setSelectedSection('');
       setShowCarteAdd(false);
     });
+  }
+
+  function findSimilarInCatalog(nom, cat, als) {
+    if (!nom || !nom.trim()) return null;
+    const n = nom.toLowerCase().trim();
+    const alias = als.find(a => a.from.toLowerCase() === n);
+    if (alias) {
+      const match = cat.find(c => c.nom.toLowerCase() === alias.to.toLowerCase() && c.prixUnitaire > 0);
+      if (match) return match;
+    }
+    const exact = cat.find(c => c.nom.toLowerCase() === n);
+    if (exact) return null;
+    return cat.find(c => c.prixUnitaire > 0 && (c.nom.toLowerCase().includes(n) || n.includes(c.nom.toLowerCase()))) || null;
+  }
+
+  async function associerIngredient(idx, suggestion) {
+    const ing = form.ingredients[idx];
+    if (ing.nom.toLowerCase() !== suggestion.nom.toLowerCase()) {
+      api.aliases.create({ from: ing.nom, to: suggestion.nom }).catch(() => {});
+      setAliases(prev => [...prev, { from: ing.nom, to: suggestion.nom }]);
+    }
+    const updatedIngs = form.ingredients.map((i, ii) =>
+      ii === idx ? { ...i, prixUnitaire: suggestion.prixUnitaire, unite: suggestion.unite } : i
+    );
+    const updatedForm = { ...form, ingredients: updatedIngs };
+    setForm(updatedForm);
+    const saved = await api.recettes.update(id, updatedForm);
+    setRecette(saved);
+    setForm(saved);
   }
 
   async function exportPDF() {
@@ -435,9 +467,11 @@ export default function FicheTechnique() {
             </thead>
             <tbody>
               {ingData.map((ing, idx) => {
+                const suggestion = ing.prixUnitaire === 0 && ing.nom ? findSimilarInCatalog(ing.nom, catalog, aliases) : null;
                 const qteScaled = ing.quantite * scaleFactor;
                 return (
-                  <tr key={idx} style={{ borderBottom: '1px solid #F9F7F4' }}>
+                  <React.Fragment key={idx}>
+                  <tr style={{ borderBottom: suggestion ? 'none' : '1px solid #F9F7F4' }}>
                     <td style={{ padding: '0.6rem 0.75rem' }}>
                       {editMode
                         ? <IngredientAutocomplete value={ing.nom} catalog={catalog} onChange={fields => updateIngredient(idx, { nom: fields.nom !== undefined ? fields.nom : ing.nom, ...(fields.prixUnitaire !== undefined ? { prixUnitaire: fields.prixUnitaire } : {}), ...(fields.unite !== undefined ? { unite: fields.unite } : {}) })} />
@@ -488,6 +522,22 @@ export default function FicheTechnique() {
                       </td>
                     )}
                   </tr>
+                  {suggestion && (
+                    <tr style={{ borderBottom: '1px solid #F9F7F4', background: '#FFFBF5' }}>
+                      <td colSpan={editMode ? 8 : 7} style={{ padding: '0.3rem 0.75rem 0.5rem 2.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <span style={{ fontSize: '0.75rem', color: '#92400E' }}>
+                            💡 Associer à <strong>{suggestion.nom}</strong> — {suggestion.prixUnitaire.toFixed(2)} EUR/{suggestion.unite} ?
+                          </span>
+                          <button onClick={() => associerIngredient(idx, suggestion)}
+                            style={{ padding: '2px 10px', fontSize: '0.75rem', background: '#d97706', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
+                            Associer
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </React.Fragment>
                 );
               })}
             </tbody>

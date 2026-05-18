@@ -61,6 +61,7 @@ export const api = {
   historiquePrix: {
     list: (nom) => request('/historique-prix' + (nom ? `?nom=${encodeURIComponent(nom)}` : '')),
     create: (data) => request('/historique-prix', { method: 'POST', body: JSON.stringify(data) }),
+    delete: (nom, date) => request(`/historique-prix?nom=${encodeURIComponent(nom)}&date=${encodeURIComponent(date)}`, { method: 'DELETE' }),
   },
 };
 

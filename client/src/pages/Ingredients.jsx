@@ -34,6 +34,14 @@ function HistoriqueModal({ item, onClose }) {
     api.historiquePrix.list(item.nom).then(setData).catch(() => {});
   }, [item.nom]);
 
+  async function supprimerEntree(entry) {
+    if (!confirm('Supprimer cette entrée ?')) return;
+    try {
+      await api.historiquePrix.delete(entry.nom, entry.date);
+      setData(prev => prev.filter(d => !(d.nom === entry.nom && d.date === entry.date)));
+    } catch { alert('Erreur lors de la suppression'); }
+  }
+
   const last = data[data.length - 1];
 
   function varSince(isoDate) {
@@ -96,7 +104,7 @@ function HistoriqueModal({ item, onClose }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '0.75rem', fontSize: '0.82rem' }}>
               <thead>
                 <tr>
-                  {['Date', 'Prix', 'Fournisseur'].map(h => (
+                  {['Date', 'Prix', 'Fournisseur', ''].map(h => (
                     <th key={h} style={{ textAlign: h === 'Prix' ? 'right' : 'left', padding: '4px 8px', color: T.muted, fontWeight: 600, fontSize: '0.68rem', textTransform: 'uppercase', borderBottom: '1px solid #F3EFE8' }}>{h}</th>
                   ))}
                 </tr>
@@ -107,6 +115,13 @@ function HistoriqueModal({ item, onClose }) {
                     <td style={{ padding: '4px 8px', color: T.muted }}>{d.date.length > 10 ? d.date.slice(0, 16).replace('T', ' ') : d.date}</td>
                     <td style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 700, color: T.green }}>{d.prix.toFixed(2)} EUR/{d.unite}</td>
                     <td style={{ padding: '4px 8px', color: T.muted }}>{d.fournisseur || '—'}</td>
+                    <td style={{ padding: '4px 4px', textAlign: 'right' }}>
+                      <button onClick={() => supprimerEntree(d)}
+                        style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '0.9rem', padding: '1px 4px' }}
+                        onMouseEnter={e => e.currentTarget.style.color = '#DC2626'}
+                        onMouseLeave={e => e.currentTarget.style.color = '#D1C4B0'}
+                        title="Supprimer cette entrée">✕</button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -114,6 +129,107 @@ function HistoriqueModal({ item, onClose }) {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+/* ─── Comparaison fournisseurs ───────────────────────────────────────────── */
+function computeComparaison(hist) {
+  if (!hist.length) return [];
+  const now = new Date();
+  const m3ago = new Date(now); m3ago.setMonth(m3ago.getMonth() - 3);
+  const byNom = {};
+  hist.forEach(e => {
+    if (!byNom[e.nom]) byNom[e.nom] = {};
+    const f = e.fournisseur || '—';
+    if (!byNom[e.nom][f]) byNom[e.nom][f] = [];
+    byNom[e.nom][f].push(e);
+  });
+  return Object.entries(byNom).map(([nom, fourns]) => {
+    const rows = Object.entries(fourns).map(([fourn, entries]) => {
+      const sorted = [...entries].sort((a, b) => new Date(a.date) - new Date(b.date));
+      const last = sorted[sorted.length - 1];
+      const recent = sorted.filter(e => new Date(e.date) >= m3ago);
+      const avg3m = recent.length > 0 ? recent.reduce((s, e) => s + e.prix, 0) / recent.length : null;
+      const prev = sorted.length >= 2 ? sorted[sorted.length - 2] : null;
+      const trend = prev ? (last.prix - prev.prix) / prev.prix * 100 : null;
+      return { fourn, lastPrix: last.prix, lastDate: last.date, avg3m, trend, unite: last.unite };
+    });
+    const minPrix = Math.min(...rows.map(r => r.lastPrix));
+    return { nom, rows: rows.sort((a, b) => a.lastPrix - b.lastPrix).map(r => ({ ...r, isBest: rows.length > 1 && r.lastPrix === minPrix })) };
+  }).sort((a, b) => a.nom.localeCompare(b.nom));
+}
+
+function ComparaisonFournisseurs({ onClose }) {
+  const [hist, setHist] = useState([]);
+  const [loadingComp, setLoadingComp] = useState(true);
+
+  useEffect(() => {
+    api.historiquePrix.list().then(h => { setHist(h); setLoadingComp(false); }).catch(() => setLoadingComp(false));
+  }, []);
+
+  const comparaison = computeComparaison(hist).filter(g => g.rows.length >= 2);
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <div>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', fontWeight: 700, color: T.text }}>Comparaison fournisseurs</h1>
+          <p style={{ color: T.muted, fontSize: '0.875rem', marginTop: '2px' }}>Ingrédients avec plusieurs fournisseurs dans l'historique</p>
+        </div>
+        <button onClick={onClose} style={{ padding: '0.5rem 1.25rem', border: '1px solid #E5E0D8', background: '#fff', borderRadius: '8px', cursor: 'pointer', fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif", color: T.text }}>
+          ← Retour au catalogue
+        </button>
+      </div>
+      {loadingComp ? (
+        <p style={{ color: T.muted }}>Chargement...</p>
+      ) : comparaison.length === 0 ? (
+        <div style={{ ...card, padding: '2rem', textAlign: 'center' }}>
+          <p style={{ color: T.muted, fontSize: '0.875rem' }}>Aucune comparaison disponible. Modifiez des prix via plusieurs fournisseurs pour voir les comparaisons ici.</p>
+        </div>
+      ) : (
+        comparaison.map(({ nom, rows }) => (
+          <div key={nom} style={{ ...card, padding: '1.25rem', marginBottom: '1rem' }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, color: T.text, fontSize: '1rem', marginBottom: '0.75rem' }}>{nom}</div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #F3EFE8' }}>
+                  {['Fournisseur', 'Dernier prix', 'Moy. 3 mois', 'Tendance', ''].map(h => (
+                    <th key={h} style={{ padding: '4px 8px', color: T.muted, fontWeight: 600, fontSize: '0.68rem', textTransform: 'uppercase', textAlign: h === 'Dernier prix' || h === 'Moy. 3 mois' ? 'right' : 'left', borderBottom: '1px solid #F3EFE8' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(r => (
+                  <tr key={r.fourn} style={{ borderBottom: '1px solid #F9F7F4', background: r.isBest ? 'rgba(45,106,79,0.04)' : 'transparent' }}>
+                    <td style={{ padding: '6px 8px', fontWeight: 500, color: T.text }}>{r.fourn}</td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: r.isBest ? T.green : T.text }}>
+                      {r.lastPrix.toFixed(2)} EUR/{r.unite}
+                    </td>
+                    <td style={{ padding: '6px 8px', textAlign: 'right', color: T.muted }}>
+                      {r.avg3m !== null ? r.avg3m.toFixed(2) + ' EUR' : '—'}
+                    </td>
+                    <td style={{ padding: '6px 8px' }}>
+                      {r.trend !== null ? (
+                        <span style={{ fontSize: '0.8rem', fontWeight: 600, color: r.trend <= 0 ? '#16a34a' : '#dc2626' }}>
+                          {r.trend <= 0 ? '▼' : '▲'} {Math.abs(r.trend).toFixed(1)}%
+                        </span>
+                      ) : <span style={{ color: T.muted, fontSize: '0.8rem' }}>—</span>}
+                    </td>
+                    <td style={{ padding: '6px 8px' }}>
+                      {r.isBest && (
+                        <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '2px 7px', borderRadius: '99px', background: 'rgba(45,106,79,0.1)', color: T.green, border: '1px solid rgba(45,106,79,0.25)', whiteSpace: 'nowrap' }}>
+                          Meilleur prix
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))
+      )}
     </div>
   );
 }
@@ -133,6 +249,7 @@ export default function Ingredients() {
   const [showNomSuggestions, setShowNomSuggestions] = useState(false);
   const [histItem, setHistItem] = useState(null);
   const [dupWarning, setDupWarning] = useState(null);
+  const [showComparaison, setShowComparaison] = useState(false);
   const autoSaveTimer = useRef(null);
   const latestEdit = useRef({ id: null, form: {} });
 
@@ -285,6 +402,10 @@ export default function Ingredients() {
     <div>
       {histItem && <HistoriqueModal item={histItem} onClose={() => setHistItem(null)} />}
 
+      {showComparaison ? (
+        <ComparaisonFournisseurs onClose={() => setShowComparaison(false)} />
+      ) : (<>
+
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
         <div>
@@ -297,6 +418,10 @@ export default function Ingredients() {
               ↩ Annuler
             </button>
           )}
+          <button
+            onClick={() => setShowComparaison(c => !c)}
+            style={{ padding: '0.55rem 1.25rem', background: showComparaison ? T.gold : '#fff', color: showComparaison ? '#fff' : T.muted, border: '1px solid #E5E0D8', borderRadius: '8px', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+          >⚖️ Fournisseurs</button>
           <button
             onClick={() => { setShowAdd(true); setEditId(null); }}
             style={{ padding: '0.55rem 1.25rem', background: T.green, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
@@ -533,6 +658,7 @@ export default function Ingredients() {
       )}
 
       <ImportFacture items={items} setItems={setItems} />
+      </>)}
     </div>
   );
 }
@@ -546,6 +672,7 @@ function ImportFacture({ items, setItems }) {
   const [toast, setToast] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const [aliases, setAliases] = useState([]);
+  const [impactReport, setImpactReport] = useState(null);
   const fileRef = useRef(null);
 
   const UNITES_IA = ['kg', 'L', 'piece', 'g', 'ml', 'botte', 'c.s.', 'c.c.'];
@@ -610,15 +737,21 @@ function ImportFacture({ items, setItems }) {
     const toImport = results.filter(p => selected.includes(p._id));
     let count = 0;
     const newAliases = [];
+    const updatedIngredients = [];
 
     for (const p of toImport) {
       if (p._action === 'associate' && p._associateId) {
         const existant = items.find(i => i.id === p._associateId);
         if (existant) {
-          const updated = await api.ingredients.update(existant.id, { ...existant, prixUnitaire: p.prix_unitaire });
+          const oldPrix = existant.prixUnitaire;
+          const newPrix = p.prix_unitaire;
+          const updated = await api.ingredients.update(existant.id, { ...existant, prixUnitaire: newPrix });
           setItems(prev => prev.map(i => i.id === existant.id ? updated : i));
           if (existant.nom.toLowerCase() !== p.nom.toLowerCase()) {
             newAliases.push({ from: p.nom, to: existant.nom });
+          }
+          if (oldPrix !== newPrix) {
+            updatedIngredients.push({ id: existant.id, nom: existant.nom, oldPrix, newPrix, unite: existant.unite });
           }
         }
       } else {
@@ -633,9 +766,51 @@ function ImportFacture({ items, setItems }) {
     }
     if (newAliases.length > 0) setAliases(prev => [...prev, ...newAliases]);
 
+    if (updatedIngredients.length > 0) {
+      try {
+        const [recettes, params] = await Promise.all([
+          api.recettes.list(),
+          api.parametres.get().catch(() => ({ foodCostCible: 30, tva: 10 })),
+        ]);
+        const updatedNoms = new Set(updatedIngredients.map(u => u.nom.toLowerCase()));
+        const impacted = recettes.filter(r =>
+          (r.ingredients || []).some(ing => updatedNoms.has((ing.nom || '').toLowerCase()))
+        );
+        const tva = params.tva || 10;
+        const cible = params.foodCostCible || 30;
+        const report = impacted.map(r => {
+          const portions = r.portions || 1;
+          const calc = (prixFn) => (r.ingredients || []).reduce((acc, ing) => {
+            const upd = updatedIngredients.find(u => u.nom.toLowerCase() === (ing.nom || '').toLowerCase());
+            return acc + ing.quantite * (upd ? prixFn(upd) : ing.prixUnitaire);
+          }, 0);
+          const oldCout = calc(u => u.oldPrix);
+          const newCout = calc(u => u.newPrix);
+          const oldCoutPortion = oldCout / portions;
+          const newCoutPortion = newCout / portions;
+          const pv = r.prixVentePratiqueTTC || 0;
+          const oldFC = pv > 0 ? (oldCoutPortion * (1 + tva / 100) / pv * 100) : null;
+          const newFC = pv > 0 ? (newCoutPortion * (1 + tva / 100) / pv * 100) : null;
+          const pvSuggere = newCoutPortion > 0 ? parseFloat((newCoutPortion * (1 + tva / 100) / (cible / 100)).toFixed(2)) : null;
+          return { recette: r, pv, oldCoutPortion, newCoutPortion, oldFC, newFC, pvSuggere, cible, exceedsCible: newFC !== null && newFC > cible };
+        });
+        setImpactReport({ report, updatedIngredients });
+      } catch (e) {
+        console.error('Impact report error:', e);
+      }
+    }
+
     setToast(`${count} ingrédient${count > 1 ? 's' : ''} importé${count > 1 ? 's' : ''} ✓`);
     setTimeout(() => setToast(''), 3500);
     setResults(null); setFile(null); setSelected([]);
+  }
+
+  async function appliquerPrixSuggere(item) {
+    await api.recettes.update(item.recette.id, { ...item.recette, prixVentePratiqueTTC: item.pvSuggere });
+    setImpactReport(prev => ({
+      ...prev,
+      report: prev.report.map(r => r.recette.id === item.recette.id ? { ...r, applied: true } : r),
+    }));
   }
 
   const dropZoneStyle = {
@@ -650,6 +825,56 @@ function ImportFacture({ items, setItems }) {
       {toast && (
         <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', background: '#2D6A4F', color: '#fff', padding: '0.75rem 1.5rem', borderRadius: '8px', fontWeight: 600, fontSize: '0.9rem', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', zIndex: 500 }}>
           {toast}
+        </div>
+      )}
+
+      {impactReport && impactReport.report.length > 0 && (
+        <div style={{ marginBottom: '2rem', ...card, padding: '1.5rem', border: '1px solid #FED7AA' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <div>
+              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, color: T.text }}>
+                Impact sur les fiches techniques
+              </h3>
+              <p style={{ fontSize: '0.8rem', color: T.muted, marginTop: '2px' }}>
+                {impactReport.updatedIngredients.map(u => `${u.nom} : ${u.oldPrix.toFixed(2)} → ${u.newPrix.toFixed(2)} EUR/${u.unite}`).join(' · ')}
+              </p>
+            </div>
+            <button onClick={() => setImpactReport(null)} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: '1.1rem' }}>✕</button>
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid #F3EFE8' }}>
+                {['Fiche', 'Ancien food cost', 'Nouveau food cost', 'PV actuel', 'PV suggéré', ''].map(h => (
+                  <th key={h} style={{ padding: '4px 8px', color: T.muted, fontWeight: 600, fontSize: '0.68rem', textTransform: 'uppercase', textAlign: 'left' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {impactReport.report.map(item => {
+                const fcColor = !item.newFC ? T.muted : item.newFC < item.cible ? '#16a34a' : item.newFC < item.cible + 5 ? '#d97706' : '#dc2626';
+                return (
+                  <tr key={item.recette.id} style={{ borderBottom: '1px solid #F9F7F4', background: item.exceedsCible ? 'rgba(220,38,38,0.03)' : 'transparent' }}>
+                    <td style={{ padding: '6px 8px', fontWeight: 600, color: T.text }}>{item.recette.nom}</td>
+                    <td style={{ padding: '6px 8px', color: T.muted }}>{item.oldFC !== null ? item.oldFC.toFixed(1) + '%' : '—'}</td>
+                    <td style={{ padding: '6px 8px', fontWeight: 700, color: fcColor }}>{item.newFC !== null ? item.newFC.toFixed(1) + '%' : '—'}</td>
+                    <td style={{ padding: '6px 8px', color: T.muted }}>{item.pv > 0 ? item.pv.toFixed(2) + ' €' : '—'}</td>
+                    <td style={{ padding: '6px 8px', fontWeight: 600, color: item.exceedsCible ? '#d97706' : T.muted }}>
+                      {item.pvSuggere ? item.pvSuggere.toFixed(2) + ' €' : '—'}
+                    </td>
+                    <td style={{ padding: '6px 8px' }}>
+                      {item.exceedsCible && item.pvSuggere && !item.applied && (
+                        <button onClick={() => appliquerPrixSuggere(item)}
+                          style={{ padding: '2px 10px', fontSize: '0.75rem', background: '#d97706', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, whiteSpace: 'nowrap' }}>
+                          Appliquer
+                        </button>
+                      )}
+                      {item.applied && <span style={{ fontSize: '0.75rem', color: T.green, fontWeight: 600 }}>✓ Appliqué</span>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
