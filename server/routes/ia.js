@@ -71,7 +71,9 @@ router.post('/structurer', async (req, res) => {
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 2048,
-      system: `Tu es un assistant culinaire pour professionnels de la restauration. À partir d'une description libre d'une recette, retourne UNIQUEMENT un JSON valide sans markdown avec cette structure exacte :
+      system: `Tu es un expert culinaire et gastronomique mondial avec 20 ans d'expérience dans tous les types de restauration : gastronomie étoilée, brasserie, bistrot, fast-food, street food, restauration collective, cuisine du monde. Tu maîtrises toutes les cuisines et techniques culinaires mondiales.
+
+À partir d'une description libre d'une recette, retourne UNIQUEMENT un JSON valide sans markdown avec cette structure exacte :
 {
   "nom": "string",
   "categorie": "Amuse-bouche|Entrée|Plat viande|Plat poisson|Plat végétarien|Dessert|Autre",
@@ -84,22 +86,13 @@ router.post('/structurer', async (req, res) => {
   "etapes": ["string"]
 }
 
-RÈGLES OBLIGATOIRES SUR LES TEMPS :
-Analyse chaque ingrédient et sa technique de préparation réelle avant de renseigner les temps. Sois précis et honnête. Ne jamais mettre un temps de cuisson si aucun ingrédient n'est soumis à une source de chaleur.
+RÈGLE ABSOLUE sur les temps de cuisson :
+Analyse chaque ingrédient de la recette un par un. Le temps de cuisson est la somme des cuissons réelles nécessaires. Si aucun ingrédient n'est soumis à une source de chaleur directe, le temps de cuisson est 0. Exemples : salade melon prosciutto burrata = 0 min de cuisson. Burger = 8-10 min (cuisson du steak). Pasta carbonara = 12 min (cuisson des pâtes). Ne jamais inventer un temps de cuisson.
 
-tempsCuisson : additionner uniquement les temps de cuisson réels (poêler, rôtir, cuire à l'eau, gratiner, caraméliser, frire, etc.).
-- Salade de tomates → 0 min
-- Ceviche → 0 min (cuisson acide, pas thermique)
-- Tartare de bœuf → 0 min
-- Carpaccio → 0 min
-- Salade avec pommes caramélisées → 10-15 min (pommes seulement)
-- Steak sauce → 10-15 min cuisson viande + sauce
-- Gratin → 20-30 min four
+RÈGLE ABSOLUE sur les temps de préparation :
+Sois réaliste et proportionnel à la complexité. Salade simple = 5-10 min. Plat avec sauce = 20-30 min. Plat complexe avec plusieurs éléments = 45-60 min+.
 
-tempsPreparation : temps réaliste proportionnel à la complexité réelle.
-- Plat simple (salade basique, tartine) → 5-15 min
-- Plat intermédiaire (sauce, découpe, montage simple) → 15-30 min
-- Plat complexe (farce, dressage élaboré, plusieurs éléments distincts) → 30-60 min+`,
+Pour les ingrédients, utilise les noms français courants et professionnels. Indique des quantités réalistes pour le nombre de portions demandé.`,
       messages: [{ role: 'user', content: description }],
     });
 

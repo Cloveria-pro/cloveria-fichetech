@@ -103,15 +103,42 @@ function ListeCartes({ cartes, onNew, onOpen, onDelete }) {
 }
 
 // ─── Vue consultant ───────────────────────────────────────────────────────────
-function VueCarte({ carte, recettes, parametres, onEdit, onBack }) {
+function VueCarte({ carte, recettes, parametres, onEdit, onBack, onAutoSave }) {
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [closedSections, setClosedSections] = useState(new Set());
+  const [localSections, setLocalSections] = useState(carte?.sections || []);
+  const autoSaveTimerVC = useRef(null);
   const width = useWindowWidth();
   const isMobile = width < 900;
   const date = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   const etablissement = parametres?.etablissement || 'Restaurant';
   const fcCible = parametres?.foodCostCible || 30;
 
-  const allSectionsWithData = (carte.sections || []).map(section => ({
+  useEffect(() => { setLocalSections(carte?.sections || []); }, [carte?.id]);
+
+  function toggleSection(titre) {
+    setClosedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(titre)) next.delete(titre); else next.add(titre);
+      return next;
+    });
+  }
+
+  function updatePrixVente(sectionTitre, recetteId, prix) {
+    const updated = localSections.map(s =>
+      s.titre === sectionTitre
+        ? { ...s, plats: s.plats.map(p => p.recetteId === recetteId ? { ...p, prixVente: parseFloat(prix) || 0 } : p) }
+        : s
+    );
+    setLocalSections(updated);
+    clearTimeout(autoSaveTimerVC.current);
+    autoSaveTimerVC.current = setTimeout(() => {
+      api.cartes.update(carte.id, { ...carte, sections: updated })
+        .then(saved => onAutoSave?.(saved)).catch(() => {});
+    }, 500);
+  }
+
+  const allSectionsWithData = localSections.map(section => ({
     ...section,
     platsData: section.plats.map(plat => {
       const rec = recettes.find(r => r.id === plat.recetteId);
@@ -144,7 +171,7 @@ function VueCarte({ carte, recettes, parametres, onEdit, onBack }) {
   }
   if (nbTotal > 30) recos.push({ type: 'warning', msg: `⚠️ Carte trop longue (${nbTotal} plats) — au-delà de 30 plats la gestion des stocks devient complexe` });
 
-  (carte.sections || []).forEach(section => {
+  localSections.forEach(section => {
     const nb = section.plats.length;
     if (nb > 8) recos.push({ type: 'warning', msg: `⚠️ Trop de choix en ${section.titre} (${nb} plats) — au-delà de 8 le client est indécis` });
     if (nb === 1) recos.push({ type: 'info', msg: `⚠️ ${section.titre} trop légère (${nb} plat) — proposez au moins 2-3 options` });
@@ -162,7 +189,7 @@ function VueCarte({ carte, recettes, parametres, onEdit, onBack }) {
     if (!allRecs.some(r => (r.categorie || '').toLowerCase().includes('poisson')))
       recos.push({ type: 'info', msg: `⚠️ Aucun plat poisson — pensez à l'équilibre viande/poisson` });
     const hasDessert = allRecs.some(r => (r.categorie || '').toLowerCase() === 'dessert') ||
-      (carte.sections || []).some(s => s.titre.toLowerCase().includes('dessert') && s.plats.length > 0);
+      localSections.some(s => s.titre.toLowerCase().includes('dessert') && s.plats.length > 0);
     if (!hasDessert) recos.push({ type: 'info', msg: `⚠️ Pas de dessert — le dessert augmente le ticket moyen de 20%` });
   }
 
@@ -280,46 +307,55 @@ ${sections}
               <p style={{ color: T.muted, margin: 0 }}>Carte vide — cliquez sur "Modifier" pour ajouter des plats.</p>
             </div>
           ) : (
-            allSectionsWithData.filter(s => s.plats.length > 0).map(section => (
-              <div key={section.titre} style={{ marginBottom: '2rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.875rem', paddingBottom: '0.5rem', borderBottom: '2px solid #F3EFE8' }}>
+            allSectionsWithData.filter(s => s.plats.length > 0).map(section => {
+              const isOpen = !closedSections.has(section.titre);
+              return (
+              <div key={section.titre} style={{ marginBottom: '1.5rem' }}>
+                <div onClick={() => toggleSection(section.titre)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: isOpen ? '0.875rem' : 0, paddingBottom: '0.5rem', borderBottom: '2px solid #F3EFE8', cursor: 'pointer', userSelect: 'none' }}>
+                  <span style={{ fontSize: '0.65rem', color: T.muted, display: 'inline-block', transition: 'transform 0.15s', transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▼</span>
                   <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: T.gold, display: 'inline-block', flexShrink: 0 }} />
                   <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text, margin: 0, flex: 1 }}>{section.titre}</h2>
                   <span style={{ fontSize: '0.72rem', color: T.muted }}>{section.plats.length} plat{section.plats.length !== 1 ? 's' : ''}</span>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {section.platsData.map(plat => {
-                    const badge = plat.fc !== null ? fcBadge(plat.fc) : null;
-                    return (
-                      <div key={plat.recetteId} style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', padding: '0.875rem 1rem', background: '#FAFAF8', borderRadius: '10px', border: '1px solid #F3EFE8' }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <Link to={'/fiches-techniques/' + plat.recetteId}
-                            style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.975rem', fontWeight: 700, color: T.text, textDecoration: 'none', lineHeight: 1.3, display: 'block' }}
-                            onMouseEnter={e => e.currentTarget.style.color = T.green}
-                            onMouseLeave={e => e.currentTarget.style.color = T.text}
-                          >{plat.nom}</Link>
-                          {plat.rec?.description && (
-                            <p style={{ fontSize: '0.8rem', color: T.muted, margin: '3px 0 0', lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                              {plat.rec.description}
-                            </p>
-                          )}
-                          {badge && (
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', marginTop: '5px', fontSize: '0.68rem', fontWeight: 600, padding: '1px 7px', borderRadius: '99px', background: badge.bg, color: badge.color }}>
-                              {badge.icon} {badge.label} {plat.fc !== null ? `— ${plat.fc.toFixed(1)}%` : ''}
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ flexShrink: 0, textAlign: 'right', paddingTop: '2px' }}>
-                          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text }}>
-                            {plat.prixVente > 0 ? plat.prixVente.toFixed(2) + ' €' : <span style={{ color: '#D1C4B0', fontSize: '0.85rem' }}>—</span>}
+                {isOpen && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {section.platsData.map(plat => {
+                      const badge = plat.fc !== null ? fcBadge(plat.fc) : null;
+                      return (
+                        <div key={plat.recetteId} style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', padding: '0.875rem 1rem', background: '#FAFAF8', borderRadius: '10px', border: '1px solid #F3EFE8' }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <Link to={'/fiches-techniques/' + plat.recetteId}
+                              style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.975rem', fontWeight: 700, color: T.text, textDecoration: 'none', lineHeight: 1.3, display: 'block' }}
+                              onMouseEnter={e => e.currentTarget.style.color = T.green}
+                              onMouseLeave={e => e.currentTarget.style.color = T.text}
+                            >{plat.nom}</Link>
+                            {plat.rec?.description && (
+                              <p style={{ fontSize: '0.8rem', color: T.muted, margin: '3px 0 0', lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                                {plat.rec.description}
+                              </p>
+                            )}
+                            {badge && (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', marginTop: '5px', fontSize: '0.68rem', fontWeight: 600, padding: '1px 7px', borderRadius: '99px', background: badge.bg, color: badge.color }}>
+                                {badge.icon} {badge.label} {plat.fc !== null ? `— ${plat.fc.toFixed(1)}%` : ''}
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px', paddingTop: '2px' }}>
+                            <input type="number" step="0.5" min="0" value={plat.prixVente || ''}
+                              onChange={e => updatePrixVente(section.titre, plat.recetteId, e.target.value)}
+                              onClick={e => e.stopPropagation()}
+                              style={{ width: '72px', padding: '0.3rem 0.5rem', border: '1px solid #E5E0D8', borderRadius: '6px', fontSize: '0.9rem', fontFamily: "'Playfair Display', serif", fontWeight: 700, color: T.text, textAlign: 'right', outline: 'none' }} />
+                            <span style={{ fontSize: '0.85rem', color: T.muted }}>€</span>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            ))
+              );
+            })
           )}
         </div>
 
@@ -705,6 +741,7 @@ export default function Cartes() {
       parametres={parametres}
       onEdit={() => setVue('edit')}
       onBack={() => { setCarteActive(null); setVue('liste'); }}
+      onAutoSave={handleAutoSave}
     />
   );
 
