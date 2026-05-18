@@ -95,6 +95,15 @@ function EditeurCarte({ carte, recettes, onSave, onBack, onAutoSave }) {
   const [catFilter, setCatFilter] = useState('');
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState(false);
+  const [closedSections, setClosedSections] = useState(new Set());
+
+  function toggleSection(titre) {
+    setClosedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(titre)) next.delete(titre); else next.add(titre);
+      return next;
+    });
+  }
   const width = useWindowWidth();
   const autoSaveTimer = useRef(null);
   const latestForm = useRef(form);
@@ -239,49 +248,77 @@ function EditeurCarte({ carte, recettes, onSave, onBack, onAutoSave }) {
 
         {/* Panneau droit : carte en construction */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {form.sections.map(section => (
-            <div key={section.titre} style={{ ...card, padding: '1.25rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.875rem' }}>
-                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, color: T.text, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: T.gold, display: 'inline-block' }} />
-                  {section.titre}
-                  <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '0.75rem', color: T.muted, fontWeight: 400 }}>({section.plats.length} plat{section.plats.length !== 1 ? 's' : ''})</span>
-                </h3>
-                <button onClick={() => supprimerSection(section.titre)} style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '0.85rem' }}
-                  onMouseEnter={e => e.currentTarget.style.color = T.red}
-                  onMouseLeave={e => e.currentTarget.style.color = '#D1C4B0'}
-                >Supprimer section</button>
+          {form.sections.map(section => {
+            const isOpen = !closedSections.has(section.titre);
+            const sectionCoutMoyen = section.plats.length > 0
+              ? section.plats.reduce((s, p) => {
+                  const rec = recettes.find(r => r.id === p.recetteId);
+                  return s + (rec ? coutPortion(rec) : 0);
+                }, 0) / section.plats.length
+              : 0;
+            return (
+              <div key={section.titre} style={{ ...card, padding: '1.25rem' }}>
+                <div
+                  onClick={() => toggleSection(section.titre)}
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isOpen ? '0.875rem' : 0, cursor: 'pointer', userSelect: 'none' }}
+                >
+                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, color: T.text, display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                    <span style={{ fontSize: '0.65rem', color: T.muted, display: 'inline-block', transition: 'transform 0.15s', transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▼</span>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: T.gold, display: 'inline-block', flexShrink: 0 }} />
+                    {section.titre}
+                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '0.75rem', color: T.muted, fontWeight: 400 }}>
+                      {section.plats.length} fiche{section.plats.length !== 1 ? 's' : ''}
+                      {sectionCoutMoyen > 0 && ` · moy. ${sectionCoutMoyen.toFixed(2)} EUR/p`}
+                    </span>
+                  </h3>
+                  <button onClick={e => { e.stopPropagation(); supprimerSection(section.titre); }} style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '0.85rem' }}
+                    onMouseEnter={e => e.currentTarget.style.color = T.red}
+                    onMouseLeave={e => e.currentTarget.style.color = '#D1C4B0'}
+                  >Supprimer section</button>
+                </div>
+                {isOpen && (
+                  <>
+                    {section.plats.length === 0 && (
+                      <p style={{ color: '#C5BDB0', fontSize: '0.82rem', fontStyle: 'italic', padding: '0.5rem 0' }}>Cliquez sur une fiche à gauche pour l'ajouter ici.</p>
+                    )}
+                    {section.plats.map(plat => {
+                      const rec = recettes.find(r => r.id === plat.recetteId);
+                      const cp = rec ? coutPortion(rec) : 0;
+                      const fc = fcPct(cp, plat.prixVente);
+                      return (
+                        <div key={plat.recetteId} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0.75rem', borderRadius: '8px', background: '#FAFAF8', marginBottom: '4px', border: '1px solid #F3EFE8' }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <Link to={'/fiches-techniques/' + plat.recetteId} style={{ fontFamily: "'Playfair Display', serif", fontWeight: 600, fontSize: '0.875rem', color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textDecoration: 'none', display: 'block' }}
+                              onClick={e => e.stopPropagation()}
+                              onMouseEnter={e => e.currentTarget.style.color = T.green} onMouseLeave={e => e.currentTarget.style.color = T.text}>{plat.nom}</Link>
+                            <div style={{ fontSize: '0.72rem', color: T.muted, marginTop: '2px' }}>Coût mat. : {cp.toFixed(2)} EUR/p</div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                            <span style={{ fontSize: '0.72rem', color: T.muted }}>PV</span>
+                            <input type="number" step="0.5" value={plat.prixVente}
+                              onChange={e => updatePrix(section.titre, plat.recetteId, e.target.value)}
+                              onClick={e => e.stopPropagation()}
+                              style={{ ...inputStyle, width: '80px', textAlign: 'right' }} />
+                            <span style={{ fontSize: '0.78rem', color: T.muted }}>EUR</span>
+                          </div>
+                          {fc && (
+                            <div style={{ textAlign: 'center', flexShrink: 0, minWidth: '52px' }}>
+                              <div style={{ fontSize: '0.62rem', color: T.muted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>FC</div>
+                              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: fcColor(parseFloat(fc)) }}>{fc}%</span>
+                            </div>
+                          )}
+                          <button onClick={() => removePlat(section.titre, plat.recetteId)} style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '1rem', flexShrink: 0 }}
+                            onMouseEnter={e => e.currentTarget.style.color = T.red}
+                            onMouseLeave={e => e.currentTarget.style.color = '#D1C4B0'}
+                          >✕</button>
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
               </div>
-              {section.plats.length === 0 && (
-                <p style={{ color: '#C5BDB0', fontSize: '0.82rem', fontStyle: 'italic', padding: '0.5rem 0' }}>Cliquez sur une fiche à gauche pour l'ajouter ici.</p>
-              )}
-              {section.plats.map(plat => {
-                const rec = recettes.find(r => r.id === plat.recetteId);
-                const cp = rec ? coutPortion(rec) : 0;
-                const fc = fcPct(cp, plat.prixVente);
-                return (
-                  <div key={plat.recetteId} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0.75rem', borderRadius: '8px', background: '#FAFAF8', marginBottom: '4px' }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <Link to={'/fiches-techniques/' + plat.recetteId} style={{ fontFamily: "'Playfair Display', serif", fontWeight: 600, fontSize: '0.875rem', color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textDecoration: 'none', display: 'block' }}
-                        onMouseEnter={e => e.currentTarget.style.color = T.green} onMouseLeave={e => e.currentTarget.style.color = T.text}>{plat.nom}</Link>
-                      <div style={{ fontSize: '0.72rem', color: T.muted, marginTop: '2px' }}>Coût mat. : {cp.toFixed(2)} EUR/p</div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                      <input type="number" step="0.5" value={plat.prixVente}
-                        onChange={e => updatePrix(section.titre, plat.recetteId, e.target.value)}
-                        style={{ ...inputStyle, width: '80px', textAlign: 'right' }} />
-                      <span style={{ fontSize: '0.78rem', color: T.muted }}>EUR</span>
-                    </div>
-                    {fc && <span style={{ fontSize: '0.78rem', fontWeight: 700, color: fcColor(parseFloat(fc)), minWidth: '36px', textAlign: 'right' }}>{fc}%</span>}
-                    <button onClick={() => removePlat(section.titre, plat.recetteId)} style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '1rem', flexShrink: 0 }}
-                      onMouseEnter={e => e.currentTarget.style.color = T.red}
-                      onMouseLeave={e => e.currentTarget.style.color = '#D1C4B0'}
-                    >✕</button>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+            );
+          })}
 
           {/* Ajouter une section */}
           {showAddSection ? (

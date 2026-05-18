@@ -31,11 +31,11 @@ function HistoriqueModal({ item, onClose }) {
   const [data, setData] = useState([]);
 
   useEffect(() => {
-    api.historiquePrix.list(item.nom).then(setData).catch(() => {});
+    api.historiquePrix.list(item.nom).then(d => setData(d.filter(e => e.prix > 0))).catch(() => {});
   }, [item.nom]);
 
   async function supprimerEntree(entry) {
-    if (!confirm('Supprimer cette entrée ?')) return;
+    if (!confirm('Supprimer cette entrée de prix ?')) return;
     try {
       await api.historiquePrix.delete(entry.nom, entry.date);
       setData(prev => prev.filter(d => !(d.nom === entry.nom && d.date === entry.date)));
@@ -47,7 +47,7 @@ function HistoriqueModal({ item, onClose }) {
   function varSince(isoDate) {
     if (!last) return null;
     const ref = [...data].find(d => d.date >= isoDate);
-    if (!ref) return null;
+    if (!ref || ref.prix === 0) return null;
     return (last.prix - ref.prix) / ref.prix * 100;
   }
 
@@ -57,7 +57,7 @@ function HistoriqueModal({ item, onClose }) {
   const m6 = new Date(); m6.setMonth(m6.getMonth() - 6);
 
   const stats = [
-    { label: 'vs précédent', val: data.length >= 2 ? (last.prix - data[data.length - 2].prix) / data[data.length - 2].prix * 100 : null },
+    { label: 'vs précédent', val: data.length >= 2 && data[data.length - 2].prix > 0 ? (last.prix - data[data.length - 2].prix) / data[data.length - 2].prix * 100 : null },
     { label: '1 mois', val: varSince(m1.toISOString().slice(0, 10)) },
     { label: '3 mois', val: varSince(m3.toISOString().slice(0, 10)) },
     { label: '6 mois', val: varSince(m6.toISOString().slice(0, 10)) },
@@ -115,12 +115,12 @@ function HistoriqueModal({ item, onClose }) {
                     <td style={{ padding: '4px 8px', color: T.muted }}>{d.date.length > 10 ? d.date.slice(0, 16).replace('T', ' ') : d.date}</td>
                     <td style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 700, color: T.green }}>{d.prix.toFixed(2)} EUR/{d.unite}</td>
                     <td style={{ padding: '4px 8px', color: T.muted }}>{d.fournisseur || '—'}</td>
-                    <td style={{ padding: '4px 4px', textAlign: 'right' }}>
+                    <td style={{ padding: '4px 8px', textAlign: 'right' }}>
                       <button onClick={() => supprimerEntree(d)}
-                        style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '0.9rem', padding: '1px 4px' }}
-                        onMouseEnter={e => e.currentTarget.style.color = '#DC2626'}
-                        onMouseLeave={e => e.currentTarget.style.color = '#D1C4B0'}
-                        title="Supprimer cette entrée">✕</button>
+                        style={{ padding: '2px 8px', fontSize: '0.72rem', background: 'none', border: '1px solid #FECACA', color: '#DC2626', cursor: 'pointer', borderRadius: '4px', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#FEE2E2'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                      >Supprimer</button>
                     </td>
                   </tr>
                 ))}
@@ -134,58 +134,51 @@ function HistoriqueModal({ item, onClose }) {
 }
 
 /* ─── Comparaison fournisseurs ───────────────────────────────────────────── */
-function computeComparaison(hist) {
-  if (!hist.length) return [];
-  const now = new Date();
-  const m3ago = new Date(now); m3ago.setMonth(m3ago.getMonth() - 3);
+function computeComparaisonCatalog(ingredients) {
   const byNom = {};
-  hist.forEach(e => {
-    if (!byNom[e.nom]) byNom[e.nom] = {};
-    const f = e.fournisseur || '—';
-    if (!byNom[e.nom][f]) byNom[e.nom][f] = [];
-    byNom[e.nom][f].push(e);
+  ingredients.forEach(ing => {
+    const key = (ing.nom || '').toLowerCase().trim();
+    if (!key) return;
+    if (!byNom[key]) byNom[key] = { nom: ing.nom, rows: [] };
+    byNom[key].rows.push(ing);
   });
-  return Object.entries(byNom).map(([nom, fourns]) => {
-    const rows = Object.entries(fourns).map(([fourn, entries]) => {
-      const sorted = [...entries].sort((a, b) => new Date(a.date) - new Date(b.date));
-      const last = sorted[sorted.length - 1];
-      const recent = sorted.filter(e => new Date(e.date) >= m3ago);
-      const avg3m = recent.length > 0 ? recent.reduce((s, e) => s + e.prix, 0) / recent.length : null;
-      const prev = sorted.length >= 2 ? sorted[sorted.length - 2] : null;
-      const trend = prev ? (last.prix - prev.prix) / prev.prix * 100 : null;
-      return { fourn, lastPrix: last.prix, lastDate: last.date, avg3m, trend, unite: last.unite };
-    });
-    const minPrix = Math.min(...rows.map(r => r.lastPrix));
-    return { nom, rows: rows.sort((a, b) => a.lastPrix - b.lastPrix).map(r => ({ ...r, isBest: rows.length > 1 && r.lastPrix === minPrix })) };
-  }).sort((a, b) => a.nom.localeCompare(b.nom));
+  return Object.values(byNom)
+    .filter(g => {
+      const fournisseurs = new Set(g.rows.map(r => (r.fournisseur || '—').toLowerCase().trim()));
+      return fournisseurs.size >= 2;
+    })
+    .map(g => {
+      const minPrix = Math.min(...g.rows.map(r => r.prixUnitaire));
+      return {
+        nom: g.nom,
+        rows: g.rows
+          .slice()
+          .sort((a, b) => a.prixUnitaire - b.prixUnitaire)
+          .map(r => ({ ...r, isBest: r.prixUnitaire === minPrix })),
+      };
+    })
+    .sort((a, b) => a.nom.localeCompare(b.nom));
 }
 
-function ComparaisonFournisseurs({ onClose }) {
-  const [hist, setHist] = useState([]);
-  const [loadingComp, setLoadingComp] = useState(true);
-
-  useEffect(() => {
-    api.historiquePrix.list().then(h => { setHist(h); setLoadingComp(false); }).catch(() => setLoadingComp(false));
-  }, []);
-
-  const comparaison = computeComparaison(hist).filter(g => g.rows.length >= 2);
+function ComparaisonFournisseurs({ items, onClose }) {
+  const comparaison = computeComparaisonCatalog(items);
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <div>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', fontWeight: 700, color: T.text }}>Comparaison fournisseurs</h1>
-          <p style={{ color: T.muted, fontSize: '0.875rem', marginTop: '2px' }}>Ingrédients avec plusieurs fournisseurs dans l'historique</p>
+          <p style={{ color: T.muted, fontSize: '0.875rem', marginTop: '2px' }}>Ingrédients présents plusieurs fois avec des fournisseurs différents</p>
         </div>
         <button onClick={onClose} style={{ padding: '0.5rem 1.25rem', border: '1px solid #E5E0D8', background: '#fff', borderRadius: '8px', cursor: 'pointer', fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif", color: T.text }}>
           ← Retour au catalogue
         </button>
       </div>
-      {loadingComp ? (
-        <p style={{ color: T.muted }}>Chargement...</p>
-      ) : comparaison.length === 0 ? (
+      {comparaison.length === 0 ? (
         <div style={{ ...card, padding: '2rem', textAlign: 'center' }}>
-          <p style={{ color: T.muted, fontSize: '0.875rem' }}>Aucune comparaison disponible. Modifiez des prix via plusieurs fournisseurs pour voir les comparaisons ici.</p>
+          <p style={{ color: T.muted, fontSize: '0.875rem' }}>
+            Aucune comparaison disponible. Pour comparer les fournisseurs, créez plusieurs entrées avec le même nom d'ingrédient mais des fournisseurs différents.
+          </p>
         </div>
       ) : (
         comparaison.map(({ nom, rows }) => (
@@ -194,28 +187,19 @@ function ComparaisonFournisseurs({ onClose }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #F3EFE8' }}>
-                  {['Fournisseur', 'Dernier prix', 'Moy. 3 mois', 'Tendance', ''].map(h => (
-                    <th key={h} style={{ padding: '4px 8px', color: T.muted, fontWeight: 600, fontSize: '0.68rem', textTransform: 'uppercase', textAlign: h === 'Dernier prix' || h === 'Moy. 3 mois' ? 'right' : 'left', borderBottom: '1px solid #F3EFE8' }}>{h}</th>
+                  {['Fournisseur', 'Prix actuel', 'Unité', ''].map(h => (
+                    <th key={h} style={{ padding: '4px 8px', color: T.muted, fontWeight: 600, fontSize: '0.68rem', textTransform: 'uppercase', textAlign: h === 'Prix actuel' ? 'right' : 'left', borderBottom: '1px solid #F3EFE8' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {rows.map(r => (
-                  <tr key={r.fourn} style={{ borderBottom: '1px solid #F9F7F4', background: r.isBest ? 'rgba(45,106,79,0.04)' : 'transparent' }}>
-                    <td style={{ padding: '6px 8px', fontWeight: 500, color: T.text }}>{r.fourn}</td>
+                  <tr key={r.id} style={{ borderBottom: '1px solid #F9F7F4', background: r.isBest ? 'rgba(45,106,79,0.04)' : 'transparent' }}>
+                    <td style={{ padding: '6px 8px', fontWeight: 500, color: T.text }}>{r.fournisseur || <span style={{ color: '#D1C4B0' }}>—</span>}</td>
                     <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: r.isBest ? T.green : T.text }}>
-                      {r.lastPrix.toFixed(2)} EUR/{r.unite}
+                      {r.prixUnitaire.toFixed(2)} EUR
                     </td>
-                    <td style={{ padding: '6px 8px', textAlign: 'right', color: T.muted }}>
-                      {r.avg3m !== null ? r.avg3m.toFixed(2) + ' EUR' : '—'}
-                    </td>
-                    <td style={{ padding: '6px 8px' }}>
-                      {r.trend !== null ? (
-                        <span style={{ fontSize: '0.8rem', fontWeight: 600, color: r.trend <= 0 ? '#16a34a' : '#dc2626' }}>
-                          {r.trend <= 0 ? '▼' : '▲'} {Math.abs(r.trend).toFixed(1)}%
-                        </span>
-                      ) : <span style={{ color: T.muted, fontSize: '0.8rem' }}>—</span>}
-                    </td>
+                    <td style={{ padding: '6px 8px', color: T.muted }}>{r.unite}</td>
                     <td style={{ padding: '6px 8px' }}>
                       {r.isBest && (
                         <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '2px 7px', borderRadius: '99px', background: 'rgba(45,106,79,0.1)', color: T.green, border: '1px solid rgba(45,106,79,0.25)', whiteSpace: 'nowrap' }}>
@@ -403,7 +387,7 @@ export default function Ingredients() {
       {histItem && <HistoriqueModal item={histItem} onClose={() => setHistItem(null)} />}
 
       {showComparaison ? (
-        <ComparaisonFournisseurs onClose={() => setShowComparaison(false)} />
+        <ComparaisonFournisseurs items={items} onClose={() => setShowComparaison(false)} />
       ) : (<>
 
       {/* Header */}
@@ -535,7 +519,7 @@ export default function Ingredients() {
                         onClick={() => setHistItem(item)}
                         style={{ ...btnSm, border: '1px solid #E5E0D8', background: '#fff', color: T.muted, fontSize: '0.75rem' }}
                         title="Historique des prix"
-                      >Hist.</button>
+                      >📈 Prix</button>
                       <button onClick={() => supprimer(item.id)} style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '1rem', padding: '2px 6px', borderRadius: '4px' }}
                         onMouseEnter={e => e.currentTarget.style.color = '#DC2626'}
                         onMouseLeave={e => e.currentTarget.style.color = '#D1C4B0'}

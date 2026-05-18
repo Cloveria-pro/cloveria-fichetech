@@ -82,7 +82,8 @@ router.post('/structurer', async (req, res) => {
   "allergenes": ["gluten"|"lait"|"oeufs"|"arachides"|"poisson"|"crustaces"|"soja"|"fruits_a_coque"],
   "ingredients": [{ "nom": "string", "quantite": number, "unite": "g|kg|ml|cl|L|piece|c.s.|c.c.|botte|tranche|pincée|gousse|feuille|sachet", "prixUnitaire": 0, "tva": 10 }],
   "etapes": ["string"]
-}`,
+}
+RÈGLE ABSOLUE sur tempsCuisson : si la recette ne nécessite aucune cuisson (salade, carpaccio, tartare, ceviche, gaspacho, verrine froide, sushi, tiramisu, mousse froide, etc.), le champ tempsCuisson doit être exactement 0. Ne jamais inventer ni estimer un temps de cuisson qui n'est pas réellement applicable à la recette décrite.`,
       messages: [{ role: 'user', content: description }],
     });
 
