@@ -4,6 +4,7 @@ import { api } from '../api.js';
 import { coutPortionHT, foodCostPct } from '../utils.js';
 
 const T = { green: '#2D6A4F', orange: '#D97706', red: '#DC2626', text: '#1C2B1E', muted: '#6B7280' };
+const card = { background: '#fff', borderRadius: '16px', boxShadow: '0 2px 16px rgba(0,0,0,0.07)' };
 
 function fcColor(pct) {
   if (pct < 30) return T.green;
@@ -14,6 +15,22 @@ function fcLabel(pct) {
   if (pct < 30) return 'Excellent';
   if (pct <= 35) return 'Attention';
   return 'Critique';
+}
+
+function varCoutsOverDays(historique, days) {
+  const histByNom = {};
+  historique.forEach(h => { if (!histByNom[h.nom]) histByNom[h.nom] = []; histByNom[h.nom].push(h); });
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
+  const variations = [];
+  Object.values(histByNom).forEach(entries => {
+    const sorted = [...entries].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const last = sorted[sorted.length - 1];
+    const ref = sorted.find(e => new Date(e.date) >= cutoff);
+    if (!ref || !last || ref === last || ref.prix === 0) return;
+    variations.push((last.prix - ref.prix) / ref.prix * 100);
+  });
+  if (variations.length === 0) return null;
+  return variations.reduce((s, v) => s + v, 0) / variations.length;
 }
 
 export default function Dashboard() {
@@ -38,34 +55,57 @@ export default function Dashboard() {
 
   const cible = params.foodCostCible || 30;
 
-  // Food cost moyen — uniquement les fiches avec prix de vente
   const avecPrix = recettes.filter(r => (r.prixVentePratiqueTTC || 0) > 0);
   const withFC = avecPrix.map(r => ({ ...r, fc: foodCostPct(r) })).filter(r => r.fc !== null);
   const fcMoyen = withFC.length > 0
     ? withFC.reduce((s, r) => s + r.fc, 0) / withFC.length
     : null;
 
-  // Coût matière moyen par portion (toutes fiches)
   const coutMatMoyen = recettes.length > 0
     ? recettes.reduce((s, r) => s + coutPortionHT(r), 0) / recettes.length
     : 0;
 
-  // ── Zone 2 : actions du jour ──────────────────────────────────────────────
+  const fichesCritiques = withFC.filter(r => r.fc > cible);
+  const withFCSorted = [...withFC].sort((a, b) => a.fc - b.fc);
+  const meilleureFiche = withFCSorted.length > 0 ? withFCSorted[0] : null;
+  const fichePlusProblem = withFCSorted.length > 0 ? withFCSorted[withFCSorted.length - 1] : null;
+
+  const prixVenteMoyenTTC = avecPrix.length > 0
+    ? avecPrix.reduce((s, r) => s + (r.prixVentePratiqueTTC || 0), 0) / avecPrix.length
+    : null;
+
+  const varCouts7j = varCoutsOverDays(historique, 7);
+  const varCouts30j = varCoutsOverDays(historique, 30);
+
+  const sansPrixCount = recettes.filter(r => !(r.prixVentePratiqueTTC > 0)).length;
+
+  const synthesePhrase = (() => {
+    if (fcMoyen === null) return 'Ajoutez vos prix de vente pour analyser votre situation.';
+    if (fichesCritiques.length === 0) return 'Toutes vos fiches sont sous contrôle — bien géré.';
+    if (fichesCritiques.length === 1) return `"${fichesCritiques[0].nom}" dépasse votre seuil cible de ${cible}%.`;
+    return `${fichesCritiques.length} fiches dépassent votre seuil cible de ${cible}%.`;
+  })();
+
+  // ── Actions prioritaires ────────────────────────────────────────────────────
   const actionsJour = (() => {
     const actions = [];
 
-    // Type 1 — fiches FC > cible, triées par impact €/couvert
     withFC
       .filter(r => r.fc > cible)
-      .map(r => ({
-        label: `"${r.nom}" — food cost à ${r.fc.toFixed(1)}% (cible : ${cible}%)`,
-        link: `/fiches-techniques/${r.id}`,
-        impact: (r.fc - cible) * (r.prixVentePratiqueTTC || 0) / 100,
-      }))
-      .sort((a, b) => b.impact - a.impact)
+      .map(r => {
+        const impactEuro = (r.fc - cible) / 100 * (r.prixVentePratiqueTTC || 0);
+        return {
+          nom: r.nom,
+          probleme: `food cost à ${r.fc.toFixed(1)}% — cible ${cible}%`,
+          impactLabel: `coûte ${impactEuro.toFixed(2)} € de trop/couvert`,
+          link: `/fiches-techniques/${r.id}`,
+          dotColor: r.fc > cible + 5 ? T.red : T.orange,
+          impactSort: impactEuro,
+        };
+      })
+      .sort((a, b) => b.impactSort - a.impactSort)
       .forEach(a => actions.push(a));
 
-    // Type 2 — hausses de prix > 5% sur 30 jours impactant des fiches
     const histByNom = {};
     historique.forEach(h => { if (!histByNom[h.nom]) histByNom[h.nom] = []; histByNom[h.nom].push(h); });
     const m1ago = new Date(); m1ago.setMonth(m1ago.getMonth() - 1);
@@ -81,163 +121,185 @@ export default function Dashboard() {
       );
       if (impacted.length === 0) return;
       actions.push({
-        label: `${nom} en hausse de +${pct.toFixed(0)}% — ${impacted.length} fiche${impacted.length > 1 ? 's' : ''} impactée${impacted.length > 1 ? 's' : ''}`,
+        nom,
+        probleme: `hausse +${pct.toFixed(0)}% sur 30 j`,
+        impactLabel: `${impacted.length} fiche${impacted.length > 1 ? 's' : ''} impactée${impacted.length > 1 ? 's' : ''}`,
         link: '/ingredients',
-        impact: pct * impacted.length,
+        dotColor: T.orange,
+        impactSort: pct * impacted.length,
       });
     });
 
-    // Type 3 — fiches sans prix de vente
-    const sansPrix = recettes.filter(r => !(r.prixVentePratiqueTTC > 0));
-    if (sansPrix.length > 0) {
+    if (sansPrixCount > 0) {
       actions.push({
-        label: `${sansPrix.length} fiche${sansPrix.length > 1 ? 's' : ''} sans prix de vente`,
+        nom: `${sansPrixCount} fiche${sansPrixCount > 1 ? 's' : ''} sans prix`,
+        probleme: 'prix de vente manquant',
+        impactLabel: 'food cost non calculable',
         link: '/fiches-techniques',
-        impact: -1,
+        dotColor: T.muted,
+        impactSort: -1,
       });
     }
 
-    return actions.sort((a, b) => b.impact - a.impact).slice(0, 3);
+    return actions.sort((a, b) => b.impactSort - a.impactSort).slice(0, 3);
   })();
 
-  // ── Zone 3 : métriques discrètes ─────────────────────────────────────────
-  const varCouts30j = (() => {
-    const histByNom = {};
-    historique.forEach(h => { if (!histByNom[h.nom]) histByNom[h.nom] = []; histByNom[h.nom].push(h); });
-    const d30ago = new Date(); d30ago.setDate(d30ago.getDate() - 30);
-    const variations = [];
-    Object.values(histByNom).forEach(entries => {
-      const sorted = [...entries].sort((a, b) => new Date(a.date) - new Date(b.date));
-      const last = sorted[sorted.length - 1];
-      const ref = sorted.find(e => new Date(e.date) >= d30ago);
-      if (!ref || !last || ref === last || ref.prix === 0) return;
-      variations.push((last.prix - ref.prix) / ref.prix * 100);
-    });
-    if (variations.length === 0) return null;
-    return variations.reduce((s, v) => s + v, 0) / variations.length;
-  })();
-
-  const sansPrixCount = recettes.filter(r => !(r.prixVentePratiqueTTC > 0)).length;
+  const metaStyle = { fontSize: '0.65rem', fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '3px' };
 
   return (
-    <div style={{ maxWidth: '680px', fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ maxWidth: '760px', fontFamily: "'DM Sans', sans-serif" }}>
 
-      {/* ── Zone 1 — Food cost dominant ─────────────────────────────────── */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
-        paddingBottom: '3rem',
-        marginBottom: '3rem',
-        borderBottom: '1px solid #EDE8DF',
-      }}>
-        <div>
-          {fcMoyen !== null ? (
-            <>
-              <div style={{
-                fontFamily: "'Playfair Display', serif",
-                fontSize: '5.5rem',
-                fontWeight: 700,
-                color: fcColor(fcMoyen),
-                lineHeight: 1,
-                letterSpacing: '-0.02em',
-              }}>
-                {fcMoyen.toFixed(1)}%
-              </div>
-              <div style={{
-                marginTop: '0.6rem',
-                fontSize: '1rem',
-                fontWeight: 700,
-                color: fcColor(fcMoyen),
-                letterSpacing: '0.01em',
-              }}>
-                {fcLabel(fcMoyen)}
-              </div>
-              <div style={{ marginTop: '0.2rem', fontSize: '0.75rem', color: T.muted }}>
-                food cost moyen
-              </div>
-            </>
-          ) : (
-            <>
-              <div style={{
-                fontFamily: "'Playfair Display', serif",
-                fontSize: '5.5rem',
-                fontWeight: 700,
-                color: '#D1C4B0',
-                lineHeight: 1,
-              }}>—</div>
-              <div style={{ marginTop: '0.6rem', fontSize: '0.85rem', color: T.muted }}>
-                Aucune fiche avec prix de vente
-              </div>
-            </>
-          )}
-        </div>
+      {/* ── Bloc 1 — Hero card ─────────────────────────────────────────────── */}
+      <div style={{ ...card, padding: '2rem 2.5rem', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'stretch' }}>
 
-        <div style={{ textAlign: 'right', paddingTop: '0.75rem' }}>
-          <div style={{ fontSize: '0.85rem', color: T.muted, lineHeight: 1.6 }}>
-            <span style={{ fontWeight: 600, color: T.text }}>{recettes.length}</span>
-            {' '}fiche{recettes.length !== 1 ? 's' : ''} active{recettes.length !== 1 ? 's' : ''}
+          {/* Colonne gauche */}
+          <div style={{ flex: '2 1 0', paddingRight: '2rem' }}>
+            <div style={metaStyle}>Situation du jour</div>
+
+            {fcMoyen !== null ? (
+              <>
+                <div style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: '3rem', fontWeight: 700,
+                  color: fcColor(fcMoyen), lineHeight: 1.05,
+                  letterSpacing: '-0.02em', marginTop: '0.5rem',
+                }}>
+                  {fcMoyen.toFixed(1)}%
+                </div>
+                <div style={{
+                  fontSize: '0.875rem', fontWeight: 700,
+                  color: fcColor(fcMoyen), marginTop: '0.35rem', marginBottom: '0.75rem',
+                }}>
+                  {fcLabel(fcMoyen)}
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: '3rem', fontWeight: 700,
+                  color: '#D1C4B0', lineHeight: 1.05, marginTop: '0.5rem',
+                }}>—</div>
+                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: T.muted, marginTop: '0.35rem', marginBottom: '0.75rem' }}>
+                  Non calculable
+                </div>
+              </>
+            )}
+
+            <div style={{ fontSize: '0.82rem', color: T.muted, lineHeight: 1.6 }}>
+              {synthesePhrase}
+            </div>
           </div>
-          <div style={{ fontSize: '0.85rem', color: T.muted, lineHeight: 1.6 }}>
-            <span style={{ fontWeight: 600, color: T.text }}>{coutMatMoyen.toFixed(2)} EUR</span>
-            {' '}/ portion moyen
+
+          {/* Séparateur vertical */}
+          <div style={{ width: '1px', background: '#EDE8DF', flexShrink: 0 }} />
+
+          {/* Colonne droite */}
+          <div style={{ flex: '1 1 0', paddingLeft: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem', justifyContent: 'center' }}>
+
+            {varCouts7j !== null && (
+              <div>
+                <div style={metaStyle}>Coûts / 7 j</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: varCouts7j > 2 ? T.red : varCouts7j < -2 ? T.green : T.text }}>
+                  {varCouts7j > 0 ? '↑ +' : '↓ '}{varCouts7j.toFixed(1)}%
+                </div>
+              </div>
+            )}
+
+            <div>
+              <div style={metaStyle}>Fiches critiques</div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: fichesCritiques.length > 0 ? T.red : T.green }}>
+                {fichesCritiques.length}
+              </div>
+            </div>
+
+            {meilleureFiche && (
+              <div>
+                <div style={metaStyle}>Plus rentable</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: T.green, flexShrink: 0 }} />
+                  <span style={{ fontSize: '0.8rem', color: T.text, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {meilleureFiche.nom}
+                  </span>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: T.green, flexShrink: 0 }}>
+                    {meilleureFiche.fc.toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {fichePlusProblem && fichePlusProblem.fc > cible && (
+              <div>
+                <div style={metaStyle}>À surveiller</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: T.red, flexShrink: 0 }} />
+                  <span style={{ fontSize: '0.8rem', color: T.text, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {fichePlusProblem.nom}
+                  </span>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: T.red, flexShrink: 0 }}>
+                    {fichePlusProblem.fc.toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
       </div>
 
-      {/* ── Zone 2 — À traiter aujourd'hui ──────────────────────────────── */}
-      <div style={{ marginBottom: '3.5rem' }}>
+      {/* ── Bloc 2 — Actions prioritaires ──────────────────────────────────── */}
+      <div style={{
+        ...card,
+        borderLeft: `4px solid ${actionsJour.length > 0 ? T.red : T.green}`,
+        borderRadius: '16px',
+        marginBottom: '1.5rem',
+        overflow: 'hidden',
+      }}>
         <div style={{
-          fontSize: '0.68rem',
-          fontWeight: 700,
-          color: T.muted,
-          textTransform: 'uppercase',
-          letterSpacing: '0.1em',
-          marginBottom: '1.5rem',
+          padding: '1.1rem 1.75rem',
+          borderBottom: '1px solid #F3EFE8',
         }}>
-          À traiter aujourd'hui
+          <div style={metaStyle}>Actions prioritaires</div>
         </div>
 
         {actionsJour.length === 0 ? (
-          <div style={{ fontSize: '0.9rem', fontWeight: 600, color: T.green }}>
-            ✓ Aucune urgence aujourd'hui
+          <div style={{ padding: '1.25rem 1.75rem', fontSize: '0.875rem', color: T.green, fontWeight: 600 }}>
+            Tout est sous contrôle — aucune action urgente aujourd'hui
           </div>
         ) : (
           <div>
             {actionsJour.map((a, i) => (
-              <div
-                key={i}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '1.5rem',
-                  padding: '0.875rem 0',
-                  borderBottom: i < actionsJour.length - 1 ? '1px solid #EDE8DF' : 'none',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', flex: 1, minWidth: 0 }}>
+              <div key={i} style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr auto auto',
+                alignItems: 'center',
+                gap: '1.25rem',
+                padding: '0.9rem 1.75rem',
+                borderBottom: i < actionsJour.length - 1 ? '1px solid #F9F7F4' : 'none',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.7rem', minWidth: 0 }}>
                   <div style={{
-                    width: '7px', height: '7px',
-                    borderRadius: '50%',
-                    background: T.red,
-                    flexShrink: 0,
+                    width: '7px', height: '7px', borderRadius: '50%',
+                    background: a.dotColor, flexShrink: 0, marginTop: '5px',
                   }} />
-                  <span style={{ fontSize: '0.9rem', color: T.text, lineHeight: 1.4 }}>
-                    {a.label}
-                  </span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {a.nom}
+                    </div>
+                    <div style={{ fontSize: '0.73rem', color: T.muted, marginTop: '1px' }}>
+                      {a.probleme}
+                    </div>
+                  </div>
                 </div>
-                <Link
-                  to={a.link}
-                  style={{
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    color: T.green,
-                    textDecoration: 'none',
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0,
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
+                <div style={{ fontSize: '0.78rem', color: a.dotColor, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  {a.impactLabel}
+                </div>
+                <Link to={a.link} style={{
+                  fontSize: '0.82rem', fontWeight: 600, color: T.green,
+                  textDecoration: 'none', whiteSpace: 'nowrap',
+                }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = '0.65'}
                   onMouseLeave={e => e.currentTarget.style.opacity = '1'}
                 >
                   Ouvrir →
@@ -248,24 +310,41 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* ── Zone 3 — Métriques discrètes ─────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '2.5rem', flexWrap: 'wrap' }}>
-        <div style={{ fontSize: '0.8rem', color: T.muted }}>
-          Variation coûts / 30 j :{' '}
-          {varCouts30j !== null ? (
-            <span style={{ fontWeight: 600, color: varCouts30j > 2 ? T.red : varCouts30j < -2 ? T.green : T.text }}>
-              {varCouts30j > 0 ? '+' : ''}{varCouts30j.toFixed(1)}%
-            </span>
-          ) : (
-            <span style={{ fontWeight: 600, color: T.text }}>—</span>
+      {/* ── Bloc 3 — 2 mini cartes ─────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+
+        <div style={{ ...card, padding: '1.25rem 1.5rem' }}>
+          <div style={metaStyle}>Coût matière moyen</div>
+          <div style={{ marginTop: '0.4rem', fontSize: '1.5rem', fontWeight: 700, color: T.text, letterSpacing: '-0.01em', lineHeight: 1.1 }}>
+            {coutMatMoyen.toFixed(2)}&nbsp;<span style={{ fontSize: '0.85rem', fontWeight: 400, color: T.muted }}>EUR / portion</span>
+          </div>
+          {varCouts30j !== null && (
+            <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', color: varCouts30j > 2 ? T.red : varCouts30j < -2 ? T.green : T.muted }}>
+              {varCouts30j > 0 ? '↑ +' : '↓ '}{varCouts30j.toFixed(1)}% sur 30 j
+            </div>
+          )}
+          {varCouts30j === null && (
+            <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', color: T.muted }}>Pas de données historiques</div>
           )}
         </div>
-        <div style={{ fontSize: '0.8rem', color: T.muted }}>
-          Fiches sans prix :{' '}
-          <span style={{ fontWeight: 600, color: sansPrixCount > 0 ? T.text : T.green }}>
-            {sansPrixCount}
-          </span>
+
+        <div style={{ ...card, padding: '1.25rem 1.5rem' }}>
+          <div style={metaStyle}>Fiches actives</div>
+          <div style={{ marginTop: '0.4rem', fontSize: '1.5rem', fontWeight: 700, color: T.text, letterSpacing: '-0.01em', lineHeight: 1.1 }}>
+            {recettes.length}&nbsp;<span style={{ fontSize: '0.85rem', fontWeight: 400, color: T.muted }}>fiche{recettes.length !== 1 ? 's' : ''}</span>
+          </div>
+          {prixVenteMoyenTTC !== null && (
+            <div style={{ marginTop: '0.5rem', fontSize: '0.78rem', color: T.muted }}>
+              PV moyen TTC&nbsp;<span style={{ fontWeight: 600, color: T.text }}>{prixVenteMoyenTTC.toFixed(2)} EUR</span>
+            </div>
+          )}
+          {sansPrixCount > 0 && (
+            <div style={{ marginTop: '0.25rem', fontSize: '0.78rem', color: T.muted }}>
+              dont&nbsp;<span style={{ fontWeight: 600, color: T.orange }}>{sansPrixCount}</span>&nbsp;sans prix de vente
+            </div>
+          )}
         </div>
+
       </div>
 
     </div>
