@@ -59,6 +59,7 @@ export default function FicheTechnique() {
   const [cartes, setCartes] = useState([]);
   const [selectedCarteId, setSelectedCarteId] = useState('');
   const [selectedSection, setSelectedSection] = useState('');
+  const [showCarteAdd, setShowCarteAdd] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -137,6 +138,7 @@ export default function FicheTechnique() {
       setCartes(prev => prev.map(c => c.id === saved.id ? saved : c));
       setSelectedCarteId('');
       setSelectedSection('');
+      setShowCarteAdd(false);
     });
   }
 
@@ -300,6 +302,46 @@ export default function FicheTechnique() {
             >
               {recette.categorie || 'Non classé'}
             </span>
+          )}
+          {/* Badges cartes */}
+          {!editMode && (
+            <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginTop: '7px', alignItems: 'center' }}>
+              {cartesContenant.map(({ carte, section }) => (
+                <span key={carte.id + section.titre} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.72rem', fontWeight: 600, padding: '2px 4px 2px 8px', borderRadius: '99px', background: 'rgba(201,168,76,0.1)', color: '#8B6914', border: '1px solid rgba(201,168,76,0.3)' }}>
+                  {carte.nom}
+                  <span style={{ color: '#A07828', fontWeight: 400, fontSize: '0.68rem' }}>&nbsp;{section.titre}</span>
+                  <button onClick={() => retirerDeCarte(carte, section.titre)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#B45309', fontSize: '0.85rem', padding: '0 3px', lineHeight: 1 }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#dc2626'} onMouseLeave={e => e.currentTarget.style.color = '#B45309'}
+                  >×</button>
+                </span>
+              ))}
+              {!showCarteAdd ? (
+                <button onClick={() => setShowCarteAdd(true)} style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '99px', border: '1px dashed rgba(201,168,76,0.5)', background: 'transparent', color: '#C9A84C', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                  + Carte
+                </button>
+              ) : (
+                <div style={{ display: 'inline-flex', gap: '4px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <select value={selectedCarteId} onChange={e => { setSelectedCarteId(e.target.value); setSelectedSection(''); }}
+                    style={{ fontSize: '0.75rem', padding: '2px 4px', border: '1px solid #E5E0D8', borderRadius: '4px', outline: 'none', fontFamily: "'DM Sans', sans-serif" }}>
+                    <option value="">Carte…</option>
+                    {cartes.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+                  </select>
+                  {selectedCarteId && (
+                    <select value={selectedSection} onChange={e => setSelectedSection(e.target.value)}
+                      style={{ fontSize: '0.75rem', padding: '2px 4px', border: '1px solid #E5E0D8', borderRadius: '4px', outline: 'none', fontFamily: "'DM Sans', sans-serif" }}>
+                      <option value="">Section…</option>
+                      {sectionsDisponibles.map(s => <option key={s.titre} value={s.titre}>{s.titre}</option>)}
+                    </select>
+                  )}
+                  {selectedCarteId && selectedSection && (
+                    <button onClick={ajouterACarte} style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '4px', background: T.green, color: '#fff', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>OK</button>
+                  )}
+                  <button onClick={() => { setShowCarteAdd(false); setSelectedCarteId(''); setSelectedSection(''); }}
+                    style={{ fontSize: '0.72rem', padding: '2px 6px', borderRadius: '4px', background: 'none', border: '1px solid #E5E0D8', cursor: 'pointer', color: T.muted, fontFamily: "'DM Sans', sans-serif" }}>✕</button>
+                </div>
+              )}
+            </div>
           )}
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
@@ -587,50 +629,6 @@ export default function FicheTechnique() {
             </div>
           </>
         )}
-      </div>
-
-      {/* Présence dans les cartes */}
-      <div style={{ ...card, padding: '1.5rem', marginBottom: '1rem' }}>
-        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text, marginBottom: '1rem' }}>Cartes</h3>
-        {cartesContenant.length === 0 ? (
-          <p style={{ color: T.muted, fontSize: '0.875rem', fontStyle: 'italic', marginBottom: '1rem' }}>Cette fiche n'est assignée à aucune carte.</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '1rem' }}>
-            {cartesContenant.map(({ carte, section }) => (
-              <div key={carte.id + '-' + section.titre} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.75rem', background: '#FAFAF8', borderRadius: '8px', border: '1px solid #F3EFE8' }}>
-                <div style={{ flex: 1 }}>
-                  <span style={{ fontWeight: 600, color: T.text, fontSize: '0.875rem' }}>{carte.nom}</span>
-                  <span style={{ color: T.muted, fontSize: '0.82rem', marginLeft: '8px' }}>→ {section.titre}</span>
-                </div>
-                <button onClick={() => retirerDeCarte(carte, section.titre)}
-                  style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '0.8rem', padding: '2px 6px' }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#dc2626'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#D1C4B0'}
-                >Retirer</button>
-              </div>
-            ))}
-          </div>
-        )}
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          <select value={selectedCarteId} onChange={e => { setSelectedCarteId(e.target.value); setSelectedSection(''); }}
-            style={{ ...inputStyle, width: 'auto', fontSize: '0.82rem' }}>
-            <option value="">— Ajouter à une carte —</option>
-            {cartes.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
-          </select>
-          {selectedCarteId && (
-            <select value={selectedSection} onChange={e => setSelectedSection(e.target.value)}
-              style={{ ...inputStyle, width: 'auto', fontSize: '0.82rem' }}>
-              <option value="">— Section —</option>
-              {sectionsDisponibles.map(s => <option key={s.titre} value={s.titre}>{s.titre}</option>)}
-            </select>
-          )}
-          {selectedCarteId && selectedSection && (
-            <button onClick={ajouterACarte}
-              style={{ padding: '0.4rem 0.9rem', background: T.green, color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.82rem', fontFamily: "'DM Sans', sans-serif" }}>
-              + Ajouter
-            </button>
-          )}
-        </div>
       </div>
 
       {/* Allergènes */}

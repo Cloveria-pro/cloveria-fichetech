@@ -84,7 +84,10 @@ function HistoriqueModal({ item, onClose }) {
             <ResponsiveContainer width="100%" height={180}>
               <LineChart data={data} margin={{ top: 4, right: 12, left: 0, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3EFE8" />
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: T.muted }} />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: T.muted }} tickFormatter={v => {
+                  const d = new Date(v);
+                  return isNaN(d) ? v : `${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}h${String(d.getMinutes()).padStart(2,'0')}`;
+                }} />
                 <YAxis tick={{ fontSize: 10, fill: T.muted }} domain={['auto', 'auto']} width={48} />
                 <Tooltip formatter={(v, n, p) => [`${v.toFixed(2)} EUR/${p.payload.unite}`, 'Prix']} />
                 <Line type="monotone" dataKey="prix" stroke={T.green} strokeWidth={2} dot={{ r: 3, fill: T.green }} activeDot={{ r: 5 }} />
@@ -101,7 +104,7 @@ function HistoriqueModal({ item, onClose }) {
               <tbody>
                 {[...data].reverse().map((d, i) => (
                   <tr key={i} style={{ borderBottom: '1px solid #F9F7F4' }}>
-                    <td style={{ padding: '4px 8px', color: T.muted }}>{d.date}</td>
+                    <td style={{ padding: '4px 8px', color: T.muted }}>{d.date.length > 10 ? d.date.slice(0, 16).replace('T', ' ') : d.date}</td>
                     <td style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 700, color: T.green }}>{d.prix.toFixed(2)} EUR/{d.unite}</td>
                     <td style={{ padding: '4px 8px', color: T.muted }}>{d.fournisseur || '—'}</td>
                   </tr>
@@ -270,6 +273,10 @@ export default function Ingredients() {
     addForm.nom.length === 0 || n.toLowerCase().includes(addForm.nom.toLowerCase())
   ).slice(0, 8);
 
+  const catalogSimilar = (showNomSuggestions && addForm.nom.trim().length >= 2 && !dupWarning)
+    ? items.filter(i => i.nom.toLowerCase().includes(addForm.nom.toLowerCase().trim())).slice(0, 4)
+    : [];
+
   const thStyle = { padding: '0.6rem 1rem', color: T.muted, fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', borderBottom: '1px solid #F3EFE8', whiteSpace: 'nowrap' };
   const tdStyle = { padding: '0.65rem 1rem', fontSize: '0.875rem', color: T.text, borderBottom: '1px solid #F9F7F4' };
   const btnSm = { padding: '0.3rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" };
@@ -437,6 +444,23 @@ export default function Ingredients() {
                           Créer quand même
                         </button>
                       </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              {catalogSimilar.length > 0 && (
+                <tr style={{ background: '#F0FDF4', borderTop: '1px solid #BBF7D0' }}>
+                  <td colSpan={7} style={{ padding: '0.5rem 1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.72rem', color: '#166534', fontWeight: 600, whiteSpace: 'nowrap' }}>Déjà dans le catalogue :</span>
+                      {catalogSimilar.map(it => (
+                        <button key={it.id} type="button"
+                          onMouseDown={() => { startEdit(it); setShowAdd(false); setDupWarning(null); }}
+                          style={{ padding: '2px 8px', borderRadius: '4px', background: '#DCFCE7', color: '#166534', border: '1px solid #86EFAC', fontSize: '0.72rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+                        >
+                          {it.nom} · {it.prixUnitaire} EUR/{it.unite}{it.fournisseur ? ` · ${it.fournisseur}` : ''} — Sélectionner
+                        </button>
+                      ))}
                     </div>
                   </td>
                 </tr>

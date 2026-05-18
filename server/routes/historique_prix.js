@@ -29,7 +29,7 @@ router.post('/', (req, res) => {
   const entry = {
     user_id: req.userId,
     nom,
-    date: new Date().toISOString().slice(0, 10),
+    date: new Date().toISOString(),
     prix: parseFloat(prix),
     unite: unite || 'kg',
     fournisseur: fournisseur || '',

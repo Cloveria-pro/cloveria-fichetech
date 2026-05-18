@@ -99,15 +99,19 @@ function EditeurCarte({ carte, recettes, onSave, onBack, onAutoSave }) {
   const autoSaveTimer = useRef(null);
   const latestForm = useRef(form);
 
-  function setFormAutoSave(updater) {
+  function setFormAndSave(updater, debounce = false) {
     setForm(prev => {
       const newForm = typeof updater === 'function' ? updater(prev) : updater;
       latestForm.current = newForm;
       if (carte?.id) {
         clearTimeout(autoSaveTimer.current);
-        autoSaveTimer.current = setTimeout(() => {
-          api.cartes.update(carte.id, latestForm.current).then(saved => onAutoSave?.(saved)).catch(() => {});
-        }, 800);
+        if (debounce) {
+          autoSaveTimer.current = setTimeout(() => {
+            api.cartes.update(carte.id, latestForm.current).then(saved => onAutoSave?.(saved)).catch(() => {});
+          }, 500);
+        } else {
+          api.cartes.update(carte.id, newForm).then(saved => onAutoSave?.(saved)).catch(() => {});
+        }
       }
       return newForm;
     });
@@ -126,7 +130,7 @@ function EditeurCarte({ carte, recettes, onSave, onBack, onAutoSave }) {
   function addToSection(recette, sectionTitre) {
     const cp = coutPortion(recette);
     const prixVente = recette.prixVente || parseFloat((cp / 0.30).toFixed(2));
-    setFormAutoSave(f => ({
+    setFormAndSave(f => ({
       ...f,
       sections: f.sections.map(s =>
         s.titre === sectionTitre
@@ -137,7 +141,7 @@ function EditeurCarte({ carte, recettes, onSave, onBack, onAutoSave }) {
   }
 
   function removePlat(sectionTitre, recetteId) {
-    setFormAutoSave(f => ({
+    setFormAndSave(f => ({
       ...f,
       sections: f.sections.map(s =>
         s.titre === sectionTitre ? { ...s, plats: s.plats.filter(p => p.recetteId !== recetteId) } : s
@@ -146,25 +150,25 @@ function EditeurCarte({ carte, recettes, onSave, onBack, onAutoSave }) {
   }
 
   function updatePrix(sectionTitre, recetteId, prix) {
-    setFormAutoSave(f => ({
+    setFormAndSave(f => ({
       ...f,
       sections: f.sections.map(s =>
         s.titre === sectionTitre
           ? { ...s, plats: s.plats.map(p => p.recetteId === recetteId ? { ...p, prixVente: parseFloat(prix) || 0 } : p) }
           : s
       ),
-    }));
+    }), true);
   }
 
   function ajouterSection() {
     if (!nouvSection.trim()) return;
-    setFormAutoSave(f => ({ ...f, sections: [...f.sections, { titre: nouvSection.trim(), plats: [] }] }));
+    setFormAndSave(f => ({ ...f, sections: [...f.sections, { titre: nouvSection.trim(), plats: [] }] }));
     setNouvSection(''); setShowAddSection(false);
   }
 
   function supprimerSection(titre) {
     if (!confirm(`Supprimer la section "${titre}" ?`)) return;
-    setFormAutoSave(f => ({ ...f, sections: f.sections.filter(s => s.titre !== titre) }));
+    setFormAndSave(f => ({ ...f, sections: f.sections.filter(s => s.titre !== titre) }));
   }
 
   async function sauvegarder() {

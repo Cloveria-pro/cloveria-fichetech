@@ -45,7 +45,7 @@ router.put('/:id', (req, res) => {
     appendHist({
       user_id: req.userId,
       nom: db[idx].nom,
-      date: new Date().toISOString().slice(0, 10),
+      date: new Date().toISOString(),
       prix: newPrix,
       unite: db[idx].unite,
       fournisseur: req.body.fournisseur || '',
