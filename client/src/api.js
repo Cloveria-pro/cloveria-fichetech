@@ -1,10 +1,10 @@
-const API_URL = 'https://cloveria-fichetech.onrender.com/api';
+export const API_URL = 'https://cloveria-fichetech.onrender.com/api';
 
 function getToken() {
   return localStorage.getItem('token');
 }
 
-function authHeaders() {
+export function authHeaders() {
   const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
@@ -53,7 +53,15 @@ export const api = {
   },
   ia: {
     structurer: (description) => request('/ia/structurer', { method: 'POST', body: JSON.stringify({ description }) })
-  }
+  },
+  aliases: {
+    list: () => request('/aliases'),
+    create: (data) => request('/aliases', { method: 'POST', body: JSON.stringify(data) }),
+  },
+  historiquePrix: {
+    list: (nom) => request('/historique-prix' + (nom ? `?nom=${encodeURIComponent(nom)}` : '')),
+    create: (data) => request('/historique-prix', { method: 'POST', body: JSON.stringify(data) }),
+  },
 };
 
 export function saveToken(token) {

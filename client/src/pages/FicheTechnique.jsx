@@ -358,7 +358,7 @@ export default function FicheTechnique() {
                     </td>
                     <td style={{ padding: '0.6rem 0.75rem' }}>
                       {editMode
-                        ? <input type="number" value={ing.quantite} onChange={e => updateIngredient(idx, { quantite: parseFloat(e.target.value) || 0 })} style={{ ...inputStyle, width: '80px' }} />
+                        ? <input type="number" step="0.001" min="0" value={ing.quantite} onChange={e => updateIngredient(idx, { quantite: parseFloat(e.target.value) || 0 })} style={{ ...inputStyle, width: '80px' }} />
                         : <span style={{ color: scaleFactor !== 1 ? T.gold : T.text, fontWeight: scaleFactor !== 1 ? 600 : 400 }}>{Number.isInteger(qteScaled) ? qteScaled : qteScaled.toFixed(1)}</span>}
                     </td>
                     <td style={{ padding: '0.6rem 0.75rem' }}>
@@ -389,10 +389,10 @@ export default function FicheTechnique() {
                     </td>
                     <td style={{ padding: '0.6rem 0.75rem', color: T.muted, fontSize: '0.82rem' }}>{ing.ingTva}%</td>
                     <td style={{ padding: '0.6rem 0.75rem', color: ing.prixUnitaire === 0 ? T.muted : T.text }}>
-                      {ing.prixUnitaire === 0 ? '—' : ing.coutHT.toFixed(2) + ' EUR'}
+                      {ing.coutHT.toFixed(2) + ' EUR'}
                     </td>
                     <td style={{ padding: '0.6rem 0.75rem', fontWeight: 600, color: ing.prixUnitaire === 0 ? T.muted : T.green }}>
-                      {ing.prixUnitaire === 0 ? '—' : ing.coutTTC.toFixed(2) + ' EUR'}
+                      {ing.coutTTC.toFixed(2) + ' EUR'}
                     </td>
                     {editMode && (
                       <td style={{ padding: '0.6rem 0.75rem' }}>

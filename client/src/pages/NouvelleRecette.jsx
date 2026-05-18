@@ -235,7 +235,7 @@ export default function NouvelleRecette() {
                   />
                 </td>
                 <td style={{ padding: '0.5rem 0.75rem' }}>
-                  <input type="number" value={ing.quantite} onChange={e => updateIngredient(idx, 'quantite', e.target.value)} style={{ ...inputStyle, width: '80px' }} />
+                  <input type="number" step="0.001" min="0" value={ing.quantite} onChange={e => updateIngredient(idx, 'quantite', e.target.value)} style={{ ...inputStyle, width: '80px' }} />
                 </td>
                 <td style={{ padding: '0.5rem 0.75rem' }}>
                   <select value={ing.unite} onChange={e => updateIngredient(idx, 'unite', e.target.value)} style={inputStyle}>

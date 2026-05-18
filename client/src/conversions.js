@@ -31,9 +31,9 @@ const CONVERSIONS = {
 };
 
 export function convertirEnUniteBase(quantite, unite) {
-  return quantite * (CONVERSIONS[unite] || 1);
+  return (parseFloat(quantite) || 0) * (CONVERSIONS[unite] || 1);
 }
 
 export function calculerCoutIngredient(quantite, uniteRecette, prixUnitaire) {
-  return convertirEnUniteBase(quantite, uniteRecette) * prixUnitaire;
+  return convertirEnUniteBase(quantite, uniteRecette) * (parseFloat(prixUnitaire) || 0);
 }

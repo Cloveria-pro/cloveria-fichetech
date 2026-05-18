@@ -1,5 +1,6 @@
 ﻿import { useEffect, useState, useRef } from 'react';
-import { api } from '../api.js';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { api, API_URL, authHeaders } from '../api.js';
 
 const CATEGORIES = ['viande', 'poisson', 'légume', 'produit laitier', 'épice', 'condiment', 'épicerie', 'épicerie fine', 'fruit', 'autre'];
 const UNITES = ['kg', 'L', 'piece', 'g', 'ml', 'botte', 'c.s.', 'c.c.'];
@@ -9,7 +10,7 @@ const TVA_OPTIONS = [
   { value: 20, label: '20%' },
 ];
 
-const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280' };
+const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280', red: '#DC2626' };
 const card = { background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' };
 const inputStyle = { padding: '0.4rem 0.6rem', border: '1px solid #E5E0D8', borderRadius: '6px', fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif", outline: 'none', color: T.text, width: '100%' };
 const BADGE_COLORS = {
@@ -23,10 +24,100 @@ function Badge({ cat }) {
   return <span style={{ fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: '99px', background: bg, color }}>{cat}</span>;
 }
 
-const EMPTY = { nom: '', categorie: 'épicerie', unite: 'kg', prixUnitaire: '', tva: 10 };
+const EMPTY = { nom: '', categorie: 'épicerie', unite: 'kg', prixUnitaire: '', tva: 10, fournisseur: '', fournisseurs: [] };
+
+/* ─── Modal historique des prix ─────────────────────────────────────────── */
+function HistoriqueModal({ item, onClose }) {
+  const [data, setData] = useState([]);
+
+  useEffect(() => {
+    api.historiquePrix.list(item.nom).then(setData).catch(() => {});
+  }, [item.nom]);
+
+  const last = data[data.length - 1];
+
+  function varSince(isoDate) {
+    if (!last) return null;
+    const ref = [...data].find(d => d.date >= isoDate);
+    if (!ref) return null;
+    return (last.prix - ref.prix) / ref.prix * 100;
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const m1 = new Date(); m1.setMonth(m1.getMonth() - 1);
+  const m3 = new Date(); m3.setMonth(m3.getMonth() - 3);
+  const m6 = new Date(); m6.setMonth(m6.getMonth() - 6);
+
+  const stats = [
+    { label: 'vs précédent', val: data.length >= 2 ? (last.prix - data[data.length - 2].prix) / data[data.length - 2].prix * 100 : null },
+    { label: '1 mois', val: varSince(m1.toISOString().slice(0, 10)) },
+    { label: '3 mois', val: varSince(m3.toISOString().slice(0, 10)) },
+    { label: '6 mois', val: varSince(m6.toISOString().slice(0, 10)) },
+  ].filter(s => s.val !== null);
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
+      <div style={{ background: '#fff', borderRadius: '16px', padding: '1.5rem', maxWidth: '580px', width: '92%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text }}>Historique — {item.nom}</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.muted, fontSize: '1.2rem', lineHeight: 1 }}>✕</button>
+        </div>
+
+        {data.length === 0 ? (
+          <p style={{ color: T.muted, fontSize: '0.875rem', fontStyle: 'italic', padding: '1rem 0' }}>
+            Aucun historique. Les variations seront enregistrées à chaque modification de prix.
+          </p>
+        ) : (
+          <>
+            {stats.length > 0 && (
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                {stats.map(({ label, val }) => (
+                  <div key={label} style={{ background: val <= 0 ? '#DCFCE7' : '#FEE2E2', borderRadius: '8px', padding: '0.5rem 0.875rem', textAlign: 'center', minWidth: '80px' }}>
+                    <div style={{ fontSize: '0.65rem', color: T.muted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '2px' }}>{label}</div>
+                    <div style={{ fontSize: '1rem', fontWeight: 700, color: val <= 0 ? '#16a34a' : '#dc2626' }}>
+                      {val <= 0 ? '▼' : '▲'} {Math.abs(val).toFixed(1)}%
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <ResponsiveContainer width="100%" height={180}>
+              <LineChart data={data} margin={{ top: 4, right: 12, left: 0, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#F3EFE8" />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: T.muted }} />
+                <YAxis tick={{ fontSize: 10, fill: T.muted }} domain={['auto', 'auto']} width={48} />
+                <Tooltip formatter={(v, n, p) => [`${v.toFixed(2)} EUR/${p.payload.unite}`, 'Prix']} />
+                <Line type="monotone" dataKey="prix" stroke={T.green} strokeWidth={2} dot={{ r: 3, fill: T.green }} activeDot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '0.75rem', fontSize: '0.82rem' }}>
+              <thead>
+                <tr>
+                  {['Date', 'Prix', 'Fournisseur'].map(h => (
+                    <th key={h} style={{ textAlign: h === 'Prix' ? 'right' : 'left', padding: '4px 8px', color: T.muted, fontWeight: 600, fontSize: '0.68rem', textTransform: 'uppercase', borderBottom: '1px solid #F3EFE8' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[...data].reverse().map((d, i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid #F9F7F4' }}>
+                    <td style={{ padding: '4px 8px', color: T.muted }}>{d.date}</td>
+                    <td style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 700, color: T.green }}>{d.prix.toFixed(2)} EUR/{d.unite}</td>
+                    <td style={{ padding: '4px 8px', color: T.muted }}>{d.fournisseur || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function Ingredients() {
   const [items, setItems] = useState([]);
+  const [undoStack, setUndoStack] = useState([]);
   const [recherche, setRecherche] = useState('');
   const [catFilter, setCatFilter] = useState('');
   const [editId, setEditId] = useState(null);
@@ -37,6 +128,9 @@ export default function Ingredients() {
   const [sortDir, setSortDir] = useState('asc');
   const [missingFromCatalog, setMissingFromCatalog] = useState([]);
   const [showNomSuggestions, setShowNomSuggestions] = useState(false);
+  const [histItem, setHistItem] = useState(null);
+  const autoSaveTimer = useRef(null);
+  const latestEdit = useRef({ id: null, form: {} });
 
   function handleSort(field) {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -58,6 +152,19 @@ export default function Ingredients() {
     });
   }, []);
 
+  function pushUndo(snapshot) {
+    setUndoStack(prev => [...prev.slice(-9), snapshot]);
+  }
+
+  function undo() {
+    if (undoStack.length === 0) return;
+    const prev = undoStack[undoStack.length - 1];
+    setUndoStack(s => s.slice(0, -1));
+    setItems(prev);
+    setEditId(null); setEditForm({});
+    clearTimeout(autoSaveTimer.current);
+  }
+
   const filtered = items
     .filter(i =>
       i.nom.toLowerCase().includes(recherche.toLowerCase()) &&
@@ -72,19 +179,56 @@ export default function Ingredients() {
     });
 
   function startEdit(item) {
+    clearTimeout(autoSaveTimer.current);
+    const form = {
+      nom: item.nom, categorie: item.categorie, unite: item.unite,
+      prixUnitaire: item.prixUnitaire, tva: item.tva ?? 10,
+      fournisseur: item.fournisseur || '',
+      fournisseurs: item.fournisseurs || [],
+    };
     setEditId(item.id);
-    setEditForm({ nom: item.nom, categorie: item.categorie, unite: item.unite, prixUnitaire: item.prixUnitaire, tva: item.tva ?? 10 });
+    setEditForm(form);
+    latestEdit.current = { id: item.id, form };
   }
 
-  function cancelEdit() { setEditId(null); setEditForm({}); }
+  function cancelEdit() {
+    clearTimeout(autoSaveTimer.current);
+    setEditId(null); setEditForm({});
+  }
+
+  function updateEditForm(updater) {
+    setEditForm(prev => {
+      const newForm = typeof updater === 'function' ? updater(prev) : { ...prev, ...updater };
+      latestEdit.current = { id: latestEdit.current.id, form: newForm };
+      clearTimeout(autoSaveTimer.current);
+      autoSaveTimer.current = setTimeout(() => {
+        const { id, form } = latestEdit.current;
+        if (!id) return;
+        api.ingredients.update(id, { ...form, prixUnitaire: parseFloat(form.prixUnitaire) || 0, tva: parseFloat(form.tva) || 10 })
+          .then(updated => {
+            setItems(prev2 => {
+              pushUndo(prev2);
+              return prev2.map(i => i.id === id ? updated : i);
+            });
+          });
+      }, 800);
+      return newForm;
+    });
+  }
 
   function saveEdit(id) {
+    clearTimeout(autoSaveTimer.current);
     api.ingredients.update(id, { ...editForm, prixUnitaire: parseFloat(editForm.prixUnitaire) || 0, tva: parseFloat(editForm.tva) || 10 })
-      .then(updated => { setItems(prev => prev.map(i => i.id === id ? updated : i)); cancelEdit(); });
+      .then(updated => {
+        pushUndo(items);
+        setItems(prev => prev.map(i => i.id === id ? updated : i));
+        cancelEdit();
+      });
   }
 
   function supprimer(id) {
     if (!confirm('Supprimer cet ingrédient ?')) return;
+    pushUndo(items);
     api.ingredients.delete(id).then(() => setItems(prev => prev.filter(i => i.id !== id)));
   }
 
@@ -92,6 +236,7 @@ export default function Ingredients() {
     if (!addForm.nom.trim()) return;
     api.ingredients.create({ ...addForm, prixUnitaire: parseFloat(addForm.prixUnitaire) || 0, tva: parseFloat(addForm.tva) || 10 })
       .then(item => {
+        pushUndo(items);
         setItems(prev => [...prev, item]);
         setMissingFromCatalog(prev => prev.filter(n => n.toLowerCase() !== addForm.nom.toLowerCase()));
         setAddForm(EMPTY);
@@ -105,21 +250,31 @@ export default function Ingredients() {
 
   const thStyle = { padding: '0.6rem 1rem', color: T.muted, fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', borderBottom: '1px solid #F3EFE8', whiteSpace: 'nowrap' };
   const tdStyle = { padding: '0.65rem 1rem', fontSize: '0.875rem', color: T.text, borderBottom: '1px solid #F9F7F4' };
+  const btnSm = { padding: '0.3rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" };
 
   return (
     <div>
+      {histItem && <HistoriqueModal item={histItem} onClose={() => setHistItem(null)} />}
+
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
         <div>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', fontWeight: 700, color: T.text }}>Ingrédients</h1>
           <p style={{ color: T.muted, fontSize: '0.875rem', marginTop: '2px' }}>{items.length} ingrédient{items.length !== 1 ? 's' : ''} dans le catalogue</p>
         </div>
-        <button
-          onClick={() => { setShowAdd(true); setEditId(null); }}
-          style={{ padding: '0.55rem 1.25rem', background: T.green, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
-          onMouseEnter={e => e.currentTarget.style.background = '#1e4d38'}
-          onMouseLeave={e => e.currentTarget.style.background = T.green}
-        >+ Ajouter</button>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          {undoStack.length > 0 && (
+            <button onClick={undo} style={{ ...btnSm, border: '1px solid #E5E0D8', background: '#fff', color: T.text, display: 'flex', alignItems: 'center', gap: '4px' }}>
+              ↩ Annuler
+            </button>
+          )}
+          <button
+            onClick={() => { setShowAdd(true); setEditId(null); }}
+            style={{ padding: '0.55rem 1.25rem', background: T.green, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+            onMouseEnter={e => e.currentTarget.style.background = '#1e4d38'}
+            onMouseLeave={e => e.currentTarget.style.background = T.green}
+          >+ Ajouter</button>
+        </div>
       </div>
 
       {/* Filtres */}
@@ -146,6 +301,7 @@ export default function Ingredients() {
                 { label: 'Catégorie', field: 'categorie' },
                 { label: 'Unité', field: 'unite' },
                 { label: 'Prix unitaire', field: 'prixUnitaire' },
+                { label: 'Fournisseur', field: 'fournisseur' },
               ].map(({ label, field }) => (
                 <th key={field} style={{ ...thStyle, cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort(field)}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
@@ -163,33 +319,41 @@ export default function Ingredients() {
           <tbody>
             {filtered.map(item => (
               editId === item.id ? (
-                <tr key={item.id}>
-                  <td style={tdStyle}><input value={editForm.nom} onChange={e => setEditForm(f => ({ ...f, nom: e.target.value }))} style={inputStyle} /></td>
+                <tr key={item.id} style={{ background: 'rgba(45,106,79,0.03)' }}>
+                  <td style={tdStyle}><input value={editForm.nom} onChange={e => updateEditForm(f => ({ ...f, nom: e.target.value }))} style={inputStyle} /></td>
                   <td style={tdStyle}>
-                    <select value={editForm.categorie} onChange={e => setEditForm(f => ({ ...f, categorie: e.target.value }))} style={inputStyle}>
+                    <select value={editForm.categorie} onChange={e => updateEditForm(f => ({ ...f, categorie: e.target.value }))} style={inputStyle}>
                       {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </td>
                   <td style={tdStyle}>
-                    <select value={editForm.unite} onChange={e => setEditForm(f => ({ ...f, unite: e.target.value }))} style={inputStyle}>
+                    <select value={editForm.unite} onChange={e => updateEditForm(f => ({ ...f, unite: e.target.value }))} style={inputStyle}>
                       {UNITES.map(u => <option key={u} value={u}>{u}</option>)}
                     </select>
                   </td>
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <input type="number" step="0.01" value={editForm.prixUnitaire} onChange={e => setEditForm(f => ({ ...f, prixUnitaire: e.target.value }))} style={{ ...inputStyle, width: '90px' }} />
+                      <input type="number" step="0.01" value={editForm.prixUnitaire} onChange={e => updateEditForm(f => ({ ...f, prixUnitaire: e.target.value }))} style={{ ...inputStyle, width: '90px' }} />
                       <span style={{ color: T.muted, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>EUR / {editForm.unite}</span>
                     </div>
                   </td>
                   <td style={tdStyle}>
-                    <select value={editForm.tva ?? 10} onChange={e => setEditForm(f => ({ ...f, tva: parseFloat(e.target.value) }))} style={{ ...inputStyle, width: '70px' }}>
+                    <input
+                      placeholder="ex: Metro"
+                      value={editForm.fournisseur}
+                      onChange={e => updateEditForm(f => ({ ...f, fournisseur: e.target.value }))}
+                      style={{ ...inputStyle, width: '110px' }}
+                    />
+                  </td>
+                  <td style={tdStyle}>
+                    <select value={editForm.tva ?? 10} onChange={e => updateEditForm(f => ({ ...f, tva: parseFloat(e.target.value) }))} style={{ ...inputStyle, width: '70px' }}>
                       {TVA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>
                     <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                      <button onClick={cancelEdit} style={{ padding: '0.3rem 0.8rem', borderRadius: '6px', border: '1px solid #E5E0D8', background: '#fff', cursor: 'pointer', fontSize: '0.8rem' }}>Annuler</button>
-                      <button onClick={() => saveEdit(item.id)} style={{ padding: '0.3rem 0.8rem', borderRadius: '6px', border: 'none', background: T.green, color: '#fff', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Sauver</button>
+                      <button onClick={cancelEdit} style={{ ...btnSm, border: '1px solid #E5E0D8', background: '#fff' }}>Annuler</button>
+                      <button onClick={() => saveEdit(item.id)} style={{ ...btnSm, border: 'none', background: T.green, color: '#fff', fontWeight: 600 }}>Sauver</button>
                     </div>
                   </td>
                 </tr>
@@ -206,19 +370,29 @@ export default function Ingredients() {
                     <span style={{ color: T.muted, fontSize: '0.8rem', marginLeft: '4px' }}>EUR / {item.unite}</span>
                   </td>
                   <td style={{ ...tdStyle, color: T.muted, fontSize: '0.82rem' }}>
+                    {item.fournisseur || <span style={{ color: '#D1C4B0' }}>—</span>}
+                  </td>
+                  <td style={{ ...tdStyle, color: T.muted, fontSize: '0.82rem' }}>
                     {(item.tva ?? 10) + '%'}
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'right' }} onClick={e => e.stopPropagation()}>
-                    <button onClick={() => supprimer(item.id)} style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '1rem', padding: '2px 6px', borderRadius: '4px' }}
-                      onMouseEnter={e => e.currentTarget.style.color = '#DC2626'}
-                      onMouseLeave={e => e.currentTarget.style.color = '#D1C4B0'}
-                    >✕</button>
+                    <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                      <button
+                        onClick={() => setHistItem(item)}
+                        style={{ ...btnSm, border: '1px solid #E5E0D8', background: '#fff', color: T.muted, fontSize: '0.75rem' }}
+                        title="Historique des prix"
+                      >Hist.</button>
+                      <button onClick={() => supprimer(item.id)} style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '1rem', padding: '2px 6px', borderRadius: '4px' }}
+                        onMouseEnter={e => e.currentTarget.style.color = '#DC2626'}
+                        onMouseLeave={e => e.currentTarget.style.color = '#D1C4B0'}
+                      >✕</button>
+                    </div>
                   </td>
                 </tr>
               )
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={6} style={{ ...tdStyle, textAlign: 'center', color: T.muted, padding: '2rem' }}>Aucun ingrédient trouvé</td></tr>
+              <tr><td colSpan={7} style={{ ...tdStyle, textAlign: 'center', color: T.muted, padding: '2rem' }}>Aucun ingrédient trouvé</td></tr>
             )}
           </tbody>
           {/* Formulaire ajout */}
@@ -226,15 +400,13 @@ export default function Ingredients() {
             <tfoot>
               {showNomSuggestions && nomSuggestions.length > 0 && (
                 <tr style={{ background: '#FFFBF5', borderTop: '1px solid #F3EFE8' }}>
-                  <td colSpan={6} style={{ padding: '0.5rem 1rem' }}>
+                  <td colSpan={7} style={{ padding: '0.5rem 1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '0.72rem', color: '#9CA3AF', whiteSpace: 'nowrap' }}>Utilisé dans des fiches :</span>
                       {nomSuggestions.map(name => (
-                        <button
-                          key={name}
-                          type="button"
+                        <button key={name} type="button"
                           onMouseDown={() => { setAddForm(f => ({ ...f, nom: name })); setShowNomSuggestions(false); }}
-                          style={{ padding: '2px 8px', borderRadius: '4px', background: '#FFF7ED', color: '#9A3412', border: '1px solid #FED7AA', fontSize: '0.72rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '3px' }}
+                          style={{ padding: '2px 8px', borderRadius: '4px', background: '#FFF7ED', color: '#9A3412', border: '1px solid #FED7AA', fontSize: '0.72rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
                         >⚠️ {name}</button>
                       ))}
                     </div>
@@ -243,15 +415,11 @@ export default function Ingredients() {
               )}
               <tr style={{ background: 'rgba(45,106,79,0.04)', borderTop: '2px solid #E5E0D8' }}>
                 <td style={{ padding: '0.75rem 1rem' }}>
-                  <input
-                    placeholder="Nom de l'ingrédient *"
-                    value={addForm.nom}
+                  <input placeholder="Nom *" value={addForm.nom}
                     onChange={e => { setAddForm(f => ({ ...f, nom: e.target.value })); setShowNomSuggestions(true); }}
                     onFocus={() => setShowNomSuggestions(true)}
                     onBlur={() => setTimeout(() => setShowNomSuggestions(false), 150)}
-                    style={inputStyle}
-                    autoFocus
-                  />
+                    style={inputStyle} autoFocus />
                 </td>
                 <td style={{ padding: '0.75rem 1rem' }}>
                   <select value={addForm.categorie} onChange={e => setAddForm(f => ({ ...f, categorie: e.target.value }))} style={inputStyle}>
@@ -265,9 +433,14 @@ export default function Ingredients() {
                 </td>
                 <td style={{ padding: '0.75rem 1rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <input type="number" step="0.01" placeholder="0.00" value={addForm.prixUnitaire} onChange={e => setAddForm(f => ({ ...f, prixUnitaire: e.target.value }))} style={{ ...inputStyle, width: '90px' }} />
+                    <input type="number" step="0.01" placeholder="0.00" value={addForm.prixUnitaire}
+                      onChange={e => setAddForm(f => ({ ...f, prixUnitaire: e.target.value }))} style={{ ...inputStyle, width: '90px' }} />
                     <span style={{ color: T.muted, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>EUR / {addForm.unite}</span>
                   </div>
+                </td>
+                <td style={{ padding: '0.75rem 1rem' }}>
+                  <input placeholder="Fournisseur" value={addForm.fournisseur}
+                    onChange={e => setAddForm(f => ({ ...f, fournisseur: e.target.value }))} style={{ ...inputStyle, width: '110px' }} />
                 </td>
                 <td style={{ padding: '0.75rem 1rem' }}>
                   <select value={addForm.tva ?? 10} onChange={e => setAddForm(f => ({ ...f, tva: parseFloat(e.target.value) }))} style={{ ...inputStyle, width: '70px' }}>
@@ -276,8 +449,8 @@ export default function Ingredients() {
                 </td>
                 <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
                   <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                    <button onClick={() => setShowAdd(false)} style={{ padding: '0.3rem 0.8rem', borderRadius: '6px', border: '1px solid #E5E0D8', background: '#fff', cursor: 'pointer', fontSize: '0.8rem' }}>Annuler</button>
-                    <button onClick={ajouter} style={{ padding: '0.3rem 0.8rem', borderRadius: '6px', border: 'none', background: T.green, color: '#fff', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Ajouter</button>
+                    <button onClick={() => setShowAdd(false)} style={{ ...btnSm, border: '1px solid #E5E0D8', background: '#fff' }}>Annuler</button>
+                    <button onClick={ajouter} style={{ ...btnSm, border: 'none', background: T.green, color: '#fff', fontWeight: 600 }}>Ajouter</button>
                   </div>
                 </td>
               </tr>
@@ -312,7 +485,7 @@ function ImportFacture({ items, setItems }) {
   const inStyle = { border: '1px solid #E5E0D8', borderRadius: '4px', padding: '0.3rem 0.5rem', fontSize: '0.82rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' };
 
   useEffect(() => {
-    fetch('/api/aliases').then(r => r.json()).then(setAliases).catch(() => {});
+    api.aliases.list().then(setAliases).catch(() => {});
   }, []);
 
   function resolveAlias(nom) {
@@ -333,7 +506,7 @@ function ImportFacture({ items, setItems }) {
     const fd = new FormData();
     fd.append('facture', file);
     try {
-      const res = await fetch('/api/ia/analyser-facture', { method: 'POST', body: fd });
+      const res = await fetch(`${API_URL}/ia/analyser-facture`, { method: 'POST', headers: { ...authHeaders() }, body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erreur serveur');
       const produits = (data.produits || []).map((p, i) => {
@@ -375,30 +548,21 @@ function ImportFacture({ items, setItems }) {
       if (p._action === 'associate' && p._associateId) {
         const existant = items.find(i => i.id === p._associateId);
         if (existant) {
-          const updated = await fetch('/api/ingredients/' + existant.id, {
-            method: 'PUT', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...existant, prixUnitaire: p.prix_unitaire }),
-          }).then(r => r.json());
+          const updated = await api.ingredients.update(existant.id, { ...existant, prixUnitaire: p.prix_unitaire });
           setItems(prev => prev.map(i => i.id === existant.id ? updated : i));
           if (existant.nom.toLowerCase() !== p.nom.toLowerCase()) {
             newAliases.push({ from: p.nom, to: existant.nom });
           }
         }
       } else {
-        const item = await fetch('/api/ingredients', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nom: p.nom, categorie: 'épicerie', unite: p.unite || 'kg', prixUnitaire: p.prix_unitaire }),
-        }).then(r => r.json());
+        const item = await api.ingredients.create({ nom: p.nom, categorie: 'épicerie', unite: p.unite || 'kg', prixUnitaire: p.prix_unitaire });
         setItems(prev => [...prev, item]);
       }
       count++;
     }
 
     for (const a of newAliases) {
-      await fetch('/api/aliases', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(a),
-      });
+      await api.aliases.create(a);
     }
     if (newAliases.length > 0) setAliases(prev => [...prev, ...newAliases]);
 

@@ -2,6 +2,7 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
 import { coutIng } from '../utils.js';
+import { api } from '../api.js';
 
 const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280', red: '#DC2626' };
 const card = { background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' };
@@ -153,12 +154,14 @@ function EditeurCarte({ carte, recettes, onSave, onBack }) {
   async function sauvegarder() {
     if (!form.nom.trim()) return alert('Le nom est obligatoire.');
     setSaving(true);
-    const method = carte ? 'PUT' : 'POST';
-    const url = carte ? '/api/cartes/' + carte.id : '/api/cartes';
-    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
-    const saved = await res.json();
-    onSave(saved, !carte);
-    setSaving(false);
+    try {
+      const saved = carte
+        ? await api.cartes.update(carte.id, form)
+        : await api.cartes.create(form);
+      onSave(saved, !carte);
+    } finally {
+      setSaving(false);
+    }
   }
 
   const inputSm = { ...inputStyle, padding: '0.35rem 0.6rem', fontSize: '0.82rem' };
@@ -292,8 +295,8 @@ export default function Cartes() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/cartes').then(r => r.json()),
-      fetch('/api/recettes').then(r => r.json()),
+      api.cartes.list().catch(() => []),
+      api.recettes.list().catch(() => []),
     ]).then(([c, r]) => { setCartes(c); setRecettes(r); });
   }, []);
 
@@ -306,7 +309,7 @@ export default function Cartes() {
 
   function handleDelete(id) {
     if (!confirm('Supprimer cette carte ?')) return;
-    fetch('/api/cartes/' + id, { method: 'DELETE' }).then(() =>
+    api.cartes.delete(id).then(() =>
       setCartes(prev => prev.filter(c => c.id !== id))
     );
   }
