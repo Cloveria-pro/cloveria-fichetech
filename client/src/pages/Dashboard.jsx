@@ -163,7 +163,7 @@ export default function Dashboard() {
       {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
 
       {/* ── Bloc 1 — Hero card ─────────────────────────────────────────────── */}
-      <div style={{ ...card, padding: '2rem 2.5rem', marginBottom: '1.5rem' }}>
+      <div style={{ ...card, padding: '2rem 0 2rem 2.5rem', marginBottom: '1.5rem', overflow: 'hidden' }}>
         <div style={{ display: 'flex', alignItems: 'stretch', flexDirection: isMobile ? 'column' : 'row' }}>
 
           {/* Colonne gauche */}
@@ -262,20 +262,24 @@ export default function Dashboard() {
 
           {/* Photo champ de trèfles — desktop uniquement */}
           {!isMobile && (
-            <div style={{ flexShrink: 0, paddingLeft: '1.5rem', display: 'flex', alignItems: 'center' }}>
+            <div style={{ flexShrink: 0, width: '260px', position: 'relative', overflow: 'hidden', marginLeft: '2rem' }}>
               <img
-                src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&q=80"
+                src="/clover-field.jpg"
                 alt=""
-                style={{
-                  width: '220px',
-                  height: '180px',
-                  objectFit: 'cover',
-                  borderRadius: '12px',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.10)',
-                  filter: 'brightness(0.9) saturate(1.2)',
-                  display: 'block',
-                }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
               />
+              {/* Dégradé transition douce depuis le contenu texte */}
+              <div style={{
+                position: 'absolute', inset: 0,
+                background: 'linear-gradient(to right, #ffffff 0%, transparent 30%)',
+                pointerEvents: 'none',
+              }} />
+              {/* Ombre intérieure gauche — effet de profondeur */}
+              <div style={{
+                position: 'absolute', inset: 0,
+                boxShadow: 'inset 12px 0 20px rgba(0,0,0,0.07)',
+                pointerEvents: 'none',
+              }} />
             </div>
           )}
 
