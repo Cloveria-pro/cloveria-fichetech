@@ -1,5 +1,4 @@
 ﻿import { useEffect, useState } from 'react';
-import { api } from '../api.js';
 
 const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280', orange: '#D97706', red: '#DC2626' };
 const card = { background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' };
@@ -25,44 +24,6 @@ export default function Parametres() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
     }).then(() => { setSaved(true); setTimeout(() => setSaved(false), 3000); });
-  }
-
-  async function exportData(fetcher, filename, type) {
-    try {
-      const data = await fetcher();
-      const blob = new Blob([data], { type });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = filename; a.click();
-      URL.revokeObjectURL(url);
-    } catch { alert('Erreur lors de l\'export'); }
-  }
-
-  function exportIngredients() {
-    return exportData(async () => {
-      const data = await api.ingredients.list();
-      const header = 'nom,unite,prix,fournisseur,tva,rendement\n';
-      const rows = data.map(i =>
-        [i.nom, i.unite ?? '', i.prixUnitaire ?? 0, i.fournisseur ?? '', i.tva ?? '', i.rendement ?? '']
-          .map(v => `"${String(v).replace(/"/g, '""')}"`)
-          .join(',')
-      ).join('\n');
-      return header + rows;
-    }, 'ingredients.csv', 'text/csv;charset=utf-8;');
-  }
-
-  function exportFiches() {
-    return exportData(
-      async () => JSON.stringify(await api.recettes.list(), null, 2),
-      'fiches-techniques.json', 'application/json'
-    );
-  }
-
-  function exportVentes() {
-    return exportData(
-      async () => JSON.stringify(await api.ventes.list(), null, 2),
-      'ventes-imports.json', 'application/json'
-    );
   }
 
   const cible = form.foodCostCible;
@@ -183,36 +144,6 @@ export default function Parametres() {
         </div>
       </form>
 
-      {/* Mes données */}
-      <div style={{ ...card, padding: '1.5rem', marginTop: '1rem' }}>
-        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, color: T.text, marginBottom: '0.4rem' }}>Mes données</h3>
-        <p style={{ fontSize: '0.82rem', color: T.muted, marginBottom: '1.25rem', marginTop: 0 }}>
-          Exportez vos données pour les sauvegarder ou les utiliser dans un autre outil.
-        </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-          {[
-            { label: 'Ingrédients', desc: 'nom, unité, prix, fournisseur, TVA, rendement', ext: 'CSV', fn: exportIngredients },
-            { label: 'Fiches techniques', desc: 'toutes les recettes complètes', ext: 'JSON', fn: exportFiches },
-            { label: 'Ventes importées', desc: 'tous les imports enregistrés', ext: 'JSON', fn: exportVentes },
-          ].map(({ label, desc, ext, fn }) => (
-            <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.875rem 1rem', background: '#FAFAF8', borderRadius: '8px', border: '1px solid #F3EFE8', gap: '1rem', flexWrap: 'wrap' }}>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: '0.875rem', color: T.text }}>{label}</div>
-                <div style={{ fontSize: '0.75rem', color: T.muted, marginTop: '2px' }}>{desc}</div>
-              </div>
-              <button
-                type="button"
-                onClick={fn}
-                style={{ flexShrink: 0, padding: '0.45rem 1rem', background: '#fff', color: T.green, border: '1px solid #2D6A4F', borderRadius: '7px', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap', transition: 'all 0.12s' }}
-                onMouseEnter={e => { e.currentTarget.style.background = T.green; e.currentTarget.style.color = '#fff'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = T.green; }}
-              >
-                ↓ Export {ext}
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

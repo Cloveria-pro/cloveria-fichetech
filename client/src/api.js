@@ -94,6 +94,11 @@ export const api = {
     update: (id, data) => request(`/sous-recettes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => request(`/sous-recettes/${id}`, { method: 'DELETE' }),
   },
+  documents: {
+    list: (type) => request(`/documents/${type}`),
+    getFile: (type, id) => request(`/documents/${type}/${id}/file`),
+    delete: (type, id) => request(`/documents/${type}/${id}`, { method: 'DELETE' }),
+  },
 };
 
 export function saveToken(token) {

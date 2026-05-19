@@ -84,6 +84,8 @@ RÈGLES ABSOLUES :
 router.post('/analyser-ventes', uploadVentes.single('ventes'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Fichier manquant' });
 
+  const fileBase64 = req.file.buffer.toString('base64');
+
   const VISUAL_MIMES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
   const isVisual = VISUAL_MIMES.includes(req.file.mimetype) || /\.(pdf|jpg|jpeg|png|webp)$/i.test(req.file.originalname);
 
@@ -125,7 +127,20 @@ router.post('/analyser-ventes', uploadVentes.single('ventes'), async (req, res) 
     const text = message.content[0].text;
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return res.status(422).json({ error: 'Réponse IA invalide', raw: text });
-    res.json({ ...JSON.parse(jsonMatch[0]), nomFichier: req.file.originalname });
+    const parsed = JSON.parse(jsonMatch[0]);
+    getDb().then(db => {
+      const doc = {
+        id: uuidv4(), user_id: req.userId,
+        nomFichier: req.file.originalname,
+        fileBase64,
+        fileMimeType: req.file.mimetype,
+        dateImport: new Date().toISOString(),
+        statut: 'validé',
+        lignesCount: (parsed.lignes || []).length,
+      };
+      db.collection('documents_ventes').insertOne(doc).catch(() => {});
+    }).catch(() => {});
+    res.json({ ...parsed, nomFichier: req.file.originalname });
   } catch (err) {
     console.error('IA analyser-ventes error:', err.message);
     res.status(500).json({ error: err.message });
@@ -177,6 +192,8 @@ RÈGLES ABSOLUES :
       const meta = {
         id: uuidv4(), user_id: req.userId,
         nomFichier: req.file.originalname,
+        fileBase64: base64,
+        fileMimeType: req.file.mimetype,
         dateImport: new Date().toISOString(),
         statut: 'validé', version: 1,
         nomPlat: result.nom || null,
@@ -218,6 +235,8 @@ router.post('/analyser-facture', upload.single('facture'), async (req, res) => {
       const meta = {
         id: uuidv4(), user_id: req.userId,
         nomFichier: req.file.originalname,
+        fileBase64: base64,
+        fileMimeType: req.file.mimetype,
         dateImport: new Date().toISOString(),
         statut: 'validé',
         fournisseur: req.body?.fournisseur || null,
