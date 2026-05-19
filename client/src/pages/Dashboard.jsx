@@ -260,24 +260,17 @@ export default function Dashboard() {
 
           </div>
 
-          {/* Photo champ de trèfles — desktop uniquement */}
+          {/* Champ de trèfles — desktop uniquement */}
           {!isMobile && (
-            <div style={{ flexShrink: 0, width: '260px', position: 'relative', overflow: 'hidden', marginLeft: '2rem' }}>
+            <div style={{ flexShrink: 0, width: '260px', height: '100%', overflow: 'hidden', borderRadius: '0 16px 16px 0', position: 'relative' }}>
               <img
-                src="/clover-field.jpg"
+                src="/clover.png"
                 alt=""
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', filter: 'brightness(1.05) saturate(1.1)' }}
               />
-              {/* Dégradé transition douce depuis le contenu texte */}
               <div style={{
                 position: 'absolute', inset: 0,
-                background: 'linear-gradient(to right, #ffffff 0%, transparent 30%)',
-                pointerEvents: 'none',
-              }} />
-              {/* Ombre intérieure gauche — effet de profondeur */}
-              <div style={{
-                position: 'absolute', inset: 0,
-                boxShadow: 'inset 12px 0 20px rgba(0,0,0,0.07)',
+                background: 'linear-gradient(to right, white 0%, transparent 35%)',
                 pointerEvents: 'none',
               }} />
             </div>
