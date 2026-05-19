@@ -112,6 +112,11 @@ export default function FicheTechnique() {
       setAliases(aliasesData);
       setSousRecettes(srsData);
       console.log('[FicheTechnique] data loaded:', data);
+      console.log('[FicheTechnique] ingredients cost debug:', (data.ingredients || []).map(i => ({
+        nom: i.nom, quantite: i.quantite, unite: i.unite, prixUnitaire: i.prixUnitaire,
+        cout: (i.quantite * ({ kg:1,g:0.001,mg:0.000001,L:1,l:1,ml:0.001,cl:0.01,'c.c.':0.005,'c.s.':0.015 }[i.unite] || 1) * i.prixUnitaire).toFixed(4) + ' EUR',
+        interpretation: `${i.prixUnitaire} EUR/${{ kg:'kg',g:'kg',mg:'kg',L:'L',l:'L',ml:'L',cl:'L','c.c.':'L','c.s.':'L' }[i.unite] || i.unite}`,
+      })));
       const etapes = Array.isArray(data.etapes) ? data.etapes
         : typeof data.etapes === 'string' ? data.etapes.split('\n').map(s => s.trim()).filter(Boolean)
         : [];
@@ -130,12 +135,22 @@ export default function FicheTechnique() {
       .then(data => { setRecette(data); setForm(data); setEditMode(false); });
   }
 
-  function handlePhotoUpload(file) {
+  function handlePhotoUpload(file, saveImmediately = false) {
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) { alert('Photo trop volumineuse (max 10 Mo)'); return; }
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { alert('Format non supporté. Utilisez JPEG, PNG ou WebP.'); return; }
     const reader = new FileReader();
-    reader.onload = e => setForm(f => ({ ...f, photo: e.target.result }));
+    reader.onload = e => {
+      const photo = e.target.result;
+      if (saveImmediately) {
+        const updated = { ...form, photo };
+        setForm(updated);
+        setRecette(prev => ({ ...prev, photo }));
+        api.recettes.update(id, updated).catch(() => {});
+      } else {
+        setForm(f => ({ ...f, photo }));
+      }
+    };
     reader.readAsDataURL(file);
   }
 
@@ -453,6 +468,15 @@ export default function FicheTechnique() {
         <div style={{ marginBottom: '1.5rem', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
           <img src={recette.photo} alt={recette.nom} style={{ width: '100%', height: '220px', objectFit: 'cover', display: 'block' }} />
         </div>
+      )}
+      {!editMode && !recette.photo && (
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginBottom: '1.25rem', cursor: 'pointer', color: T.muted, fontSize: '0.82rem', fontWeight: 500, padding: '0.4rem 0.9rem', borderRadius: '6px', border: '1px dashed #D1C4B0', background: 'transparent', transition: 'all 0.15s' }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = T.green; e.currentTarget.style.color = T.green; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = '#D1C4B0'; e.currentTarget.style.color = T.muted; }}
+        >
+          📷 Ajouter une photo
+          <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={e => handlePhotoUpload(e.target.files[0], true)} />
+        </label>
       )}
       {editMode && (
         <div style={{ marginBottom: '1.5rem' }}>

@@ -5,6 +5,12 @@ import { calculerCoutIngredient } from '../conversions.js';
 
 function norm(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim(); }
 
+function baseUnit(unite) {
+  if (['kg', 'g', 'mg'].includes(unite)) return 'kg';
+  if (['L', 'l', 'ml', 'cl', 'c.c.', 'c.s.', 'càc', 'càs'].includes(unite)) return 'L';
+  return unite;
+}
+
 const CATEGORIES = ['viande', 'poisson', 'légume', 'produit laitier', 'épice', 'condiment', 'épicerie', 'épicerie fine', 'fruit', 'autre'];
 const UNITES = ['kg', 'L', 'piece', 'g', 'ml', 'botte', 'c.s.', 'c.c.'];
 const TVA_OPTIONS = [
@@ -556,7 +562,7 @@ export default function Ingredients() {
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <input type="number" step="0.01" value={editForm.prixUnitaire} onChange={e => updateEditForm(f => ({ ...f, prixUnitaire: e.target.value }))} style={{ ...inputStyle, width: '90px' }} />
-                      <span style={{ color: T.muted, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>EUR / {editForm.unite}</span>
+                      <span style={{ color: T.muted, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>EUR / {baseUnit(editForm.unite)}</span>
                     </div>
                   </td>
                   <td style={tdStyle}>
@@ -597,7 +603,7 @@ export default function Ingredients() {
                   <td style={{ ...tdStyle, color: T.muted }}>{item.unite}</td>
                   <td style={tdStyle}>
                     <span style={{ fontWeight: 700, color: T.green }}>{item.prixUnitaire.toFixed(2)}</span>
-                    <span style={{ color: T.muted, fontSize: '0.8rem', marginLeft: '4px' }}>EUR / {item.unite}</span>
+                    <span style={{ color: T.muted, fontSize: '0.8rem', marginLeft: '4px' }}>EUR / {baseUnit(item.unite)}</span>
                   </td>
                   <td style={{ ...tdStyle, color: T.muted, fontSize: '0.82rem' }}>
                     {item.fournisseur || <span style={{ color: '#D1C4B0' }}>—</span>}
@@ -709,7 +715,7 @@ export default function Ingredients() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <input type="number" step="0.01" placeholder="0.00" value={addForm.prixUnitaire}
                       onChange={e => setAddForm(f => ({ ...f, prixUnitaire: e.target.value }))} style={{ ...inputStyle, width: '90px' }} />
-                    <span style={{ color: T.muted, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>EUR / {addForm.unite}</span>
+                    <span style={{ color: T.muted, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>EUR / {baseUnit(addForm.unite)}</span>
                   </div>
                 </td>
                 <td style={{ padding: '0.75rem 1rem' }}>
@@ -910,7 +916,7 @@ function ImportFacture({ items, setItems }) {
   };
 
   return (
-    <div style={{ marginTop: '2.5rem' }}>
+    <div style={{ marginTop: '2.5rem', marginBottom: '2.5rem' }}>
       {toast && (
         <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', background: '#2D6A4F', color: '#fff', padding: '0.75rem 1.5rem', borderRadius: '8px', fontWeight: 600, fontSize: '0.9rem', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', zIndex: 500 }}>
           {toast}

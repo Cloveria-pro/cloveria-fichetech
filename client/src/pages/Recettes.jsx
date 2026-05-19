@@ -233,18 +233,30 @@ export default function Recettes() {
             style={{ ...selectStyle, width: '220px', cursor: 'text' }}
           />
           <button
-            onClick={() => setShowImport(true)}
-            style={{ padding: '0.65rem 1.5rem', background: '#fff', color: T.green, borderRadius: '8px', fontWeight: 700, fontSize: '0.95rem', fontFamily: "'DM Sans', sans-serif", border: `2px solid ${T.green}`, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(45,106,79,0.06)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}
-          >↑ Importer une fiche</button>
-          <button
             onClick={() => navigate('/fiches-techniques/nouvelle')}
             style={{ padding: '0.65rem 1.5rem', background: T.green, color: '#fff', borderRadius: '8px', fontWeight: 700, fontSize: '0.95rem', fontFamily: "'DM Sans', sans-serif", border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
             onMouseEnter={e => e.currentTarget.style.background = '#1e4d38'}
             onMouseLeave={e => e.currentTarget.style.background = T.green}
           >+ Nouvelle fiche</button>
         </div>
+      </div>
+
+      {/* Bloc import fiche IA */}
+      <div
+        onClick={() => setShowImport(true)}
+        style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 1.25rem', marginBottom: '1.25rem', background: 'linear-gradient(135deg, rgba(45,106,79,0.05) 0%, rgba(45,106,79,0.02) 100%)', border: '1.5px solid rgba(45,106,79,0.18)', borderRadius: '12px', cursor: 'pointer', transition: 'border-color 0.15s' }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = T.green; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(45,106,79,0.09) 0%, rgba(45,106,79,0.04) 100%)'; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(45,106,79,0.18)'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(45,106,79,0.05) 0%, rgba(45,106,79,0.02) 100%)'; }}
+      >
+        <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: T.green, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.25rem' }}>📄</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+            <span style={{ fontWeight: 700, fontSize: '0.9rem', color: T.text }}>Importer une fiche technique</span>
+            <span style={{ fontSize: '0.65rem', background: 'rgba(201,168,76,0.15)', color: '#8B6914', border: '1px solid rgba(201,168,76,0.3)', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, letterSpacing: '0.04em' }}>IA</span>
+          </div>
+          <p style={{ margin: 0, fontSize: '0.78rem', color: T.muted }}>Scannez une fiche papier ou PDF — l'IA extrait les ingrédients, les quantités et les étapes automatiquement</p>
+        </div>
+        <span style={{ color: T.green, fontSize: '1.1rem', flexShrink: 0, fontWeight: 700 }}>→</span>
       </div>
 
       {/* Filtre par statut */}
