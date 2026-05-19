@@ -370,15 +370,20 @@ export default function Dashboard() {
 
       {/* ── Colonne droite — photo sticky ──────────────────────────────────── */}
       {!isMobile && !isTablet && (
-        <div style={{ flexShrink: 0, width: '300px', position: 'sticky', top: 0, height: '100vh', alignSelf: 'flex-start', boxShadow: '-4px 0 24px rgba(0,0,0,0.08)', borderRadius: '16px', overflow: 'hidden' }}>
+        <div style={{ flexShrink: 0, width: '320px', position: 'sticky', top: 0, height: '100vh', alignSelf: 'flex-start', borderRadius: '24px 0 0 24px', overflow: 'hidden', boxShadow: '-8px 0 40px rgba(0,0,0,0.12)' }}>
           <img
             src="/clover.png"
             alt=""
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', filter: 'saturate(1.3) brightness(0.95) contrast(1.05)' }}
           />
           <div style={{
             position: 'absolute', inset: 0,
-            background: 'linear-gradient(to right, white 0%, transparent 25%)',
+            background: 'linear-gradient(to right, #F8F6F1 0%, transparent 30%)',
+            pointerEvents: 'none',
+          }} />
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, transparent 40%, transparent 60%, rgba(0,0,0,0.25) 100%)',
             pointerEvents: 'none',
           }} />
         </div>
