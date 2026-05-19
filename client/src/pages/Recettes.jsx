@@ -140,6 +140,7 @@ export default function Recettes() {
   const [loading, setLoading] = useState(true);
   const [recherche, setRecherche] = useState('');
   const [carteFilter, setCarteFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [sectionsOpen, setSectionsOpen] = useState({});
   const navigate = useNavigate();
 
@@ -167,6 +168,16 @@ export default function Recettes() {
     setSectionsOpen(prev => ({ ...prev, [name]: !(prev[name] ?? true) }));
   }
 
+  function getStatus(r) {
+    const cpTTC = coutPortionTTC(r);
+    const pvTTC = r.prixVentePratiqueTTC || 0;
+    const fc = calculerFoodCost(cpTTC, pvTTC);
+    if (fc === null) return 'sans-prix';
+    if (fc < params.foodCostCible) return 'Rentable';
+    if (fc < params.foodCostCible + 5) return 'Acceptable';
+    return 'À retravailler';
+  }
+
   // Filtre par carte : récupère les IDs de recettes dans la carte sélectionnée
   const carteRecettesIds = carteFilter
     ? new Set((cartes.find(c => c.id === carteFilter)?.sections || []).flatMap(s => (s.plats || []).map(p => p.recetteId)))
@@ -175,7 +186,8 @@ export default function Recettes() {
   const filtrees = recettes.filter(r => {
     const matchRecherche = !recherche || r.nom.toLowerCase().includes(recherche.toLowerCase()) || (r.categorie || '').toLowerCase().includes(recherche.toLowerCase());
     const matchCarte = !carteFilter || carteRecettesIds?.has(r.id);
-    return matchRecherche && matchCarte;
+    const matchStatus = !statusFilter || getStatus(r) === statusFilter;
+    return matchRecherche && matchCarte && matchStatus;
   });
 
   const grouped = Object.fromEntries(SECTIONS.map(s => [s, []]));
@@ -224,6 +236,35 @@ export default function Recettes() {
             onMouseLeave={e => e.currentTarget.style.background = T.green}
           >+ Nouvelle fiche</button>
         </div>
+      </div>
+
+      {/* Filtre par statut */}
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+        {[
+          { value: '', label: 'Tous', color: T.muted, bg: '#F8F6F1', border: '#E5E0D8' },
+          { value: 'Rentable', label: 'Rentable', color: '#16a34a', bg: '#DCFCE7', border: '#86EFAC' },
+          { value: 'Acceptable', label: 'Acceptable', color: '#d97706', bg: '#FEF3C7', border: '#FCD34D' },
+          { value: 'À retravailler', label: 'À retravailler', color: '#dc2626', bg: '#FEE2E2', border: '#FCA5A5' },
+          { value: 'sans-prix', label: 'Sans prix', color: T.muted, bg: '#F1F5F9', border: '#CBD5E1' },
+        ].map(opt => {
+          const active = statusFilter === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => setStatusFilter(opt.value)}
+              style={{
+                padding: '0.3rem 0.9rem', borderRadius: '99px', fontSize: '0.78rem', fontWeight: active ? 700 : 500,
+                cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+                background: active ? opt.bg : '#fff',
+                color: active ? opt.color : T.muted,
+                border: `1px solid ${active ? opt.border : '#E5E0D8'}`,
+                transition: 'all 0.12s',
+              }}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
       </div>
 
       {filtrees.length === 0 && (

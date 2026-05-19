@@ -515,7 +515,7 @@ export default function Ingredients() {
                 </th>
               ))}
               <th style={thStyle}>TVA</th>
-              <th style={thStyle}>Rendement</th>
+              <th style={thStyle}>Rendement matière (%)</th>
               <th style={{ ...thStyle, textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>

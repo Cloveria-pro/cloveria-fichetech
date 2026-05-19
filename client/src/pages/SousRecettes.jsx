@@ -29,6 +29,7 @@ export default function SousRecettes() {
   const [catalog, setCatalog] = useState([]);
   const [editForm, setEditForm] = useState(null);
   const [editId, setEditId] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
@@ -37,7 +38,7 @@ export default function SousRecettes() {
     ]).then(([srs, cats]) => {
       setItems(srs);
       setCatalog(cats);
-    });
+    }).finally(() => setLoading(false));
   }, []);
 
   function startCreate() {
@@ -98,6 +99,8 @@ export default function SousRecettes() {
   const thStyle = { padding: '0.6rem 1rem', color: T.muted, fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', borderBottom: '1px solid #F3EFE8', whiteSpace: 'nowrap' };
   const tdStyle = { padding: '0.65rem 1rem', fontSize: '0.875rem', color: T.text, borderBottom: '1px solid #F9F7F4' };
   const btnSm = { padding: '0.3rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" };
+
+  if (loading) return <p style={{ color: T.muted, fontFamily: "'DM Sans', sans-serif" }}>Chargement...</p>;
 
   return (
     <div>
