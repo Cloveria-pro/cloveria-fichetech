@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { coutPortionHT, foodCostPct } from '../utils.js';
-import OnboardingModal from '../components/OnboardingModal.jsx';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
 
 const T = { green: '#2D6A4F', orange: '#D97706', red: '#DC2626', text: '#1C2B1E', muted: '#6B7280' };
@@ -40,23 +39,15 @@ export default function Dashboard() {
   const [params, setParams] = useState({ foodCostCible: 30, tva: 10 });
   const [historique, setHistorique] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [ingredientsCount, setIngredientsCount] = useState(null);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-
   useEffect(() => {
     Promise.all([
       api.recettes.list(),
       api.parametres.get().catch(() => ({ foodCostCible: 30, tva: 10 })),
       api.historiquePrix.list().catch(() => []),
-      api.ingredients.list().catch(() => []),
-    ]).then(([recs, p, hist, ings]) => {
+    ]).then(([recs, p, hist]) => {
       setRecettes(recs);
       setParams(p);
       setHistorique(hist);
-      setIngredientsCount(ings.length);
-      if (!localStorage.getItem('onboarding_done') && recs.length === 0 && ings.length === 0) {
-        setShowOnboarding(true);
-      }
     }).finally(() => setLoading(false));
   }, []);
 
@@ -161,7 +152,6 @@ export default function Dashboard() {
 
   return (
     <div style={{ maxWidth: '760px', fontFamily: "'DM Sans', sans-serif" }}>
-      {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
 
       {/* ── Bloc 1 — Hero card ─────────────────────────────────────────────── */}
       <div style={{ ...card, padding: '2rem 2.5rem', marginBottom: '1.5rem' }}>

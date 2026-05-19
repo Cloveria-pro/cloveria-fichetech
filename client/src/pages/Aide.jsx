@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import OnboardingModal from '../components/OnboardingModal.jsx';
+import { startTour } from '../utils/onboardingTour.js';
 
 const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280' };
 
@@ -64,17 +64,15 @@ function SvgIcon({ d }) {
 
 export default function Aide() {
   const [openIdx, setOpenIdx] = useState(null);
-  const [showOnboarding, setShowOnboarding] = useState(false);
   const navigate = useNavigate();
 
   function reopenDemo() {
     localStorage.removeItem('onboarding_done');
-    setShowOnboarding(true);
+    startTour();
   }
 
   return (
     <div style={{ maxWidth: '720px', fontFamily: "'DM Sans', sans-serif" }}>
-      {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', fontWeight: 700, color: T.text }}>
