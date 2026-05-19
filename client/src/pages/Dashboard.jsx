@@ -160,7 +160,7 @@ export default function Dashboard() {
   const metaStyle = { fontSize: '0.65rem', fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '3px' };
 
   return (
-    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', fontFamily: "'DM Sans', sans-serif" }}>
       <div style={{ flex: 1, minWidth: 0, maxWidth: '760px' }}>
       {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
 
@@ -370,22 +370,17 @@ export default function Dashboard() {
 
       {/* ── Colonne droite — photo sticky ──────────────────────────────────── */}
       {!isMobile && !isTablet && (
-        <div style={{ flexShrink: 0, width: '280px', position: 'sticky', top: '2rem', alignSelf: 'flex-start' }}>
-          <div style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.10)' }}>
-            <img
-              src="/clover.png"
-              alt=""
-              style={{
-                width: '100%', height: '520px', objectFit: 'cover', display: 'block',
-                opacity: 0.75, filter: 'brightness(1.05) saturate(1.15)',
-              }}
-            />
-            <div style={{
-              position: 'absolute', inset: 0,
-              background: 'linear-gradient(to right, white 0%, transparent 20%)',
-              pointerEvents: 'none',
-            }} />
-          </div>
+        <div style={{ flexShrink: 0, width: '300px', position: 'sticky', top: 0, height: '100vh', alignSelf: 'flex-start', boxShadow: '-4px 0 24px rgba(0,0,0,0.08)', borderRadius: '16px', overflow: 'hidden' }}>
+          <img
+            src="/clover.png"
+            alt=""
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          />
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(to right, white 0%, transparent 25%)',
+            pointerEvents: 'none',
+          }} />
         </div>
       )}
 
