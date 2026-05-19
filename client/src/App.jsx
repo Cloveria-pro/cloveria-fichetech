@@ -125,13 +125,13 @@ export default function App() {
 
       {/* Sidebar */}
       <aside style={sidebarStyle}>
-        <div style={{ background: '#1e3d2a', borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '1.5rem 1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ background: '#FFFFFF', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-            <img src="/logo.png" alt="CloverIA FicheTech" style={{ width: '154px', height: 'auto', objectFit: 'contain', display: 'block' }}
+            <img src="/logo.png" alt="CloverIA FicheTech" style={{ width: '150px', height: 'auto', objectFit: 'contain', display: 'block' }}
               onError={e => { e.currentTarget.style.display = 'none'; }} />
           </div>
           {isMobile && (
-            <button onClick={closeSidebar} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px', position: 'absolute', top: '12px', right: '12px' }}>
+            <button onClick={closeSidebar} style={{ background: 'none', border: 'none', color: 'rgba(28,43,30,0.5)', cursor: 'pointer', padding: '4px', position: 'absolute', top: '12px', right: '12px' }}>
               <HamburgerIcon open={true} />
             </button>
           )}

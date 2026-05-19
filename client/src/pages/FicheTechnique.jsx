@@ -7,7 +7,7 @@ import { coutIng, coutPortionHT, coutPortionTTC, calculerFoodCost } from '../uti
 import EtapesEditor from '../components/EtapesEditor.jsx';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
 
-async function downloadPDF(htmlString, filename, landscape = false) {
+async function downloadPDF(htmlString, filename) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(htmlString, 'text/html');
   doc.body.querySelectorAll('*').forEach(el => {
@@ -24,7 +24,7 @@ async function downloadPDF(htmlString, filename, landscape = false) {
     .map(s => s.textContent.replace(/@page[^}]*\{[^}]*\}/g, ''))
     .join('\n');
   const wrapper = document.createElement('div');
-  wrapper.style.cssText = `position:absolute;top:-9999px;left:0;background:white;width:${landscape ? '277' : '180'}mm;`;
+  wrapper.style.cssText = 'position:absolute;top:-9999px;left:0;background:white;width:180mm;';
   if (styleText) {
     const styleEl = document.createElement('style');
     styleEl.textContent = styleText;
@@ -36,11 +36,12 @@ async function downloadPDF(htmlString, filename, landscape = false) {
   document.body.appendChild(wrapper);
   try {
     const url = await html2pdf().set({
-      margin: landscape ? [8, 8, 8, 8] : [18, 15, 18, 15],
+      margin: [10, 10, 10, 10],
       filename,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' },
+      image: { type: 'jpeg', quality: 1.0 },
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
     }).from(content).output('bloburl');
     window.open(url, '_blank');
   } finally {
@@ -313,7 +314,7 @@ export default function FicheTechnique() {
     }).join('');
 
     const etapesHtml = (recette.etapes || []).map((e, idx) =>
-      '<div style="display:flex;gap:18px;align-items:flex-start;margin-bottom:14px"><div style="font-family:Georgia,serif;font-size:2rem;font-weight:700;color:#C9A84C;line-height:1;min-width:32px;text-align:center">' + (idx + 1) + '</div><p style="margin:0;line-height:1.7;color:#374151;font-size:0.9rem;padding-top:6px">' + e + '</p></div>'
+      '<div class="etape-step" style="display:flex;gap:18px;align-items:flex-start;margin-bottom:14px"><div style="font-family:Georgia,serif;font-size:2rem;font-weight:700;color:#C9A84C;line-height:1;min-width:32px;text-align:center">' + (idx + 1) + '</div><p style="margin:0;line-height:1.7;color:#374151;font-size:0.9rem;padding-top:6px">' + e + '</p></div>'
     ).join('');
 
     const allergenesBadges = (recette.allergenes || []).map(a =>
@@ -342,14 +343,15 @@ export default function FicheTechnique() {
       : '';
 
     const html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Fiche — ' + recette.nom + '</title><style>'
-      + '@page{size:A4;margin:18mm 15mm}'
       + 'body{font-family:"Helvetica Neue",Arial,sans-serif;color:#1C2B1E;background:#fff;margin:0;font-size:13px}'
-      + 'table{width:100%;border-collapse:collapse;font-size:0.85rem}'
+      + 'table{width:100%;border-collapse:collapse;font-size:0.85rem;page-break-inside:auto}'
       + 'th{background:#FAFAF8;padding:8px 10px;text-align:left;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#6B7280;border-bottom:2px solid #F3EFE8}'
       + 'td{padding:7px 10px;border-bottom:1px solid #F9F7F4}'
-      + '.section{margin-bottom:20px}.section-title{font-family:Georgia,serif;font-size:1rem;font-weight:700;color:#1C2B1E;margin-bottom:10px;border-bottom:1px solid #F3EFE8;padding-bottom:6px}'
+      + 'tr{page-break-inside:avoid}'
+      + '.section{margin-bottom:20px;page-break-inside:avoid}'
+      + '.section-title{font-family:Georgia,serif;font-size:1rem;font-weight:700;color:#1C2B1E;margin-bottom:10px;border-bottom:1px solid #F3EFE8;padding-bottom:6px;page-break-after:avoid}'
+      + '.etape-step{page-break-inside:avoid}'
       + '.total-row td{border-top:2px solid #F3EFE8;font-weight:700;padding-top:10px}'
-      + '@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}'
       + '</style></head><body>'
       + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #2D6A4F">'
       + '<div><div style="font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#2D6A4F;margin-bottom:4px">CloverIA FicheTech</div><h1 style="font-family:Georgia,serif;font-size:1.6rem;line-height:1.2;margin:0 0 6px">' + recette.nom + '</h1><span style="display:inline-block;font-size:0.7rem;font-weight:700;text-transform:uppercase;color:#2D6A4F;background:rgba(45,106,79,0.08);padding:3px 8px;border-radius:4px">' + (recette.categorie || '') + '</span>' + (portionLabel ? '<span style="margin-left:8px;font-size:0.75rem;color:#C9A84C;font-weight:600">' + portionLabel + '</span>' : '') + '</div>'
