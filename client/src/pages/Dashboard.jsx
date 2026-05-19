@@ -160,8 +160,7 @@ export default function Dashboard() {
   const metaStyle = { fontSize: '0.65rem', fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '3px' };
 
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', fontFamily: "'DM Sans', sans-serif" }}>
-      <div style={{ flex: 1, minWidth: 0, maxWidth: '760px' }}>
+    <div style={{ maxWidth: '760px', fontFamily: "'DM Sans', sans-serif" }}>
       {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
 
       {/* ── Bloc 1 — Hero card ─────────────────────────────────────────────── */}
@@ -365,29 +364,6 @@ export default function Dashboard() {
         </div>
 
       </div>
-
-      </div>{/* closes left column */}
-
-      {/* ── Colonne droite — photo sticky ──────────────────────────────────── */}
-      {!isMobile && !isTablet && (
-        <div style={{ flexShrink: 0, width: '320px', position: 'sticky', top: 0, height: '100vh', alignSelf: 'flex-start', borderRadius: '24px 0 0 24px', overflow: 'hidden', boxShadow: '-8px 0 40px rgba(0,0,0,0.12)' }}>
-          <img
-            src="/clover.png"
-            alt=""
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', filter: 'saturate(1.3) brightness(0.95) contrast(1.05)' }}
-          />
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'linear-gradient(to right, #F8F6F1 0%, transparent 30%)',
-            pointerEvents: 'none',
-          }} />
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, transparent 40%, transparent 60%, rgba(0,0,0,0.25) 100%)',
-            pointerEvents: 'none',
-          }} />
-        </div>
-      )}
 
     </div>
   );
