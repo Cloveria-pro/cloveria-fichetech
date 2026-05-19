@@ -6,6 +6,7 @@ import { api } from '../api.js';
 import { coutIng, coutPortionHT, coutPortionTTC, calculerFoodCost } from '../utils.js';
 import EtapesEditor from '../components/EtapesEditor.jsx';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
+import { useWindowWidth } from '../hooks/useWindowWidth.js';
 
 async function downloadPDF(htmlString, filename) {
   const parser = new DOMParser();
@@ -148,6 +149,8 @@ export default function FicheTechnique() {
   const [selectedSection, setSelectedSection] = useState('');
   const [showCarteAdd, setShowCarteAdd] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const width = useWindowWidth();
+  const isMobile = width < 768;
 
   useEffect(() => {
     Promise.all([
@@ -608,7 +611,7 @@ export default function FicheTechnique() {
       )}
 
       {/* Stats rapides + Couverts */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${isMobile ? 2 : 4}, 1fr)`, gap: '1rem', marginBottom: '1.5rem' }}>
         {[
           { label: 'Temps prep', field: 'tempsPreparation', display: (form.tempsPreparation || 0) + ' min' },
           { label: 'Temps cuisson', field: 'tempsCuisson', display: (form.tempsCuisson || 0) + ' min' },
@@ -785,7 +788,7 @@ export default function FicheTechnique() {
           </div>
 
           {/* Métriques temps réel */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '0.75rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '0.75rem' }}>
             <div style={{ background: '#F8F6F1', borderRadius: '8px', padding: '0.875rem 1rem' }}>
               <div style={{ fontSize: '0.68rem', color: T.muted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Taux de coût matière</div>
               <div style={{ fontSize: '1.3rem', fontWeight: 700, color: prixVentePratiqueTTCVal > 0 ? fcColor2 : T.muted }}>
@@ -810,7 +813,7 @@ export default function FicheTechnique() {
           </div>
 
           {/* Prix suggérés */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '0.75rem' }}>
             <div style={{ background: '#F8F6F1', borderRadius: '8px', padding: '0.875rem 1rem' }}>
               <div style={{ fontSize: '0.68rem', color: T.muted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Prix de vente suggéré HT (objectif {parametres.foodCostCible}%)</div>
               <div style={{ fontSize: '1.3rem', fontWeight: 700, color: T.green }}>

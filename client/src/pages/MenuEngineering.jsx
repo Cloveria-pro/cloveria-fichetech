@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { useWindowWidth } from '../hooks/useWindowWidth.js';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { api } from '../api.js';
 import { coutPortionHT } from '../utils.js';
@@ -82,6 +83,8 @@ export default function MenuEngineering() {
   const [historique, setHistorique] = useState([]);
   const [histLoading, setHistLoading] = useState(false);
   const fileInputRef = useRef(null);
+  const width = useWindowWidth();
+  const isMobile = width < 768;
 
   useEffect(() => {
     api.recettes.list().then(setRecettes).catch(() => {});
@@ -182,7 +185,7 @@ export default function MenuEngineering() {
       if (allDates.length === 1) return allDates[0];
       return `${allDates[0]} → ${allDates[allDates.length - 1]}`;
     })();
-    api.ventes.create({ periode, lignes: withQuadrant }).catch(() => {});
+    api.ventes.create({ periode, lignes: withQuadrant, nomFichier: file?.name || null }).catch(() => {});
 
     setStep(3);
   }
@@ -394,7 +397,8 @@ export default function MenuEngineering() {
                   <p style={{ color: T.muted, fontSize: '0.85rem' }}>Aucune ligne détectée.</p>
                 )}
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', margin: '0 -0.25rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', minWidth: isMobile ? '520px' : undefined }}>
                   {matchings.map((m, i) => (
                     <div key={i} style={{
                       display: 'grid', gridTemplateColumns: '1.8fr auto 1.8fr auto', gap: '0.75rem', alignItems: 'center',
@@ -476,6 +480,7 @@ export default function MenuEngineering() {
                       </button>
                     </div>
                   ))}
+                </div>
                 </div>
               </div>
 
@@ -572,6 +577,8 @@ function ResultatsView({ resultats, onBack }) {
   const [filterService, setFilterService] = useState('');
   const [filterCategorie, setFilterCategorie] = useState('');
   const [highlightedRow, setHighlightedRow] = useState(null);
+  const rvWidth = useWindowWidth();
+  const isMobile = rvWidth < 768;
 
   const services = useMemo(() => {
     const s = new Set();
@@ -709,7 +716,7 @@ function ResultatsView({ resultats, onBack }) {
       )}
 
       {/* ── Graphiques ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: hasLineData ? '1fr 1fr' : '1fr', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: hasLineData && !isMobile ? '1fr 1fr' : '1fr', gap: '1rem' }}>
         <div style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', padding: '1.25rem' }}>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.9rem', fontWeight: 700, color: T.text, marginBottom: '1rem' }}>Top 10 — Volumes vendus</div>
           <ResponsiveContainer width="100%" height={220}>

@@ -47,7 +47,7 @@ function TileFiche({ r, cible, onDelete, onUpdateCategorie, navigate }) {
       style={{
         display: 'flex', alignItems: 'center', gap: '0.75rem',
         padding: '0 1.5rem',
-        height: '60px',
+        height: '60px', minWidth: '680px',
         borderRadius: '50px',
         background: '#FFFFFF',
         border: `1px solid ${hovered ? T.green : '#E8E2D9'}`,
@@ -319,16 +319,20 @@ export default function Recettes() {
             </div>
 
             {/* Tuiles */}
-            {isOpen && fiches.map(r => (
-              <TileFiche
-                key={r.id}
-                r={r}
-                cible={params.foodCostCible}
-                onDelete={supprimer}
-                onUpdateCategorie={updateCategorie}
-                navigate={navigate}
-              />
-            ))}
+            {isOpen && (
+              <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                {fiches.map(r => (
+                  <TileFiche
+                    key={r.id}
+                    r={r}
+                    cible={params.foodCostCible}
+                    onDelete={supprimer}
+                    onUpdateCategorie={updateCategorie}
+                    navigate={navigate}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         );
       })}

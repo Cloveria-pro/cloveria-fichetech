@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { periode, lignes } = req.body;
+  const { periode, lignes, dateDebut, dateFin, typePeriode, service, nomFichier } = req.body;
   if (!lignes || !Array.isArray(lignes)) return res.status(400).json({ error: 'lignes requis' });
   try {
     const db = await getDb();
@@ -28,6 +28,12 @@ router.post('/', async (req, res) => {
       user_id: req.userId,
       periode: periode || null,
       lignes,
+      dateDebut: dateDebut || null,
+      dateFin: dateFin || null,
+      typePeriode: typePeriode || null,
+      service: service || null,
+      nomFichier: nomFichier || null,
+      statut: 'validé',
       createdAt: new Date().toISOString(),
     };
     await db.collection('ventes_imports').insertOne(doc);

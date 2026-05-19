@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { coutPortionHT, foodCostPct } from '../utils.js';
 import OnboardingModal from '../components/OnboardingModal.jsx';
+import { useWindowWidth } from '../hooks/useWindowWidth.js';
 
 const T = { green: '#2D6A4F', orange: '#D97706', red: '#DC2626', text: '#1C2B1E', muted: '#6B7280' };
 const card = { background: '#fff', borderRadius: '16px', boxShadow: '0 2px 16px rgba(0,0,0,0.07)' };
@@ -58,6 +59,9 @@ export default function Dashboard() {
       }
     }).finally(() => setLoading(false));
   }, []);
+
+  const width = useWindowWidth();
+  const isMobile = width < 768;
 
   if (loading) return <p style={{ color: T.muted, fontFamily: "'DM Sans', sans-serif" }}>Chargement...</p>;
 
@@ -160,10 +164,10 @@ export default function Dashboard() {
 
       {/* ── Bloc 1 — Hero card ─────────────────────────────────────────────── */}
       <div style={{ ...card, padding: '2rem 2.5rem', marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'stretch' }}>
+        <div style={{ display: 'flex', alignItems: 'stretch', flexDirection: isMobile ? 'column' : 'row' }}>
 
           {/* Colonne gauche */}
-          <div style={{ flex: '2 1 0', paddingRight: '2rem' }}>
+          <div style={{ flex: '2 1 0', paddingRight: isMobile ? 0 : '2rem', paddingBottom: isMobile ? '1.25rem' : 0 }}>
             <div style={metaStyle}>Situation du jour</div>
 
             {fcMoyen !== null ? (
@@ -201,11 +205,12 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Séparateur vertical */}
-          <div style={{ width: '1px', background: '#EDE8DF', flexShrink: 0 }} />
+          {/* Séparateur */}
+          {!isMobile && <div style={{ width: '1px', background: '#EDE8DF', flexShrink: 0 }} />}
+          {isMobile && <div style={{ height: '1px', background: '#EDE8DF' }} />}
 
           {/* Colonne droite */}
-          <div style={{ flex: '1 1 0', paddingLeft: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem', justifyContent: 'center' }}>
+          <div style={{ flex: '1 1 0', paddingLeft: isMobile ? 0 : '2rem', paddingTop: isMobile ? '1.25rem' : 0, display: 'flex', flexDirection: 'column', gap: '1rem', justifyContent: 'center' }}>
 
             {varCouts7j !== null && (
               <div>
@@ -281,10 +286,10 @@ export default function Dashboard() {
             {actionsJour.map((a, i) => (
               <div key={i} style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr auto auto',
+                gridTemplateColumns: isMobile ? '1fr auto' : '1fr auto auto',
                 alignItems: 'center',
-                gap: '1.25rem',
-                padding: '0.9rem 1.75rem',
+                gap: isMobile ? '0.75rem' : '1.25rem',
+                padding: isMobile ? '0.75rem 1.25rem' : '0.9rem 1.75rem',
                 borderBottom: i < actionsJour.length - 1 ? '1px solid #F9F7F4' : 'none',
               }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.7rem', minWidth: 0 }}>
@@ -301,9 +306,11 @@ export default function Dashboard() {
                     </div>
                   </div>
                 </div>
-                <div style={{ fontSize: '0.78rem', color: a.dotColor, fontWeight: 600, whiteSpace: 'nowrap' }}>
-                  {a.impactLabel}
-                </div>
+                {!isMobile && (
+                  <div style={{ fontSize: '0.78rem', color: a.dotColor, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                    {a.impactLabel}
+                  </div>
+                )}
                 <Link to={a.link} style={{
                   fontSize: '0.82rem', fontWeight: 600, color: T.green,
                   textDecoration: 'none', whiteSpace: 'nowrap',
@@ -320,7 +327,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── Bloc 3 — 2 mini cartes ─────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem' }}>
 
         <div style={{ ...card, padding: '1.25rem 1.5rem' }}>
           <div style={metaStyle}>Coût matière moyen</div>

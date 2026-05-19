@@ -57,7 +57,7 @@ export default function OnboardingModal({ onClose }) {
 
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <img src="/logo.png" alt="CloverIA FicheTech" style={{ width: '180px', height: 'auto', objectFit: 'contain', display: 'inline-block' }} />
+          <img src="/logo.png" alt="CloverIA FicheTech" style={{ width: '160px', height: 'auto', objectFit: 'contain', display: 'inline-block' }} />
         </div>
 
         {/* Progress dots */}
@@ -72,7 +72,7 @@ export default function OnboardingModal({ onClose }) {
               Étape 1 sur 3
             </div>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.45rem', fontWeight: 700, color: T.text, marginBottom: '0.75rem', lineHeight: 1.25 }}>
-              Votre restaurant, vos règles
+              Bienvenue sur CloverIA
             </h2>
             <p style={{ fontSize: '0.9rem', color: T.muted, lineHeight: 1.6, marginBottom: '2rem' }}>
               Définissez votre food cost cible et votre TVA. Tout le reste se calcule automatiquement.
@@ -101,7 +101,7 @@ export default function OnboardingModal({ onClose }) {
               Étape 2 sur 3
             </div>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.45rem', fontWeight: 700, color: T.text, marginBottom: '0.75rem', lineHeight: 1.25 }}>
-              Vos ingrédients, votre base
+              Vos ingrédients
             </h2>
             <p style={{ fontSize: '0.9rem', color: T.muted, lineHeight: 1.6, marginBottom: '1.75rem' }}>
               Sans ingrédients, les food costs restent à zéro.
@@ -152,7 +152,7 @@ export default function OnboardingModal({ onClose }) {
               Étape 3 sur 3
             </div>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.45rem', fontWeight: 700, color: T.text, marginBottom: '0.75rem', lineHeight: 1.25 }}>
-              Votre première fiche en 30 secondes
+              Votre première fiche
             </h2>
             <p style={{ fontSize: '0.9rem', color: T.muted, lineHeight: 1.6, marginBottom: '2rem' }}>
               Décrivez votre plat en langage naturel, l'IA fait le reste.

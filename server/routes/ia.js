@@ -3,6 +3,7 @@ import express from 'express';
 import multer from 'multer';
 import Anthropic from '@anthropic-ai/sdk';
 import XLSX from 'xlsx';
+import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../db.js';
 
 function normalize(str) {
@@ -124,7 +125,7 @@ router.post('/analyser-ventes', uploadVentes.single('ventes'), async (req, res) 
     const text = message.content[0].text;
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return res.status(422).json({ error: 'Réponse IA invalide', raw: text });
-    res.json(JSON.parse(jsonMatch[0]));
+    res.json({ ...JSON.parse(jsonMatch[0]), nomFichier: req.file.originalname });
   } catch (err) {
     console.error('IA analyser-ventes error:', err.message);
     res.status(500).json({ error: err.message });
@@ -171,7 +172,20 @@ RÈGLES ABSOLUES :
     const text = message.content[0].text;
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return res.status(422).json({ error: 'Réponse IA invalide', raw: text });
-    res.json(JSON.parse(jsonMatch[0]));
+    const result = JSON.parse(jsonMatch[0]);
+    getDb().then(db => {
+      const meta = {
+        id: uuidv4(), user_id: req.userId,
+        nomFichier: req.file.originalname,
+        dateImport: new Date().toISOString(),
+        statut: 'validé', version: 1,
+        nomPlat: result.nom || null,
+        categoriePlat: result.categorie || null,
+        recetteLiee: null,
+      };
+      db.collection('documents_fiches').insertOne(meta).catch(() => {});
+    }).catch(() => {});
+    res.json(result);
   } catch (err) {
     console.error('IA analyser-fiche error:', err.message);
     res.status(500).json({ error: err.message });
@@ -199,8 +213,23 @@ router.post('/analyser-facture', upload.single('facture'), async (req, res) => {
     const text = message.content[0].text;
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return res.status(422).json({ error: 'Réponse IA invalide', raw: text });
-
-    res.json(JSON.parse(jsonMatch[0]));
+    const result = JSON.parse(jsonMatch[0]);
+    getDb().then(db => {
+      const meta = {
+        id: uuidv4(), user_id: req.userId,
+        nomFichier: req.file.originalname,
+        dateImport: new Date().toISOString(),
+        statut: 'validé',
+        fournisseur: req.body?.fournisseur || null,
+        dateFacture: req.body?.dateFacture || null,
+        moisFacture: req.body?.moisFacture || null,
+        anneeFacture: req.body?.anneeFacture || null,
+        categorieAchat: req.body?.categorieAchat || null,
+        ingredientsLies: (result.produits || []).map(p => p.nom).filter(Boolean),
+      };
+      db.collection('documents_factures').insertOne(meta).catch(() => {});
+    }).catch(() => {});
+    res.json(result);
   } catch (err) {
     console.error('IA error:', err.message);
     res.status(500).json({ error: err.message });
