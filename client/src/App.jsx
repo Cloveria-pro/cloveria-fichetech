@@ -127,12 +127,8 @@ export default function App() {
       <aside style={sidebarStyle}>
         <div style={{ padding: '1.5rem 1.5rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: '8px' }}>
-            <img src="/logo.png" alt="CloverIA" style={{ height: '200px', width: 'auto', objectFit: 'contain', display: 'block' }}
+            <img src="/logo.png" alt="CloverIA FicheTech" style={{ maxWidth: '120px', width: '100%', height: 'auto', objectFit: 'contain', display: 'block' }}
               onError={e => { e.currentTarget.style.display = 'none'; }} />
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: "'Playfair Display', serif", color: '#fff', fontSize: '20px', fontWeight: 700, lineHeight: 1.1 }}>CloverIA</div>
-              <div style={{ color: '#C9A84C', fontSize: '11px', fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: '3px' }}>FicheTech</div>
-            </div>
           </div>
           {isMobile && (
             <button onClick={closeSidebar} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px', position: 'absolute', top: '12px', right: '12px' }}>

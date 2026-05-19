@@ -263,7 +263,7 @@ function ComparaisonFournisseurs({ items, onClose }) {
                   <tr key={r.id} style={{ borderBottom: '1px solid #F9F7F4', background: r.isBest ? 'rgba(45,106,79,0.04)' : 'transparent' }}>
                     <td style={{ padding: '6px 8px', fontWeight: 500, color: T.text }}>{r.fournisseur || <span style={{ color: '#D1C4B0' }}>—</span>}</td>
                     <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: r.isBest ? T.green : T.text }}>
-                      {r.prixUnitaire.toFixed(2)} EUR
+                      {r.prixUnitaire.toFixed(2)} EUR HT
                     </td>
                     <td style={{ padding: '6px 8px', color: T.muted }}>{r.unite}</td>
                     <td style={{ padding: '6px 8px' }}>
@@ -562,7 +562,7 @@ export default function Ingredients() {
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <input type="number" step="0.01" value={editForm.prixUnitaire} onChange={e => updateEditForm(f => ({ ...f, prixUnitaire: e.target.value }))} style={{ ...inputStyle, width: '90px' }} />
-                      <span style={{ color: T.muted, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>EUR / {baseUnit(editForm.unite)}</span>
+                      <span style={{ color: T.muted, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>EUR HT / {baseUnit(editForm.unite)}</span>
                     </div>
                   </td>
                   <td style={tdStyle}>
@@ -603,7 +603,7 @@ export default function Ingredients() {
                   <td style={{ ...tdStyle, color: T.muted }}>{item.unite}</td>
                   <td style={tdStyle}>
                     <span style={{ fontWeight: 700, color: T.green }}>{item.prixUnitaire.toFixed(2)}</span>
-                    <span style={{ color: T.muted, fontSize: '0.8rem', marginLeft: '4px' }}>EUR / {baseUnit(item.unite)}</span>
+                    <span style={{ color: T.muted, fontSize: '0.8rem', marginLeft: '4px' }}>EUR HT / {baseUnit(item.unite)}</span>
                   </td>
                   <td style={{ ...tdStyle, color: T.muted, fontSize: '0.82rem' }}>
                     {item.fournisseur || <span style={{ color: '#D1C4B0' }}>—</span>}
@@ -645,7 +645,7 @@ export default function Ingredients() {
                   <td colSpan={8} style={{ padding: '0.75rem 1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '0.85rem', color: '#92400e', flex: 1 }}>
-                        ⚠️ Un ingrédient similaire existe déjà : <strong>{dupWarning.nom}</strong> ({dupWarning.prixUnitaire} EUR/{dupWarning.unite}
+                        ⚠️ Un ingrédient similaire existe déjà : <strong>{dupWarning.nom}</strong> ({dupWarning.prixUnitaire} EUR HT/{dupWarning.unite}
                         {dupWarning.fournisseur ? ` · ${dupWarning.fournisseur}` : ''}).
                         Mettre à jour son prix plutôt que créer un doublon ?
                       </span>
@@ -671,7 +671,7 @@ export default function Ingredients() {
                           onMouseDown={() => { startEdit(it); setShowAdd(false); setDupWarning(null); }}
                           style={{ padding: '2px 8px', borderRadius: '4px', background: '#DCFCE7', color: '#166534', border: '1px solid #86EFAC', fontSize: '0.72rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
                         >
-                          {it.nom} · {it.prixUnitaire} EUR/{it.unite}{it.fournisseur ? ` · ${it.fournisseur}` : ''} — Sélectionner
+                          {it.nom} · {it.prixUnitaire} EUR HT/{it.unite}{it.fournisseur ? ` · ${it.fournisseur}` : ''} — Sélectionner
                         </button>
                       ))}
                     </div>
@@ -715,7 +715,7 @@ export default function Ingredients() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <input type="number" step="0.01" placeholder="0.00" value={addForm.prixUnitaire}
                       onChange={e => setAddForm(f => ({ ...f, prixUnitaire: e.target.value }))} style={{ ...inputStyle, width: '90px' }} />
-                    <span style={{ color: T.muted, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>EUR / {baseUnit(addForm.unite)}</span>
+                    <span style={{ color: T.muted, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>EUR HT / {baseUnit(addForm.unite)}</span>
                   </div>
                 </td>
                 <td style={{ padding: '0.75rem 1rem' }}>
@@ -1079,7 +1079,7 @@ function ImportFacture({ items, setItems }) {
                           >
                             <option value="">— Choisir l'ingrédient —</option>
                             {[...items].sort((a, b) => a.nom.localeCompare(b.nom)).map(it => (
-                              <option key={it.id} value={it.id}>{it.nom} ({it.prixUnitaire} EUR/{it.unite})</option>
+                              <option key={it.id} value={it.id}>{it.nom} ({it.prixUnitaire} EUR HT/{it.unite})</option>
                             ))}
                           </select>
                         )}

@@ -43,8 +43,7 @@ export default function Login({ onLogin }) {
       <div style={{ width: '100%', maxWidth: '400px' }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '2rem', fontWeight: 700, color: T.text }}>CloverIA</div>
-          <div style={{ color: T.gold, fontSize: '11px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: '4px' }}>FicheTech</div>
+          <img src="/logo.png" alt="CloverIA FicheTech" style={{ width: '160px', height: 'auto', objectFit: 'contain', display: 'inline-block' }} />
         </div>
 
         {/* Card */}

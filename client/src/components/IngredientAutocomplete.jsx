@@ -72,7 +72,7 @@ export default function IngredientAutocomplete({ value, onChange, catalog, sousR
               onMouseLeave={e => e.currentTarget.style.background = '#fff'}
             >
               <span style={{ color: '#1C2B1E', fontWeight: 500 }}>{item.nom}</span>
-              <span style={{ color: '#6B7280', fontSize: '0.75rem' }}>{item.prixUnitaire} EUR/{item.unite}</span>
+              <span style={{ color: '#6B7280', fontSize: '0.75rem' }}>{item.prixUnitaire} EUR HT/{item.unite}</span>
             </div>
           ))}
           {srSuggestions.map(sr => {

@@ -55,6 +55,11 @@ export default function OnboardingModal({ onClose }) {
         fontFamily: "'DM Sans', sans-serif",
       }}>
 
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+          <img src="/logo.png" alt="CloverIA FicheTech" style={{ width: '140px', height: 'auto', objectFit: 'contain', display: 'inline-block' }} />
+        </div>
+
         {/* Progress dots */}
         <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '2rem' }}>
           {[0, 1, 2].map(i => <Dot key={i} active={i === step} />)}
