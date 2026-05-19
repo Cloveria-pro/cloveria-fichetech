@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { coutPortionTTC, calculerFoodCost } from '../utils.js';
+import ImportFicheModal from '../components/ImportFicheModal.jsx';
 
 const T = { green: '#2D6A4F', text: '#1A1A1A', muted: '#9CA3AF' };
 const SECTIONS = ['Amuse-bouche', 'Entrée', 'Plat viande', 'Plat poisson', 'Plat végétarien', 'Dessert', 'Autre'];
@@ -142,6 +143,7 @@ export default function Recettes() {
   const [carteFilter, setCarteFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [sectionsOpen, setSectionsOpen] = useState({});
+  const [showImport, setShowImport] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -200,6 +202,7 @@ export default function Recettes() {
 
   return (
     <div>
+      {showImport && <ImportFicheModal onClose={() => setShowImport(false)} />}
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
@@ -229,6 +232,12 @@ export default function Recettes() {
             onChange={e => setRecherche(e.target.value)}
             style={{ ...selectStyle, width: '220px', cursor: 'text' }}
           />
+          <button
+            onClick={() => setShowImport(true)}
+            style={{ padding: '0.55rem 1.25rem', background: 'transparent', color: T.green, borderRadius: '8px', fontWeight: 600, fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif", border: `1.5px solid ${T.green}`, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(45,106,79,0.06)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+          >↑ Importer une fiche</button>
           <button
             onClick={() => navigate('/fiches-techniques/nouvelle')}
             style={{ padding: '0.55rem 1.25rem', background: T.green, color: '#fff', borderRadius: '8px', fontWeight: 600, fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif", border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}

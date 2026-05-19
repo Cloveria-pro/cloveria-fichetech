@@ -33,6 +33,53 @@ const upload = multer({
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+router.post('/analyser-fiche', upload.single('fiche'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Fichier manquant' });
+
+  const base64 = req.file.buffer.toString('base64');
+  const isPDF = req.file.mimetype === 'application/pdf';
+  const fileBlock = isPDF
+    ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } }
+    : { type: 'image', source: { type: 'base64', media_type: req.file.mimetype, data: base64 } };
+
+  try {
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 2048,
+      system: `Tu es un assistant expert en restauration professionnelle. Analyse ce document (fiche technique de cuisine) et extrais les informations structurées.
+
+Retourne UNIQUEMENT un JSON valide sans markdown :
+{
+  "nom": "string ou null si illisible",
+  "categorie": "Amuse-bouche|Entrée|Plat viande|Plat poisson|Plat végétarien|Dessert|Autre ou null",
+  "portions": number ou null,
+  "tempsPreparation": number_en_minutes ou null,
+  "tempsCuisson": number_en_minutes ou null,
+  "incertains": ["noms des champs de haut niveau dont tu n'es pas certain"],
+  "ingredients": [
+    { "nom": "string", "quantite": number ou null, "unite": "g|kg|ml|L|piece|c.s.|c.c.|botte|tranche ou null", "prixUnitaire": number ou null, "incertain": boolean }
+  ]
+}
+
+RÈGLES ABSOLUES :
+- Retourne null pour tout champ absent ou illisible. Ne jamais inventer.
+- Ajoute le nom du champ dans "incertains" si la valeur est déduite ou peu lisible.
+- "prixUnitaire" d'un ingrédient : null sauf si clairement visible sur le document.
+- "categorie" déduite (non explicite) → ajouter "categorie" dans "incertains".
+- Ingrédient peu lisible → "incertain": true.`,
+      messages: [{ role: 'user', content: [fileBlock, { type: 'text', text: 'Analyse cette fiche technique et retourne le JSON.' }] }],
+    });
+
+    const text = message.content[0].text;
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return res.status(422).json({ error: 'Réponse IA invalide', raw: text });
+    res.json(JSON.parse(jsonMatch[0]));
+  } catch (err) {
+    console.error('IA analyser-fiche error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.post('/analyser-facture', upload.single('facture'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Fichier manquant' });
 

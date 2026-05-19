@@ -55,6 +55,15 @@ export const api = {
   ia: {
     structurer: (description) => request('/ia/structurer', { method: 'POST', body: JSON.stringify({ description }) }),
     descriptionCommerciale: (data) => request('/ia/description-commerciale', { method: 'POST', body: JSON.stringify(data) }),
+    analyserFiche: (formData) => fetch(`${API_URL}/ia/analyser-fiche`, {
+      method: 'POST',
+      headers: { ...authHeaders() },
+      body: formData,
+    }).then(async res => {
+      const body = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(body?.error || 'Erreur serveur');
+      return body;
+    }),
   },
   aliases: {
     list: () => request('/aliases'),
