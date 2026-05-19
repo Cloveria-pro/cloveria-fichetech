@@ -109,10 +109,13 @@ export default function MenuEngineering() {
       setColonnes(colonnesResult);
       const m = lignesResult.map(l => {
         const match = findBestMatch(l.nomPOS, recettes);
+        const prixVenteIA = l.prixVente > 0 ? l.prixVente : null;
+        const prixVente = prixVenteIA ?? (match?.recette.prixVentePratiqueTTC > 0 ? match.recette.prixVentePratiqueTTC : null);
         return {
           nomPOS: l.nomPOS,
           quantite: l.quantite || 1,
-          prixVente: l.prixVente || null,
+          prixVenteIA,
+          prixVente,
           date: l.date || null,
           service: l.service || null,
           recetteId: match?.recette.id || null,
@@ -389,36 +392,70 @@ export default function MenuEngineering() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                   {matchings.map((m, i) => (
                     <div key={i} style={{
-                      display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '0.75rem', alignItems: 'center',
+                      display: 'grid', gridTemplateColumns: '1.8fr auto 1.8fr auto', gap: '0.75rem', alignItems: 'center',
                       padding: '0.65rem 0.875rem', borderRadius: '8px',
                       background: m.ignore ? '#F5F3F0' : '#FAFAF8',
                       border: `1px solid ${m.ignore ? '#EBE7E0' : '#F3EFE8'}`,
                       opacity: m.ignore ? 0.55 : 1,
                       transition: 'opacity 0.15s',
                     }}>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: '0.875rem', color: T.text }}>{m.nomPOS}</div>
-                        <div style={{ fontSize: '0.73rem', color: T.muted, marginTop: '1px' }}>
-                          {m.quantite} vendu{m.quantite > 1 ? 's' : ''}
-                          {m.prixVente ? ` · ${m.prixVente.toFixed(2)} €` : ''}
+                      {/* Nom POS */}
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.875rem', color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.nomPOS}</div>
+                        <div style={{ display: 'flex', gap: '0.625rem', marginTop: '6px' }}>
+                          <label style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <span style={{ fontSize: '0.62rem', fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Qté vendue</span>
+                            <input
+                              type="number" min="0" step="1"
+                              value={m.quantite}
+                              disabled={m.ignore}
+                              onChange={e => setMatchings(prev => prev.map((x, j) => j === i ? { ...x, quantite: Math.max(0, parseInt(e.target.value) || 0) } : x))}
+                              style={{ ...inputSm, width: '70px', textAlign: 'right' }}
+                            />
+                          </label>
+                          <label style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <span style={{ fontSize: '0.62rem', fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                              Prix TTC {m.prixVenteIA ? '(IA)' : m.recetteId ? '(fiche)' : ''}
+                            </span>
+                            <input
+                              type="number" min="0" step="0.01"
+                              value={m.prixVente ?? ''}
+                              placeholder="—"
+                              disabled={m.ignore}
+                              onChange={e => setMatchings(prev => prev.map((x, j) => j === i ? { ...x, prixVente: e.target.value === '' ? null : parseFloat(e.target.value) || null } : x))}
+                              style={{ ...inputSm, width: '80px', textAlign: 'right' }}
+                            />
+                          </label>
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {m.recetteId && m.matchScore >= 0.8 && !m.ignore && (
-                          <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#16a34a', background: '#F0FDF4', border: '1px solid #86EFAC', padding: '1px 6px', borderRadius: '99px', whiteSpace: 'nowrap', flexShrink: 0 }}>✓ Match</span>
+                      {/* Match badge */}
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        {m.recetteId && m.matchScore >= 0.8 && !m.ignore ? (
+                          <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#16a34a', background: '#F0FDF4', border: '1px solid #86EFAC', padding: '2px 7px', borderRadius: '99px', whiteSpace: 'nowrap' }}>✓ Match</span>
+                        ) : (
+                          <span style={{ fontSize: '0.65rem', color: T.muted, padding: '2px 7px', whiteSpace: 'nowrap' }}>→</span>
                         )}
-                        <select
-                          value={m.recetteId || ''}
-                          onChange={e => setMatchings(prev => prev.map((x, j) => j === i ? { ...x, recetteId: e.target.value || null } : x))}
-                          disabled={m.ignore}
-                          style={{ ...inputSm, width: '100%' }}
-                        >
-                          <option value="">— Sélectionner une fiche —</option>
-                          {recettes.map(r => <option key={r.id} value={r.id}>{r.nom}</option>)}
-                        </select>
                       </div>
 
+                      {/* Fiche select */}
+                      <select
+                        value={m.recetteId || ''}
+                        onChange={e => setMatchings(prev => prev.map((x, j) => {
+                          if (j !== i) return x;
+                          const newId = e.target.value || null;
+                          const rec = recettes.find(r => r.id === newId);
+                          const prixVente = x.prixVenteIA ?? (rec?.prixVentePratiqueTTC > 0 ? rec.prixVentePratiqueTTC : null);
+                          return { ...x, recetteId: newId, prixVente };
+                        }))}
+                        disabled={m.ignore}
+                        style={{ ...inputSm, width: '100%' }}
+                      >
+                        <option value="">— Sélectionner une fiche —</option>
+                        {recettes.map(r => <option key={r.id} value={r.id}>{r.nom}</option>)}
+                      </select>
+
+                      {/* Ignore button */}
                       <button
                         onClick={() => setMatchings(prev => prev.map((x, j) => j === i ? { ...x, ignore: !x.ignore } : x))}
                         style={{

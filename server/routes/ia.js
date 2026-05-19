@@ -62,10 +62,15 @@ Retourne UNIQUEMENT un JSON valide sans markdown avec cette structure exacte :
   ]
 }
 
+RÈGLE CRITIQUE sur la détection des colonnes :
+- Si le document n'a que DEUX colonnes, la première est TOUJOURS le nom du plat et la deuxième est TOUJOURS la quantité vendue. Ne jamais interpréter la deuxième colonne comme un prix.
+- Si le document n'a que TROIS colonnes sans en-tête de prix explicite, les colonnes sont : nom du plat, quantité vendue, et une troisième colonne (date ou service). Il n'y a pas de prix.
+- "prixVente" doit être null sauf si une colonne de prix est EXPLICITEMENT présente et clairement identifiable dans le document (intitulée "prix", "tarif", "PU", "prix unitaire", "montant unitaire", "prix TTC", etc.). Ne jamais déduire le prix depuis la quantité ou toute autre colonne ambiguë.
+
 RÈGLES ABSOLUES :
 - "nom_plat" : colonne avec les noms des plats/articles vendus
-- "quantite" : nombre de portions/couverts vendus (entier positif)
-- "prix_unitaire" : prix de vente unitaire TTC en euros
+- "quantite" : nombre de portions/couverts vendus — toujours un entier positif, jamais un montant en euros
+- "prix_unitaire" : prix de vente unitaire TTC en euros — null si absent du document
 - "date" : date ou période de la vente
 - "service" : "midi" (déjeuner/lunch) ou "soir" (dîner/dinner) si présent
 - incertain: true si tu n'es pas sûr du type d'une colonne
