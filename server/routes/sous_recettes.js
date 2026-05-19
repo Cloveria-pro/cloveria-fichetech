@@ -5,17 +5,39 @@ import { getDb } from '../db.js';
 const router = express.Router();
 const PROJ = { projection: { _id: 0 } };
 
+function norm(str) {
+  return (str || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+async function enrichIngredients(ingredients, userId, db) {
+  if (!ingredients || ingredients.length === 0) return ingredients || [];
+  const catalog = await db.collection('ingredients')
+    .find({ $or: [{ user_id: userId }, { user_id: 'demo' }] }, PROJ)
+    .toArray();
+  return ingredients.map(ing => {
+    if (!ing.nom) return ing;
+    const found = catalog.find(c => norm(c.nom) === norm(ing.nom));
+    return found
+      ? { ...ing, prixUnitaire: found.prixUnitaire }
+      : { ...ing, prixUnitaire: ing.prixUnitaire ?? 0 };
+  });
+}
+
 router.get('/', async (req, res) => {
   const db = await getDb();
   const items = await db.collection('sous_recettes').find({ user_id: req.userId }, PROJ).toArray();
-  res.json(items);
+  const enriched = await Promise.all(items.map(async sr => ({
+    ...sr,
+    ingredients: await enrichIngredients(sr.ingredients, req.userId, db),
+  })));
+  res.json(enriched);
 });
 
 router.get('/:id', async (req, res) => {
   const db = await getDb();
   const item = await db.collection('sous_recettes').findOne({ id: req.params.id, user_id: req.userId }, PROJ);
   if (!item) return res.status(404).json({ error: 'Introuvable' });
-  res.json(item);
+  res.json({ ...item, ingredients: await enrichIngredients(item.ingredients, req.userId, db) });
 });
 
 router.post('/', async (req, res) => {

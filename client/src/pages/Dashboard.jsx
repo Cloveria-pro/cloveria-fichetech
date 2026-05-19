@@ -6,14 +6,14 @@ import { coutPortionHT, foodCostPct } from '../utils.js';
 const T = { green: '#2D6A4F', orange: '#D97706', red: '#DC2626', text: '#1C2B1E', muted: '#6B7280' };
 const card = { background: '#fff', borderRadius: '16px', boxShadow: '0 2px 16px rgba(0,0,0,0.07)' };
 
-function fcColor(pct) {
-  if (pct < 30) return T.green;
-  if (pct <= 35) return T.orange;
+function fcColor(pct, cible) {
+  if (pct < cible) return T.green;
+  if (pct <= cible + 5) return T.orange;
   return T.red;
 }
-function fcLabel(pct) {
-  if (pct < 30) return 'Excellent';
-  if (pct <= 35) return 'Attention';
+function fcLabel(pct, cible) {
+  if (pct < cible) return 'Excellent';
+  if (pct <= cible + 5) return 'Attention';
   return 'Critique';
 }
 
@@ -162,16 +162,16 @@ export default function Dashboard() {
                 <div style={{
                   fontFamily: "'Playfair Display', serif",
                   fontSize: '3rem', fontWeight: 700,
-                  color: fcColor(fcMoyen), lineHeight: 1.05,
+                  color: fcColor(fcMoyen, cible), lineHeight: 1.05,
                   letterSpacing: '-0.02em', marginTop: '0.5rem',
                 }}>
                   {fcMoyen.toFixed(1)}%
                 </div>
                 <div style={{
                   fontSize: '0.875rem', fontWeight: 700,
-                  color: fcColor(fcMoyen), marginTop: '0.35rem', marginBottom: '0.75rem',
+                  color: fcColor(fcMoyen, cible), marginTop: '0.35rem', marginBottom: '0.75rem',
                 }}>
-                  {fcLabel(fcMoyen)}
+                  {fcLabel(fcMoyen, cible)}
                 </div>
               </>
             ) : (

@@ -189,8 +189,10 @@ export default function SousRecettes() {
                           catalog={catalog}
                           onChange={fields => updateIng(idx, {
                             nom: fields.nom !== undefined ? fields.nom : ing.nom,
-                            ...(fields.prixUnitaire !== undefined ? { prixUnitaire: fields.prixUnitaire } : {}),
-                            ...(fields.unite !== undefined ? { unite: fields.unite } : {}),
+                            ...(fields.prixUnitaire !== undefined ? {
+                              prixUnitaire: fields.prixUnitaire,
+                              unite: fields.unite !== undefined ? fields.unite : ing.unite,
+                            } : {}),
                           })}
                         />
                       </td>
