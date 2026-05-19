@@ -270,7 +270,8 @@ export default function Dashboard() {
               />
               <div style={{
                 position: 'absolute', inset: 0,
-                background: 'linear-gradient(to right, white 0%, transparent 35%)',
+                background: 'linear-gradient(to right, white 0%, transparent 40%)',
+                boxShadow: 'inset 8px 0 16px rgba(255,255,255,0.6)',
                 pointerEvents: 'none',
               }} />
             </div>
