@@ -99,7 +99,11 @@ export default function ImportFicheModal({ onClose }) {
     try {
       const fd = new FormData();
       fd.append('fiche', file);
-      const data = await api.ia.analyserFiche(fd);
+      const [data, freshCatalog] = await Promise.all([
+        api.ia.analyserFiche(fd),
+        api.ingredients.list().catch(() => catalog),
+      ]);
+      setCatalog(freshCatalog);
       setResult(data);
       setFicheForm({
         nom: data.nom || '',
@@ -110,7 +114,7 @@ export default function ImportFicheModal({ onClose }) {
       });
       const ings = data.ingredients || [];
       setIngChoices(ings.map(ing => {
-        const match = findMatch(ing.nom, catalog);
+        const match = findMatch(ing.nom, freshCatalog);
         return {
           mode: ing.prixUnitaire !== null ? 'creer' : 'creer_sans_prix',
           selectedCatalogId: match?.item?.id || '',

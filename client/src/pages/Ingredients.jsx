@@ -3,6 +3,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { api, API_URL, authHeaders } from '../api.js';
 import { calculerCoutIngredient } from '../conversions.js';
 
+function norm(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim(); }
+
 const CATEGORIES = ['viande', 'poisson', 'légume', 'produit laitier', 'épice', 'condiment', 'épicerie', 'épicerie fine', 'fruit', 'autre'];
 const UNITES = ['kg', 'L', 'piece', 'g', 'ml', 'botte', 'c.s.', 'c.c.'];
 const TVA_OPTIONS = [
@@ -281,6 +283,7 @@ export default function Ingredients() {
   const [undoStack, setUndoStack] = useState([]);
   const [recherche, setRecherche] = useState('');
   const [catFilter, setCatFilter] = useState('');
+  const [ficheFilter, setFicheFilter] = useState('');
   const [editId, setEditId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [showAdd, setShowAdd] = useState(false);
@@ -333,10 +336,15 @@ export default function Ingredients() {
     clearTimeout(autoSaveTimer.current);
   }
 
+  const ficheFilterNorms = ficheFilter
+    ? new Set((recettes.find(r => r.id === ficheFilter)?.ingredients || []).map(fi => norm(fi.nom)))
+    : null;
+
   const filtered = items
     .filter(i =>
       i.nom.toLowerCase().includes(recherche.toLowerCase()) &&
-      (catFilter === '' || i.categorie === catFilter)
+      (catFilter === '' || i.categorie === catFilter) &&
+      (!ficheFilterNorms || ficheFilterNorms.has(norm(i.nom)))
     )
     .sort((a, b) => {
       const av = sortField === 'prixUnitaire' ? a.prixUnitaire : (a[sortField] || '').toLowerCase();
@@ -491,6 +499,15 @@ export default function Ingredients() {
           <option value="">Toutes les catégories</option>
           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
+        {recettes.length > 0 && (
+          <select value={ficheFilter} onChange={e => setFicheFilter(e.target.value)}
+            style={{ ...inputStyle, width: 'auto', cursor: 'pointer', borderColor: ficheFilter ? '#2D6A4F' : '#E5E0D8' }}>
+            <option value="">Toutes les fiches</option>
+            {[...recettes].sort((a, b) => a.nom.localeCompare(b.nom)).map(r => (
+              <option key={r.id} value={r.id}>{r.nom}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* Tableau */}

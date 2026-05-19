@@ -9,6 +9,30 @@ function norm(str) {
   return (str || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
 }
 
+async function syncIngredientsToBase(ingredients, userId, db) {
+  if (!ingredients || ingredients.length === 0) return;
+  const existing = await db.collection('ingredients')
+    .find({ $or: [{ user_id: userId }, { user_id: 'demo' }] }, { projection: { _id: 0, nom: 1 } })
+    .toArray();
+  const existingNorms = new Set(existing.map(i => norm(i.nom)));
+  const seen = new Set();
+  for (const ing of ingredients) {
+    if (!ing.nom?.trim()) continue;
+    const n = norm(ing.nom);
+    if (existingNorms.has(n) || seen.has(n)) continue;
+    seen.add(n);
+    await db.collection('ingredients').insertOne({
+      id: uuidv4(),
+      user_id: userId,
+      nom: ing.nom.trim(),
+      prixUnitaire: 0,
+      unite: ing.unite || 'g',
+      fournisseur: '',
+      createdAt: new Date().toISOString(),
+    });
+  }
+}
+
 async function enrichIngredients(ingredients, userId, db) {
   if (!ingredients || ingredients.length === 0) return ingredients || [];
   const catalog = await db.collection('ingredients')
@@ -45,6 +69,7 @@ router.post('/', async (req, res) => {
   const item = { id: uuidv4(), user_id: req.userId, ...req.body, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
   await db.collection('recettes').insertOne(item);
   delete item._id;
+  syncIngredientsToBase(item.ingredients, req.userId, db).catch(() => {});
   res.status(201).json(item);
 });
 
@@ -55,6 +80,7 @@ router.put('/:id', async (req, res) => {
   if (!existing) return res.status(404).json({ error: 'Introuvable' });
   const updated = { ...existing, ...req.body, id: req.params.id, user_id: req.userId, updatedAt: new Date().toISOString() };
   await col.replaceOne({ id: req.params.id, user_id: req.userId }, updated);
+  syncIngredientsToBase(updated.ingredients, req.userId, db).catch(() => {});
   res.json(updated);
 });
 
