@@ -26,14 +26,16 @@ const router = express.Router();
 
 const uploadVentes = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_, file, cb) => {
     const ok = [
       'text/csv', 'text/plain', 'application/csv',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'application/vnd.ms-excel',
-    ].includes(file.mimetype) || /\.(csv|xlsx|xls)$/i.test(file.originalname);
-    cb(ok ? null : new Error('Format non supporté (CSV ou Excel uniquement)'), ok);
+      'application/pdf',
+      'image/jpeg', 'image/jpg', 'image/png', 'image/webp',
+    ].includes(file.mimetype) || /\.(csv|xlsx|xls|pdf|jpg|jpeg|png|webp)$/i.test(file.originalname);
+    cb(ok ? null : new Error('Format non supporté'), ok);
   },
 });
 
@@ -48,30 +50,7 @@ const upload = multer({
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-router.post('/analyser-ventes', uploadVentes.single('ventes'), async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'Fichier manquant' });
-
-  const isExcel = [
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'application/vnd.ms-excel',
-  ].includes(req.file.mimetype) || /\.(xlsx|xls)$/i.test(req.file.originalname);
-
-  let textContent;
-  if (isExcel) {
-    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
-    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-    textContent = XLSX.utils.sheet_to_csv(firstSheet);
-  } else {
-    textContent = req.file.buffer.toString('utf-8');
-  }
-
-  if (textContent.length > 10000) textContent = textContent.substring(0, 10000) + '\n[... tronqué]';
-
-  try {
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 4096,
-      system: `Tu es un expert en restauration et analyse de données de ventes POS (point de vente). Analyse ce fichier de ventes et identifie la structure des données.
+const VENTES_SYSTEM = `Tu es un expert en restauration et analyse de données de ventes POS (point de vente). Analyse ce fichier de ventes et identifie la structure des données.
 
 Retourne UNIQUEMENT un JSON valide sans markdown avec cette structure exacte :
 {
@@ -94,8 +73,47 @@ RÈGLES ABSOLUES :
 - Ignore les boissons (eau, café, thé, vin, bière) si clairement identifiables comme telles
 - Pour "service" dans les lignes : "midi"/"déjeuner"/"lunch" → "midi", "soir"/"dîner"/"dinner" → "soir", sinon null
 - Si quantite n'est pas détectable, utilise 1 comme valeur par défaut
-- Ne retourne que les lignes plats/articles réels, pas les métadonnées`,
-      messages: [{ role: 'user', content: `Analyse ce fichier de ventes :\n\n${textContent}` }],
+- Ne retourne que les lignes plats/articles réels, pas les métadonnées`;
+
+router.post('/analyser-ventes', uploadVentes.single('ventes'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Fichier manquant' });
+
+  const VISUAL_MIMES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  const isVisual = VISUAL_MIMES.includes(req.file.mimetype) || /\.(pdf|jpg|jpeg|png|webp)$/i.test(req.file.originalname);
+
+  let messageContent;
+
+  if (isVisual) {
+    const base64 = req.file.buffer.toString('base64');
+    const isPDF = req.file.mimetype === 'application/pdf' || /\.pdf$/i.test(req.file.originalname);
+    const fileBlock = isPDF
+      ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } }
+      : { type: 'image', source: { type: 'base64', media_type: req.file.mimetype || 'image/jpeg', data: base64 } };
+    messageContent = [fileBlock, { type: 'text', text: 'Analyse ce document de ventes et retourne le JSON.' }];
+  } else {
+    const isExcel = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+    ].includes(req.file.mimetype) || /\.(xlsx|xls)$/i.test(req.file.originalname);
+
+    let textContent;
+    if (isExcel) {
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      textContent = XLSX.utils.sheet_to_csv(firstSheet);
+    } else {
+      textContent = req.file.buffer.toString('utf-8');
+    }
+    if (textContent.length > 10000) textContent = textContent.substring(0, 10000) + '\n[... tronqué]';
+    messageContent = `Analyse ce fichier de ventes :\n\n${textContent}`;
+  }
+
+  try {
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4096,
+      system: VENTES_SYSTEM,
+      messages: [{ role: 'user', content: messageContent }],
     });
 
     const text = message.content[0].text;
