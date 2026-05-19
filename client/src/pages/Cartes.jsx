@@ -134,13 +134,14 @@ async function downloadPDF(htmlString, filename, landscape = false) {
   wrapper.appendChild(content);
   document.body.appendChild(wrapper);
   try {
-    await html2pdf().set({
+    const url = await html2pdf().set({
       margin: landscape ? [8, 8, 8, 8] : [18, 14, 18, 14],
       filename,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
       jsPDF: { unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' },
-    }).from(content).save();
+    }).from(content).output('bloburl');
+    window.open(url, '_blank');
   } finally {
     document.body.removeChild(wrapper);
   }

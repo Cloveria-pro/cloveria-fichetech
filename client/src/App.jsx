@@ -125,12 +125,10 @@ export default function App() {
 
       {/* Sidebar */}
       <aside style={sidebarStyle}>
-        <div style={{ padding: '1.5rem 1.5rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ background: '#1e3d2a', borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '1.5rem 1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-            <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '12px', padding: '10px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img src="/logo.png" alt="CloverIA FicheTech" style={{ width: '150px', height: 'auto', objectFit: 'contain', display: 'block' }}
-                onError={e => { e.currentTarget.parentElement.style.display = 'none'; }} />
-            </div>
+            <img src="/logo.png" alt="CloverIA FicheTech" style={{ width: '154px', height: 'auto', objectFit: 'contain', display: 'block' }}
+              onError={e => { e.currentTarget.style.display = 'none'; }} />
           </div>
           {isMobile && (
             <button onClick={closeSidebar} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', padding: '4px', position: 'absolute', top: '12px', right: '12px' }}>
