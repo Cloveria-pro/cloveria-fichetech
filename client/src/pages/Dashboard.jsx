@@ -163,14 +163,8 @@ export default function Dashboard() {
       {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
 
       {/* ── Bloc 1 — Hero card ─────────────────────────────────────────────── */}
-      <div style={{ ...card, padding: '2rem 2.5rem', marginBottom: '1.5rem', position: 'relative', overflow: 'hidden' }}>
-        {/* Trèfle décoratif */}
-        <div style={{
-          position: 'absolute', right: '-16px', bottom: '-16px',
-          fontSize: '160px', lineHeight: 1, opacity: 0.07,
-          userSelect: 'none', pointerEvents: 'none', zIndex: 0,
-        }}>🍀</div>
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'stretch', flexDirection: isMobile ? 'column' : 'row' }}>
+      <div style={{ ...card, padding: '2rem 2.5rem', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'stretch', flexDirection: isMobile ? 'column' : 'row' }}>
 
           {/* Colonne gauche */}
           <div style={{ flex: '2 1 0', paddingRight: isMobile ? 0 : '2rem', paddingBottom: isMobile ? '1.25rem' : 0 }}>
@@ -265,6 +259,26 @@ export default function Dashboard() {
             )}
 
           </div>
+
+          {/* Photo champ de trèfles — desktop uniquement */}
+          {!isMobile && (
+            <div style={{ flexShrink: 0, paddingLeft: '1.5rem', display: 'flex', alignItems: 'center' }}>
+              <img
+                src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=600&q=80"
+                alt=""
+                style={{
+                  width: '220px',
+                  height: '180px',
+                  objectFit: 'cover',
+                  borderRadius: '12px',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.10)',
+                  filter: 'brightness(0.9) saturate(1.2)',
+                  display: 'block',
+                }}
+              />
+            </div>
+          )}
+
         </div>
       </div>
 
