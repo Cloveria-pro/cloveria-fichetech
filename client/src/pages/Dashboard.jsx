@@ -162,23 +162,15 @@ export default function Dashboard() {
     <div style={{ maxWidth: '760px', fontFamily: "'DM Sans', sans-serif" }}>
       {showOnboarding && <OnboardingModal onClose={() => setShowOnboarding(false)} />}
 
-      {/* ── Bandeau ambiance ──────────────────────────────────────────────── */}
-      <div style={{
-        height: '120px',
-        borderRadius: '16px',
-        marginBottom: '1.5rem',
-        overflow: 'hidden',
-        position: 'relative',
-        backgroundImage: "url('https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1400&q=80')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center 40%',
-      }}>
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(45,106,79,0.15)' }} />
-      </div>
-
       {/* ── Bloc 1 — Hero card ─────────────────────────────────────────────── */}
-      <div style={{ ...card, padding: '2rem 2.5rem', marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'stretch', flexDirection: isMobile ? 'column' : 'row' }}>
+      <div style={{ ...card, padding: '2rem 2.5rem', marginBottom: '1.5rem', position: 'relative', overflow: 'hidden' }}>
+        {/* Trèfle décoratif */}
+        <div style={{
+          position: 'absolute', right: '-16px', bottom: '-16px',
+          fontSize: '160px', lineHeight: 1, opacity: 0.07,
+          userSelect: 'none', pointerEvents: 'none', zIndex: 0,
+        }}>🍀</div>
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'stretch', flexDirection: isMobile ? 'column' : 'row' }}>
 
           {/* Colonne gauche */}
           <div style={{ flex: '2 1 0', paddingRight: isMobile ? 0 : '2rem', paddingBottom: isMobile ? '1.25rem' : 0 }}>
