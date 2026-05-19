@@ -223,7 +223,7 @@ router.post('/analyser-facture', upload.single('facture'), async (req, res) => {
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 2048,
-      system: 'Tu es un assistant pour professionnels de la restauration. Analyse cette facture fournisseur et extrais tous les produits alimentaires avec leurs prix. Retourne UNIQUEMENT un JSON valide sans markdown : { "produits": [{ "nom": "string", "quantite": number, "unite": "string", "prix_unitaire": number, "prix_total": number }] }. Omets les produits illisibles ou non alimentaires.',
+      system: 'Tu es un assistant pour professionnels de la restauration. Analyse cette facture fournisseur et extrais le fournisseur et tous les produits alimentaires avec leurs prix. Retourne UNIQUEMENT un JSON valide sans markdown : { "fournisseur": "nom du fournisseur ou null si non identifiable", "produits": [{ "nom": "string", "quantite": number, "unite": "string", "prix_unitaire": number, "prix_total": number }] }. Omets les produits illisibles ou non alimentaires.',
       messages: [{ role: 'user', content: [fileBlock, { type: 'text', text: 'Analyse cette facture et retourne le JSON des produits.' }] }],
     });
 
@@ -231,6 +231,7 @@ router.post('/analyser-facture', upload.single('facture'), async (req, res) => {
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return res.status(422).json({ error: 'Réponse IA invalide', raw: text });
     const result = JSON.parse(jsonMatch[0]);
+    const fournisseurFinal = req.body?.fournisseur || result.fournisseur || null;
     getDb().then(db => {
       const meta = {
         id: uuidv4(), user_id: req.userId,
@@ -239,7 +240,7 @@ router.post('/analyser-facture', upload.single('facture'), async (req, res) => {
         fileMimeType: req.file.mimetype,
         dateImport: new Date().toISOString(),
         statut: 'validé',
-        fournisseur: req.body?.fournisseur || null,
+        fournisseur: fournisseurFinal,
         dateFacture: req.body?.dateFacture || null,
         moisFacture: req.body?.moisFacture || null,
         anneeFacture: req.body?.anneeFacture || null,

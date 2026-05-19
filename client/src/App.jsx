@@ -130,7 +130,13 @@ export default function App() {
       {/* Sidebar */}
       <aside style={sidebarStyle}>
         <div style={{ padding: '1.5rem 0 1.25rem', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
-          <div style={{ width: '130px', height: '130px', borderRadius: '50%', background: 'linear-gradient(135deg, #ffffff 0%, #f0f7f4 100%)', border: '2px solid rgba(45,106,79,0.15)', boxShadow: '0 4px 20px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{
+            width: '130px', height: '130px', borderRadius: '50%',
+            background: 'linear-gradient(135deg, #ffffff 0%, #f0f7f4 100%)',
+            border: '2px solid rgba(45,106,79,0.15)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.25), 0 0 0 8px rgba(45,106,79,0.08), 0 0 0 16px rgba(45,106,79,0.04)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
             <img src="/logo.png" alt="CloverIA FicheTech" style={{ width: '110px', height: 'auto', objectFit: 'contain', display: 'block' }}
               onError={e => { e.currentTarget.style.display = 'none'; }} />
           </div>

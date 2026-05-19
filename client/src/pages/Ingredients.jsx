@@ -761,6 +761,7 @@ export default function Ingredients() {
 /* ─── Import Facture IA ──────────────────────────────────────────────────── */
 function ImportFacture({ items, setItems }) {
   const [file, setFile] = useState(null);
+  const [fournisseur, setFournisseur] = useState('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
   const [selected, setSelected] = useState([]);
@@ -794,10 +795,14 @@ function ImportFacture({ items, setItems }) {
     setLoading(true);
     const fd = new FormData();
     fd.append('facture', file);
+    if (fournisseur.trim()) fd.append('fournisseur', fournisseur.trim());
     try {
       const res = await fetch(`${API_URL}/ia/analyser-facture`, { method: 'POST', headers: { ...authHeaders() }, body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+      if (!fournisseur.trim() && data.fournisseur) {
+        setFournisseur(data.fournisseur);
+      }
       const produits = (data.produits || []).map((p, i) => {
         const resolvedNom = resolveAlias(p.nom);
         const match = items.find(it => it.nom.toLowerCase() === resolvedNom.toLowerCase());
@@ -834,13 +839,16 @@ function ImportFacture({ items, setItems }) {
     const newAliases = [];
     const updatedIngredients = [];
 
+    const fournisseurImport = fournisseur.trim() || null;
     for (const p of toImport) {
       if (p._action === 'associate' && p._associateId) {
         const existant = items.find(i => i.id === p._associateId);
         if (existant) {
           const oldPrix = existant.prixUnitaire;
           const newPrix = p.prix_unitaire;
-          const updated = await api.ingredients.update(existant.id, { ...existant, prixUnitaire: newPrix });
+          const updatedData = { ...existant, prixUnitaire: newPrix };
+          if (fournisseurImport) updatedData.fournisseur = fournisseurImport;
+          const updated = await api.ingredients.update(existant.id, updatedData);
           setItems(prev => prev.map(i => i.id === existant.id ? updated : i));
           if (existant.nom.toLowerCase() !== p.nom.toLowerCase()) {
             newAliases.push({ from: p.nom, to: existant.nom });
@@ -850,7 +858,7 @@ function ImportFacture({ items, setItems }) {
           }
         }
       } else {
-        const item = await api.ingredients.create({ nom: p.nom, categorie: 'épicerie', unite: p.unite || 'kg', prixUnitaire: p.prix_unitaire });
+        const item = await api.ingredients.create({ nom: p.nom, categorie: 'épicerie', unite: p.unite || 'kg', prixUnitaire: p.prix_unitaire, ...(fournisseurImport ? { fournisseur: fournisseurImport } : {}) });
         setItems(prev => [...prev, item]);
       }
       count++;
@@ -897,7 +905,7 @@ function ImportFacture({ items, setItems }) {
 
     setToast(`${count} ingrédient${count > 1 ? 's' : ''} importé${count > 1 ? 's' : ''} ✓`);
     setTimeout(() => setToast(''), 3500);
-    setResults(null); setFile(null); setSelected([]);
+    setResults(null); setFile(null); setSelected([]); setFournisseur('');
   }
 
   async function appliquerPrixSuggere(item) {
@@ -997,12 +1005,25 @@ function ImportFacture({ items, setItems }) {
             <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,application/pdf" style={{ display: 'none' }} onChange={e => handleFile(e.target.files[0])} />
           </div>
           {file && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.75rem', padding: '0.6rem 1rem', background: '#F8F6F1', borderRadius: '8px', border: '1px solid #E5E0D8' }}>
-              <span style={{ fontSize: '0.82rem', color: T.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📎 {file.name}</span>
-              <button onClick={analyser} disabled={loading} style={{ padding: '0.4rem 1rem', background: T.green, color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: loading ? 'default' : 'pointer', fontSize: '0.82rem', fontFamily: "'DM Sans', sans-serif", opacity: loading ? 0.8 : 1, whiteSpace: 'nowrap', flexShrink: 0 }}>
-                {loading ? '⏳ Analyse...' : 'Analyser'}
-              </button>
-              <button onClick={() => setFile(null)} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: '0.9rem', padding: '2px', flexShrink: 0, lineHeight: 1 }}>✕</button>
+            <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 1rem', background: '#F8F6F1', borderRadius: '8px', border: '1px solid #E5E0D8' }}>
+                <span style={{ fontSize: '0.82rem', color: T.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📎 {file.name}</span>
+                <button onClick={() => setFile(null)} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: '0.9rem', padding: '2px', flexShrink: 0, lineHeight: 1 }}>✕</button>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ flex: 1, position: 'relative' }}>
+                  <input
+                    type="text"
+                    placeholder="Fournisseur (optionnel — l'IA le détectera si vide)"
+                    value={fournisseur}
+                    onChange={e => setFournisseur(e.target.value)}
+                    style={{ ...inStyle, width: '100%', paddingLeft: '0.75rem', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <button onClick={analyser} disabled={loading} style={{ padding: '0.4rem 1.25rem', background: T.green, color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: loading ? 'default' : 'pointer', fontSize: '0.82rem', fontFamily: "'DM Sans', sans-serif", opacity: loading ? 0.8 : 1, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  {loading ? '⏳ Analyse...' : 'Analyser'}
+                </button>
+              </div>
             </div>
           )}
         </>
@@ -1013,7 +1034,12 @@ function ImportFacture({ items, setItems }) {
           <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #F3EFE8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <span style={{ fontWeight: 600, color: T.text }}>{results.length} produit{results.length !== 1 ? 's' : ''} détecté{results.length !== 1 ? 's' : ''}</span>
-              <span style={{ fontSize: '0.75rem', color: T.muted, marginLeft: '12px' }}>Choisissez l'action pour chaque produit avant d'importer</span>
+              {fournisseur && (
+                <span style={{ marginLeft: '10px', fontSize: '0.75rem', fontWeight: 600, color: T.green, background: 'rgba(45,106,79,0.08)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(45,106,79,0.2)' }}>
+                  {fournisseur}
+                </span>
+              )}
+              <span style={{ fontSize: '0.75rem', color: T.muted, marginLeft: '10px' }}>Choisissez l'action pour chaque produit avant d'importer</span>
             </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button onClick={() => { setResults(null); setFile(null); }} style={{ padding: '0.35rem 0.85rem', border: '1px solid #E5E0D8', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '0.82rem' }}>Annuler</button>
