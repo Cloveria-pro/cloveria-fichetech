@@ -159,7 +159,7 @@ export default function SousRecettes() {
           </div>
 
           {/* Tableau ingrédients */}
-          <div style={{ border: '1px solid #F3EFE8', borderRadius: '8px', overflow: 'hidden', marginBottom: '1rem' }}>
+          <div style={{ border: '1px solid #F3EFE8', borderRadius: '8px', overflow: 'visible', marginBottom: '1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', borderBottom: '1px solid #F3EFE8', background: '#FAFAF8' }}>
               <span style={{ fontSize: '0.78rem', color: T.muted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ingrédients</span>
               <button
