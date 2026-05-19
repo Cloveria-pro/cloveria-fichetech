@@ -40,8 +40,7 @@ export default function IngredientAutocomplete({ value, onChange, catalog, sousR
   const hasSuggestions = catSuggestions.length > 0 || srSuggestions.length > 0;
 
   function select(item) {
-    const unite = item.unite === 'kg' ? 'g' : item.unite === 'L' ? 'ml' : item.unite;
-    onChange({ nom: item.nom, prixUnitaire: item.prixUnitaire, unite });
+    onChange({ nom: item.nom, prixUnitaire: item.prixUnitaire, unite: item.unite });
     setQuery(item.nom);
     setOpen(false);
   }
