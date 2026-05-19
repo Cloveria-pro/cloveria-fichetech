@@ -64,6 +64,19 @@ export const api = {
       if (!res.ok) throw new Error(body?.error || 'Erreur serveur');
       return body;
     }),
+    analyserVentes: (formData) => fetch(`${API_URL}/ia/analyser-ventes`, {
+      method: 'POST',
+      headers: { ...authHeaders() },
+      body: formData,
+    }).then(async res => {
+      const body = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(body?.error || 'Erreur serveur');
+      return body;
+    }),
+  },
+  ventes: {
+    list: () => request('/ventes'),
+    create: (data) => request('/ventes', { method: 'POST', body: JSON.stringify(data) }),
   },
   aliases: {
     list: () => request('/aliases'),

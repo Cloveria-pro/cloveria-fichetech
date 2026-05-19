@@ -2,6 +2,7 @@ import '../env.js';
 import express from 'express';
 import multer from 'multer';
 import Anthropic from '@anthropic-ai/sdk';
+import XLSX from 'xlsx';
 import { getDb } from '../db.js';
 
 function normalize(str) {
@@ -22,6 +23,20 @@ async function matchIngredientPrice(nom, userId) {
 }
 
 const router = express.Router();
+
+const uploadVentes = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_, file, cb) => {
+    const ok = [
+      'text/csv', 'text/plain', 'application/csv',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+    ].includes(file.mimetype) || /\.(csv|xlsx|xls)$/i.test(file.originalname);
+    cb(ok ? null : new Error('Format non supporté (CSV ou Excel uniquement)'), ok);
+  },
+});
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -32,6 +47,66 @@ const upload = multer({
 });
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+router.post('/analyser-ventes', uploadVentes.single('ventes'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Fichier manquant' });
+
+  const isExcel = [
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-excel',
+  ].includes(req.file.mimetype) || /\.(xlsx|xls)$/i.test(req.file.originalname);
+
+  let textContent;
+  if (isExcel) {
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+    textContent = XLSX.utils.sheet_to_csv(firstSheet);
+  } else {
+    textContent = req.file.buffer.toString('utf-8');
+  }
+
+  if (textContent.length > 10000) textContent = textContent.substring(0, 10000) + '\n[... tronqué]';
+
+  try {
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4096,
+      system: `Tu es un expert en restauration et analyse de données de ventes POS (point de vente). Analyse ce fichier de ventes et identifie la structure des données.
+
+Retourne UNIQUEMENT un JSON valide sans markdown avec cette structure exacte :
+{
+  "colonnes": [
+    { "index": 0, "nom": "nom détecté ou inféré", "type": "nom_plat|quantite|prix_unitaire|date|service|inconnu", "incertain": false }
+  ],
+  "lignes": [
+    { "nomPOS": "string", "quantite": number, "prixVente": number_ou_null, "date": "string_ou_null", "service": "midi|soir|null" }
+  ]
+}
+
+RÈGLES ABSOLUES :
+- "nom_plat" : colonne avec les noms des plats/articles vendus
+- "quantite" : nombre de portions/couverts vendus (entier positif)
+- "prix_unitaire" : prix de vente unitaire TTC en euros
+- "date" : date ou période de la vente
+- "service" : "midi" (déjeuner/lunch) ou "soir" (dîner/dinner) si présent
+- incertain: true si tu n'es pas sûr du type d'une colonne
+- Ignore les lignes de totaux, sous-totaux, en-têtes répétés, lignes vides
+- Ignore les boissons (eau, café, thé, vin, bière) si clairement identifiables comme telles
+- Pour "service" dans les lignes : "midi"/"déjeuner"/"lunch" → "midi", "soir"/"dîner"/"dinner" → "soir", sinon null
+- Si quantite n'est pas détectable, utilise 1 comme valeur par défaut
+- Ne retourne que les lignes plats/articles réels, pas les métadonnées`,
+      messages: [{ role: 'user', content: `Analyse ce fichier de ventes :\n\n${textContent}` }],
+    });
+
+    const text = message.content[0].text;
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return res.status(422).json({ error: 'Réponse IA invalide', raw: text });
+    res.json(JSON.parse(jsonMatch[0]));
+  } catch (err) {
+    console.error('IA analyser-ventes error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 router.post('/analyser-fiche', upload.single('fiche'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Fichier manquant' });

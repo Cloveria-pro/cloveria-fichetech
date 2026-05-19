@@ -12,6 +12,7 @@ import authRouter from './routes/auth.js';
 import aliasesRouter from './routes/aliases.js';
 import historiquePrixRouter from './routes/historique_prix.js';
 import sousRecettesRouter from './routes/sous_recettes.js';
+import ventesRouter from './routes/ventes.js';
 import { authMiddleware } from './middleware/auth.js';
 
 const app = express();
@@ -37,6 +38,7 @@ app.use('/api/ia', iaRouter);
 app.use('/api/aliases', aliasesRouter);
 app.use('/api/historique-prix', historiquePrixRouter);
 app.use('/api/sous-recettes', sousRecettesRouter);
+app.use('/api/ventes', ventesRouter);
 
 // Fail fast: connect to MongoDB before accepting requests
 getDb()
