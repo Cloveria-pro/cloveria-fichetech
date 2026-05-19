@@ -130,6 +130,15 @@ export default function FicheTechnique() {
       .then(data => { setRecette(data); setForm(data); setEditMode(false); });
   }
 
+  function handlePhotoUpload(file) {
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { alert('Photo trop volumineuse (max 10 Mo)'); return; }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { alert('Format non supporté. Utilisez JPEG, PNG ou WebP.'); return; }
+    const reader = new FileReader();
+    reader.onload = e => setForm(f => ({ ...f, photo: e.target.result }));
+    reader.readAsDataURL(file);
+  }
+
   function updateIngredient(idx, fields) {
     const ingredients = [...form.ingredients];
     ingredients[idx] = { ...ingredients[idx], ...fields };
@@ -256,6 +265,9 @@ export default function FicheTechnique() {
 
     const donutSVG = buildDonutSVG(recette.ingredients || []);
     const portionLabel = couverts !== form.portions ? ' — ajusté pour ' + couverts + ' couverts' : '';
+    const photoHtml = form.photo
+      ? '<div style="margin-bottom:20px;border-radius:8px;overflow:hidden"><img src="' + form.photo + '" style="width:100%;height:200px;object-fit:cover;display:block" /></div>'
+      : '';
 
     const html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Fiche — ' + recette.nom + '</title><style>'
       + '@page{size:A4;margin:18mm 15mm}'
@@ -271,6 +283,7 @@ export default function FicheTechnique() {
       + '<div><div style="font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#2D6A4F;margin-bottom:4px">CloverIA FicheTech</div><h1 style="font-family:Georgia,serif;font-size:1.6rem;line-height:1.2;margin:0 0 6px">' + recette.nom + '</h1><span style="display:inline-block;font-size:0.7rem;font-weight:700;text-transform:uppercase;color:#2D6A4F;background:rgba(45,106,79,0.08);padding:3px 8px;border-radius:4px">' + (recette.categorie || '') + '</span>' + (portionLabel ? '<span style="margin-left:8px;font-size:0.75rem;color:#C9A84C;font-weight:600">' + portionLabel + '</span>' : '') + '</div>'
       + '<div style="text-align:right"><div style="font-weight:600;color:#1C2B1E;font-size:0.9rem">' + parametres.etablissement + '</div><div style="font-size:0.8rem;color:#6B7280;margin-top:2px">' + date + '</div><div style="margin-top:8px;font-size:0.78rem;color:#6B7280">' + (form.tempsPreparation || 0) + ' min prép. · ' + (form.tempsCuisson || 0) + ' min cuisson · ' + couverts + ' couvert' + (couverts > 1 ? 's' : '') + (couverts !== form.portions ? ' (base ' + form.portions + ')' : '') + '</div></div>'
       + '</div>'
+      + photoHtml
       + '<div class="section"><div class="section-title">Ingrédients' + portionLabel + '</div>'
       + '<table><thead><tr><th>Ingrédient</th><th style="text-align:right">Quantité</th><th>Unité</th><th style="text-align:right">Prix/unité</th><th style="text-align:right">TVA</th><th style="text-align:right">Coût</th></tr></thead>'
       + '<tbody>' + ingRows + '</tbody>'
@@ -434,6 +447,35 @@ export default function FicheTechnique() {
           )}
         </div>
       </div>
+
+      {/* Photo du plat */}
+      {!editMode && recette.photo && (
+        <div style={{ marginBottom: '1.5rem', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
+          <img src={recette.photo} alt={recette.nom} style={{ width: '100%', height: '220px', objectFit: 'cover', display: 'block' }} />
+        </div>
+      )}
+      {editMode && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          {form.photo ? (
+            <div style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden' }}>
+              <img src={form.photo} alt="" style={{ width: '100%', height: '220px', objectFit: 'cover', display: 'block' }} />
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.35)' }}>
+                <label style={{ cursor: 'pointer', padding: '0.5rem 1.25rem', background: '#fff', borderRadius: '8px', fontWeight: 600, fontSize: '0.875rem', color: T.green, border: `1.5px solid ${T.green}` }}>
+                  Changer la photo
+                  <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={e => handlePhotoUpload(e.target.files[0])} />
+                </label>
+              </div>
+            </div>
+          ) : (
+            <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', cursor: 'pointer', minHeight: '120px', borderRadius: '12px', border: '2px dashed #E5E0D8', background: '#F8F6F1', transition: 'all 0.15s' }}>
+              <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📷</div>
+              <div style={{ fontWeight: 600, color: T.muted, fontSize: '0.875rem', marginBottom: '4px' }}>Ajouter une photo</div>
+              <div style={{ fontSize: '0.75rem', color: '#B0A898' }}>JPEG, PNG, WebP · max 10 Mo</div>
+              <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={e => handlePhotoUpload(e.target.files[0])} />
+            </label>
+          )}
+        </div>
+      )}
 
       {/* Stats rapides + Couverts */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>

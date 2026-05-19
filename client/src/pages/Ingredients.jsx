@@ -487,6 +487,8 @@ export default function Ingredients() {
         </div>
       </div>
 
+      <ImportFacture items={items} setItems={setItems} />
+
       {/* Filtres */}
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
         <input
@@ -745,8 +747,6 @@ export default function Ingredients() {
           + Ajouter un ingrédient
         </button>
       )}
-
-      <ImportFacture items={items} setItems={setItems} />
       </>)}
     </div>
   );

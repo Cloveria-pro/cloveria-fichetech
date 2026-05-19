@@ -234,13 +234,13 @@ export default function Recettes() {
           />
           <button
             onClick={() => setShowImport(true)}
-            style={{ padding: '0.55rem 1.25rem', background: 'transparent', color: T.green, borderRadius: '8px', fontWeight: 600, fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif", border: `1.5px solid ${T.green}`, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s' }}
+            style={{ padding: '0.65rem 1.5rem', background: '#fff', color: T.green, borderRadius: '8px', fontWeight: 700, fontSize: '0.95rem', fontFamily: "'DM Sans', sans-serif", border: `2px solid ${T.green}`, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(45,106,79,0.06)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}
           >↑ Importer une fiche</button>
           <button
             onClick={() => navigate('/fiches-techniques/nouvelle')}
-            style={{ padding: '0.55rem 1.25rem', background: T.green, color: '#fff', borderRadius: '8px', fontWeight: 600, fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif", border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
+            style={{ padding: '0.65rem 1.5rem', background: T.green, color: '#fff', borderRadius: '8px', fontWeight: 700, fontSize: '0.95rem', fontFamily: "'DM Sans', sans-serif", border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
             onMouseEnter={e => e.currentTarget.style.background = '#1e4d38'}
             onMouseLeave={e => e.currentTarget.style.background = T.green}
           >+ Nouvelle fiche</button>
