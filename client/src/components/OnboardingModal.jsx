@@ -25,8 +25,8 @@ export default function OnboardingModal({ onClose }) {
   }
 
   function goTo(path) {
-    dismiss();
     navigate(path);
+    setStep(s => Math.min(s + 1, 2));
   }
 
   const btnPrimary = {
@@ -57,7 +57,7 @@ export default function OnboardingModal({ onClose }) {
 
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <img src="/logo.png" alt="CloverIA FicheTech" style={{ width: '140px', height: 'auto', objectFit: 'contain', display: 'inline-block' }} />
+          <img src="/logo.png" alt="CloverIA FicheTech" style={{ width: '180px', height: 'auto', objectFit: 'contain', display: 'inline-block' }} />
         </div>
 
         {/* Progress dots */}

@@ -9,6 +9,9 @@ export default defineConfig({
       '/api': 'http://localhost:3001',
     },
   },
+  optimizeDeps: {
+    include: ['html2pdf.js'],
+  },
   build: {
     outDir: 'dist',
     sourcemap: false,

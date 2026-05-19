@@ -59,16 +59,26 @@ export default function Parametres() {
           <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, color: T.text, marginBottom: '1.25rem' }}>Food Cost cible</h3>
           <div>
             <label style={labelStyle}>Objectif food cost</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ position: 'relative', paddingTop: '2.75rem' }}>
+              <span style={{
+                position: 'absolute',
+                top: 0,
+                left: `${((cible - 20) / (50 - 20)) * 100}%`,
+                transform: 'translateX(-50%)',
+                fontFamily: "'Playfair Display', serif",
+                fontSize: '1.8rem',
+                fontWeight: 700,
+                color: fcColor(cible),
+                pointerEvents: 'none',
+                whiteSpace: 'nowrap',
+                lineHeight: 1,
+              }}>{cible}%</span>
               <input
                 type="range" min="20" max="50" step="1"
                 value={cible}
                 onChange={e => setForm(f => ({ ...f, foodCostCible: parseInt(e.target.value) }))}
-                style={{ flex: 1, accentColor: fcColor(cible), cursor: 'pointer' }}
+                style={{ width: '100%', accentColor: fcColor(cible), cursor: 'pointer', display: 'block' }}
               />
-              <div style={{ minWidth: '80px', textAlign: 'center' }}>
-                <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', fontWeight: 700, color: fcColor(cible) }}>{cible}%</span>
-              </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: T.muted, marginTop: '4px' }}>
               <span>20%</span><span>30%</span><span>40%</span><span>50%</span>

@@ -6,6 +6,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
 import { coutIng } from '../utils.js';
 import { api } from '../api.js';
+import html2pdf from 'html2pdf.js';
 
 const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280', red: '#DC2626' };
 const card = { background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' };
@@ -105,10 +106,51 @@ function ListeCartes({ cartes, onNew, onOpen, onDelete }) {
   );
 }
 
+async function downloadPDF(htmlString, filename, landscape = false) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(htmlString, 'text/html');
+  doc.body.querySelectorAll('*').forEach(el => {
+    if (el.style.position === 'fixed') {
+      el.style.position = 'static';
+      el.style.removeProperty('bottom');
+      el.style.removeProperty('top');
+      el.style.removeProperty('left');
+      el.style.removeProperty('right');
+      el.style.marginTop = '16px';
+    }
+  });
+  const styleText = [...doc.querySelectorAll('style')]
+    .map(s => s.textContent.replace(/@page[^}]*\{[^}]*\}/g, ''))
+    .join('\n');
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = `position:absolute;top:-9999px;left:0;background:white;width:${landscape ? '277' : '180'}mm;`;
+  if (styleText) {
+    const styleEl = document.createElement('style');
+    styleEl.textContent = styleText;
+    wrapper.appendChild(styleEl);
+  }
+  const content = document.createElement('div');
+  content.innerHTML = doc.body.innerHTML;
+  wrapper.appendChild(content);
+  document.body.appendChild(wrapper);
+  try {
+    await html2pdf().set({
+      margin: landscape ? [8, 8, 8, 8] : [18, 14, 18, 14],
+      filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' },
+    }).from(content).save();
+  } finally {
+    document.body.removeChild(wrapper);
+  }
+}
+
 // ─── Vue consultant ───────────────────────────────────────────────────────────
 function VueCarte({ carte, recettes, parametres, onEdit, onBack, onAutoSave }) {
   // showAllergenesMenu removed — buttons are now direct
   const [closedSections, setClosedSections] = useState(new Set());
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [localSections, setLocalSections] = useState(carte?.sections || []);
   const autoSaveTimerVC = useRef(null);
   const width = useWindowWidth();
@@ -202,49 +244,57 @@ function VueCarte({ carte, recettes, parametres, onEdit, onBack, onAutoSave }) {
   if (incomplets > 0) recos.push({ type: 'warning', msg: `⚠️ ${incomplets} plat${incomplets > 1 ? 's ont' : ' a'} des coûts incomplets — renseignez les prix des ingrédients` });
 
   // ── Export Format A (serveurs — tableau paysage) ──
-  function exportAllergenesA() {
-    const headers = ALLERGENES_14.map(a =>
-      `<th style="background:#2D6A4F;color:#fff;padding:3px 1px;font-size:6.5px;white-space:nowrap;text-align:center">${a.code}</th>`
-    ).join('');
-    const rows = allSectionsWithData.flatMap(s => [
-      `<tr><td colspan="15" style="background:#F3EFE8;font-weight:700;font-style:italic;padding:4px 8px;font-size:8px;border:1px solid #ccc">${s.titre}</td></tr>`,
-      ...s.platsData.map(p => {
-        const cells = ALLERGENES_14.map(a =>
-          `<td style="text-align:center;border:1px solid #ddd;color:#dc2626;font-weight:700;font-size:9px">${(p.rec?.allergenes || []).includes(a.key) ? '●' : ''}</td>`
-        ).join('');
-        return `<tr><td style="padding:3px 6px;font-size:8px;border:1px solid #ddd;max-width:160px">${p.nom}</td>${cells}</tr>`;
-      }),
-    ]).join('');
-    const footer = ALLERGENES_14.map(a => `${a.code} = ${a.label}`).join(' · ');
-    const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Allergènes serveurs — ${carte.nom}</title>
-<style>@page{size:A4 landscape;margin:8mm}body{font-family:Arial,sans-serif;font-size:8px;margin:0}table{width:100%;border-collapse:collapse}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>
+  async function exportAllergenesA() {
+    if (pdfLoading) return;
+    setPdfLoading(true);
+    try {
+      const headers = ALLERGENES_14.map(a =>
+        `<th style="background:#2D6A4F;color:#fff;padding:3px 1px;font-size:6.5px;white-space:nowrap;text-align:center">${a.code}</th>`
+      ).join('');
+      const rows = allSectionsWithData.flatMap(s => [
+        `<tr><td colspan="15" style="background:#F3EFE8;font-weight:700;font-style:italic;padding:4px 8px;font-size:8px;border:1px solid #ccc">${s.titre}</td></tr>`,
+        ...s.platsData.map(p => {
+          const cells = ALLERGENES_14.map(a =>
+            `<td style="text-align:center;border:1px solid #ddd;color:#dc2626;font-weight:700;font-size:9px">${(p.rec?.allergenes || []).includes(a.key) ? '●' : ''}</td>`
+          ).join('');
+          return `<tr><td style="padding:3px 6px;font-size:8px;border:1px solid #ddd;max-width:160px">${p.nom}</td>${cells}</tr>`;
+        }),
+      ]).join('');
+      const footer = ALLERGENES_14.map(a => `${a.code} = ${a.label}`).join(' · ');
+      const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Allergènes serveurs — ${carte.nom}</title>
+<style>body{font-family:Arial,sans-serif;font-size:8px;margin:0}table{width:100%;border-collapse:collapse}</style>
 </head><body>
 <div style="margin-bottom:6px;font-size:9px;font-weight:600">${etablissement} · ${carte.nom} · ${date}</div>
 <table><thead><tr><th style="background:#2D6A4F;color:#fff;text-align:left;padding:4px 8px;font-size:8px;min-width:140px">Plat</th>${headers}</tr></thead><tbody>${rows}</tbody></table>
 <div style="margin-top:6px;font-size:6.5px;color:#666;line-height:1.8">${footer}</div>
 </body></html>`;
-    const win = window.open('', '_blank', 'width=1100,height=700');
-    win.document.write(html); win.document.close(); win.focus();
+      await downloadPDF(html, `allergenes-serveurs-${(carte.nom || 'carte').replace(/[^a-z0-9]/gi, '-').toLowerCase()}.pdf`, true);
+    } finally {
+      setPdfLoading(false);
+    }
   }
 
   // ── Export Format B (clients — élégant par catégorie) ──
-  function exportAllergenesB() {
-    const labelMap = Object.fromEntries(ALLERGENES_14.map(a => [a.key, a.label]));
-    const sections = allSectionsWithData
-      .filter(s => s.plats.length > 0)
-      .map(s => {
-        const plats = s.platsData.map(p => {
-          const allergs = (p.rec?.allergenes || []).map(k => labelMap[k] || k).join(', ');
-          return `<div style="padding:10px 0;border-bottom:1px solid #F3EFE8">
-            <div style="font-family:Georgia,serif;font-size:1rem;font-weight:700;color:#1C2B1E">${p.nom}${p.prixVente > 0 ? `<span style="float:right;font-weight:400;font-size:0.9rem">${p.prixVente.toFixed(2)} €</span>` : ''}</div>
-            ${(p.rec?.description_commerciale || p.rec?.description) ? `<div style="font-size:0.82rem;color:#6B7280;margin:2px 0 4px;line-height:1.4;font-style:italic">${p.rec.description_commerciale || p.rec.description}</div>` : ''}
-            <div style="font-size:0.78rem;color:#9A3412"><em>${allergs ? `Contient : ${allergs}` : 'Aucun allergène majeur déclaré'}</em></div>
-          </div>`;
+  async function exportAllergenesB() {
+    if (pdfLoading) return;
+    setPdfLoading(true);
+    try {
+      const labelMap = Object.fromEntries(ALLERGENES_14.map(a => [a.key, a.label]));
+      const sections = allSectionsWithData
+        .filter(s => s.plats.length > 0)
+        .map(s => {
+          const plats = s.platsData.map(p => {
+            const allergs = (p.rec?.allergenes || []).map(k => labelMap[k] || k).join(', ');
+            return `<div style="padding:10px 0;border-bottom:1px solid #F3EFE8">
+              <div style="font-family:Georgia,serif;font-size:1rem;font-weight:700;color:#1C2B1E">${p.nom}${p.prixVente > 0 ? `<span style="float:right;font-weight:400;font-size:0.9rem">${p.prixVente.toFixed(2)} €</span>` : ''}</div>
+              ${(p.rec?.description_commerciale || p.rec?.description) ? `<div style="font-size:0.82rem;color:#6B7280;margin:2px 0 4px;line-height:1.4;font-style:italic">${p.rec.description_commerciale || p.rec.description}</div>` : ''}
+              <div style="font-size:0.78rem;color:#9A3412"><em>${allergs ? `Contient : ${allergs}` : 'Aucun allergène majeur déclaré'}</em></div>
+            </div>`;
+          }).join('');
+          return `<div style="margin-bottom:24px"><h2 style="font-family:Georgia,serif;font-size:1.05rem;font-weight:700;color:#1C2B1E;border-bottom:2px solid #2D6A4F;padding-bottom:6px;margin-bottom:0">${s.titre}</h2>${plats}</div>`;
         }).join('');
-        return `<div style="margin-bottom:24px"><h2 style="font-family:Georgia,serif;font-size:1.05rem;font-weight:700;color:#1C2B1E;border-bottom:2px solid #2D6A4F;padding-bottom:6px;margin-bottom:0">${s.titre}</h2>${plats}</div>`;
-      }).join('');
-    const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Allergènes clients — ${carte.nom}</title>
-<style>@page{size:A4;margin:18mm 14mm}body{font-family:"Helvetica Neue",Arial,sans-serif;color:#1C2B1E;font-size:12px;margin:0}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>
+      const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Allergènes clients — ${carte.nom}</title>
+<style>body{font-family:"Helvetica Neue",Arial,sans-serif;color:#1C2B1E;font-size:12px;margin:0}</style>
 </head><body>
 <div style="text-align:center;margin-bottom:24px;padding-bottom:14px;border-bottom:2px solid #2D6A4F">
   <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#2D6A4F;margin-bottom:3px">${etablissement}</div>
@@ -252,33 +302,38 @@ function VueCarte({ carte, recettes, parametres, onEdit, onBack, onAutoSave }) {
   <div style="font-size:0.75rem;color:#6B7280">Information allergènes · ${date}</div>
 </div>
 ${sections}
-<div style="position:fixed;bottom:10mm;left:14mm;right:14mm;border-top:1px solid #E5E0D8;padding-top:5px;font-size:0.6rem;color:#9CA3AF;text-align:center">
+<div style="margin-top:24px;border-top:1px solid #E5E0D8;padding-top:5px;font-size:0.6rem;color:#9CA3AF;text-align:center">
   Document d'information sur les allergènes réglementaires (Règlement UE n°1169/2011) · ${etablissement}
 </div>
 </body></html>`;
-    const win = window.open('', '_blank', 'width=900,height=700');
-    win.document.write(html); win.document.close(); win.focus();
+      await downloadPDF(html, `allergenes-clients-${(carte.nom || 'carte').replace(/[^a-z0-9]/gi, '-').toLowerCase()}.pdf`);
+    } finally {
+      setPdfLoading(false);
+    }
   }
 
   // ── Export Argumentation (A4 par catégorie — nom + description commerciale) ──
-  function exportArgumentation() {
-    const sections = allSectionsWithData
-      .filter(s => s.plats.length > 0)
-      .map(s => {
-        const plats = s.platsData.map(p => {
-          const desc = p.rec?.description_commerciale || p.rec?.description || '';
-          return `<div style="padding:12px 0;border-bottom:1px solid #F3EFE8">
-            <div style="font-family:Georgia,serif;font-size:1.05rem;font-weight:700;color:#1C2B1E;margin-bottom:4px">${p.nom}${p.prixVente > 0 ? `<span style="float:right;font-weight:400;font-size:0.9rem;color:#6B7280">${p.prixVente.toFixed(2)} €</span>` : ''}</div>
-            ${desc ? `<div style="font-size:0.88rem;color:#374151;line-height:1.6;font-style:italic">${desc}</div>` : '<div style="font-size:0.82rem;color:#9CA3AF;font-style:italic">— Description à renseigner —</div>'}
+  async function exportArgumentation() {
+    if (pdfLoading) return;
+    setPdfLoading(true);
+    try {
+      const sections = allSectionsWithData
+        .filter(s => s.plats.length > 0)
+        .map(s => {
+          const plats = s.platsData.map(p => {
+            const desc = p.rec?.description_commerciale || p.rec?.description || '';
+            return `<div style="padding:12px 0;border-bottom:1px solid #F3EFE8">
+              <div style="font-family:Georgia,serif;font-size:1.05rem;font-weight:700;color:#1C2B1E;margin-bottom:4px">${p.nom}${p.prixVente > 0 ? `<span style="float:right;font-weight:400;font-size:0.9rem;color:#6B7280">${p.prixVente.toFixed(2)} €</span>` : ''}</div>
+              ${desc ? `<div style="font-size:0.88rem;color:#374151;line-height:1.6;font-style:italic">${desc}</div>` : '<div style="font-size:0.82rem;color:#9CA3AF;font-style:italic">— Description à renseigner —</div>'}
+            </div>`;
+          }).join('');
+          return `<div style="margin-bottom:28px">
+            <h2 style="font-family:Georgia,serif;font-size:1.1rem;font-weight:700;color:#2D6A4F;border-bottom:2px solid #2D6A4F;padding-bottom:6px;margin-bottom:0;text-transform:uppercase;letter-spacing:0.04em">${s.titre}</h2>
+            ${plats}
           </div>`;
         }).join('');
-        return `<div style="margin-bottom:28px">
-          <h2 style="font-family:Georgia,serif;font-size:1.1rem;font-weight:700;color:#2D6A4F;border-bottom:2px solid #2D6A4F;padding-bottom:6px;margin-bottom:0;text-transform:uppercase;letter-spacing:0.04em">${s.titre}</h2>
-          ${plats}
-        </div>`;
-      }).join('');
-    const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Argumentation — ${carte.nom}</title>
-<style>@page{size:A4;margin:20mm 16mm}body{font-family:"Helvetica Neue",Arial,sans-serif;color:#1C2B1E;font-size:12px;margin:0}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>
+      const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Argumentation — ${carte.nom}</title>
+<style>body{font-family:"Helvetica Neue",Arial,sans-serif;color:#1C2B1E;font-size:12px;margin:0}</style>
 </head><body>
 <div style="text-align:center;margin-bottom:28px;padding-bottom:14px;border-bottom:2px solid #2D6A4F">
   <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#2D6A4F;margin-bottom:3px">${etablissement}</div>
@@ -286,12 +341,14 @@ ${sections}
   <div style="font-size:0.75rem;color:#6B7280">Argumentation de vente · ${date}</div>
 </div>
 ${sections}
-<div style="position:fixed;bottom:10mm;left:16mm;right:16mm;border-top:1px solid #E5E0D8;padding-top:5px;font-size:0.6rem;color:#9CA3AF;text-align:center">
+<div style="margin-top:24px;border-top:1px solid #E5E0D8;padding-top:5px;font-size:0.6rem;color:#9CA3AF;text-align:center">
   Document usage interne — ${etablissement} · ${date}
 </div>
 </body></html>`;
-    const win = window.open('', '_blank', 'width=900,height=700');
-    win.document.write(html); win.document.close(); win.focus();
+      await downloadPDF(html, `argumentation-${(carte.nom || 'carte').replace(/[^a-z0-9]/gi, '-').toLowerCase()}.pdf`);
+    } finally {
+      setPdfLoading(false);
+    }
   }
 
   return (
@@ -305,13 +362,13 @@ ${sections}
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', fontWeight: 700, color: T.text, margin: 0, lineHeight: 1.2 }}>{carte.nom}</h1>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
-          <button onClick={exportAllergenesA}
-            style={{ padding: '0.45rem 0.9rem', border: '1px solid #E5E0D8', background: '#fff', borderRadius: '8px', cursor: 'pointer', fontSize: '0.82rem', color: T.muted, fontFamily: "'DM Sans', sans-serif" }}>
-            Allergènes
+          <button onClick={exportAllergenesA} disabled={pdfLoading}
+            style={{ padding: '0.45rem 0.9rem', border: '1px solid #E5E0D8', background: '#fff', borderRadius: '8px', cursor: pdfLoading ? 'default' : 'pointer', fontSize: '0.82rem', color: T.muted, fontFamily: "'DM Sans', sans-serif", opacity: pdfLoading ? 0.7 : 1 }}>
+            {pdfLoading ? '⏳ PDF...' : 'Allergènes'}
           </button>
-          <button onClick={exportArgumentation}
-            style={{ padding: '0.45rem 0.9rem', border: '1px solid #E5E0D8', background: '#fff', borderRadius: '8px', cursor: 'pointer', fontSize: '0.82rem', color: T.muted, fontFamily: "'DM Sans', sans-serif" }}>
-            Argumentation
+          <button onClick={exportArgumentation} disabled={pdfLoading}
+            style={{ padding: '0.45rem 0.9rem', border: '1px solid #E5E0D8', background: '#fff', borderRadius: '8px', cursor: pdfLoading ? 'default' : 'pointer', fontSize: '0.82rem', color: T.muted, fontFamily: "'DM Sans', sans-serif", opacity: pdfLoading ? 0.7 : 1 }}>
+            {pdfLoading ? '⏳ PDF...' : 'Argumentation'}
           </button>
           <button onClick={onEdit}
             style={{ padding: '0.45rem 1.1rem', background: T.green, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif" }}

@@ -1,10 +1,51 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import html2pdf from 'html2pdf.js';
 import { api } from '../api.js';
 import { coutIng, coutPortionHT, coutPortionTTC, calculerFoodCost } from '../utils.js';
 import EtapesEditor from '../components/EtapesEditor.jsx';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
+
+async function downloadPDF(htmlString, filename, landscape = false) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(htmlString, 'text/html');
+  doc.body.querySelectorAll('*').forEach(el => {
+    if (el.style.position === 'fixed') {
+      el.style.position = 'static';
+      el.style.removeProperty('bottom');
+      el.style.removeProperty('top');
+      el.style.removeProperty('left');
+      el.style.removeProperty('right');
+      el.style.marginTop = '16px';
+    }
+  });
+  const styleText = [...doc.querySelectorAll('style')]
+    .map(s => s.textContent.replace(/@page[^}]*\{[^}]*\}/g, ''))
+    .join('\n');
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = `position:absolute;top:-9999px;left:0;background:white;width:${landscape ? '277' : '180'}mm;`;
+  if (styleText) {
+    const styleEl = document.createElement('style');
+    styleEl.textContent = styleText;
+    wrapper.appendChild(styleEl);
+  }
+  const content = document.createElement('div');
+  content.innerHTML = doc.body.innerHTML;
+  wrapper.appendChild(content);
+  document.body.appendChild(wrapper);
+  try {
+    await html2pdf().set({
+      margin: landscape ? [8, 8, 8, 8] : [18, 15, 18, 15],
+      filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: landscape ? 'landscape' : 'portrait' },
+    }).from(content).save();
+  } finally {
+    document.body.removeChild(wrapper);
+  }
+}
 
 const UNITES = ['g', 'kg', 'ml', 'L', 'piece', 'c.s.', 'c.c.', 'botte', 'tranche'];
 
@@ -104,6 +145,7 @@ export default function FicheTechnique() {
   const [selectedCarteId, setSelectedCarteId] = useState('');
   const [selectedSection, setSelectedSection] = useState('');
   const [showCarteAdd, setShowCarteAdd] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -249,6 +291,8 @@ export default function FicheTechnique() {
   }
 
   async function exportPDF() {
+    if (pdfLoading) return;
+    setPdfLoading(true);
     const date = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
     const scaleFactor = (form.portions || 1) > 0 ? couverts / form.portions : 1;
     const scaledIngredients = (form.ingredients || []).map(i => ({ ...i, quantite: i.quantite * scaleFactor }));
@@ -324,11 +368,12 @@ export default function FicheTechnique() {
       + '<div style="position:fixed;bottom:12mm;left:15mm;right:15mm;border-top:1px solid #E5E0D8;padding-top:6px;display:flex;justify-content:space-between;font-size:0.68rem;color:#9CA3AF"><span>Document confidentiel — ' + (parametres.etablissement || 'Restaurant CloverIA') + '</span><span>CloverIA FicheTech · ' + date + '</span></div>'
       + '</body></html>';
 
-    const win = window.open('', '_blank', 'width=900,height=700');
-    win.document.write(html);
-    win.document.close();
-    win.focus();
-    setTimeout(() => win.print(), 600);
+    const filename = `fiche-${(recette.nom || 'recette').replace(/[^a-z0-9]/gi, '-').toLowerCase()}.pdf`;
+    try {
+      await downloadPDF(html, filename);
+    } finally {
+      setPdfLoading(false);
+    }
   }
 
   if (loading) return <p style={{ color: T.muted }}>Chargement...</p>;
@@ -461,8 +506,10 @@ export default function FicheTechnique() {
           )}
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
-          <button onClick={exportPDF} style={{ ...btnSecondary, color: T.gold, borderColor: '#C9A84C' }}
-            onMouseEnter={e => e.currentTarget.style.background = '#FFFBF0'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>↓ PDF</button>
+          <button onClick={exportPDF} disabled={pdfLoading} style={{ ...btnSecondary, color: T.gold, borderColor: '#C9A84C', opacity: pdfLoading ? 0.7 : 1 }}
+            onMouseEnter={e => { if (!pdfLoading) e.currentTarget.style.background = '#FFFBF0'; }} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
+            {pdfLoading ? '⏳ PDF...' : '↓ PDF'}
+          </button>
           {editMode ? (
             <>
               <button onClick={() => { setForm(recette); setEditMode(false); }} style={btnSecondary}>Annuler</button>
