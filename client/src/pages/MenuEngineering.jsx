@@ -13,10 +13,10 @@ const QUADRANTS = {
 };
 
 const RECOMMANDATIONS = {
-  etoile:     'Maintenez et valorisez',
-  vache:      'Retravaillez le coût ou le prix',
-  enigme:     'Améliorez la mise en avant',
-  poids_mort: 'À retirer ou reformuler',
+  etoile:     'Maintenez — valorisez la visibilité',
+  vache:      'Retravaillez le coût ou augmentez le prix',
+  enigme:     'Poussez sur la carte — meilleure position',
+  poids_mort: 'Retirez ou reformulez complètement',
 };
 
 const COLUMN_TYPES = [
@@ -571,7 +571,7 @@ function HistoriqueTab({ historique, loading, onRecharger }) {
 function ResultatsView({ resultats, onBack }) {
   const [filterService, setFilterService] = useState('');
   const [filterCategorie, setFilterCategorie] = useState('');
-  const [filterPeriode, setFilterPeriode] = useState('');
+  const [highlightedRow, setHighlightedRow] = useState(null);
 
   const services = useMemo(() => {
     const s = new Set();
@@ -581,25 +581,19 @@ function ResultatsView({ resultats, onBack }) {
 
   const categories = useMemo(() => [...new Set(resultats.map(r => r.categorieMenu))].sort(), [resultats]);
 
-  const periodes = useMemo(() => {
-    const s = new Set();
-    resultats.forEach(r => (r.dates || []).forEach(d => s.add(d)));
-    return [...s].sort();
-  }, [resultats]);
-
   const filtered = useMemo(() => {
     let rows = resultats.map(r => ({ ...r }));
     if (filterService) rows = rows.filter(r => (r.services || []).includes(filterService));
     if (filterCategorie) rows = rows.filter(r => r.categorieMenu === filterCategorie);
-    if (filterPeriode) rows = rows.filter(r => (r.dates || []).includes(filterPeriode));
     return computeQuadrant(rows);
-  }, [resultats, filterService, filterCategorie, filterPeriode]);
+  }, [resultats, filterService, filterCategorie]);
 
   const totalVentes = filtered.reduce((s, r) => s + r.quantite, 0);
   const totalMarge = filtered.reduce((s, r) => s + r.margeTotal, 0);
 
   const top10Bar = useMemo(() => (
-    [...filtered].sort((a, b) => b.quantite - a.quantite).slice(0, 10).map(r => ({ name: r.nomFiche.length > 16 ? r.nomFiche.slice(0, 14) + '…' : r.nomFiche, ventes: r.quantite }))
+    [...filtered].sort((a, b) => b.quantite - a.quantite).slice(0, 10)
+      .map(r => ({ name: r.nomFiche.length > 16 ? r.nomFiche.slice(0, 14) + '…' : r.nomFiche, ventes: r.quantite }))
   ), [filtered]);
 
   const lineData = useMemo(() => {
@@ -614,90 +608,129 @@ function ResultatsView({ resultats, onBack }) {
     return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
   }, [filtered]);
 
-  const hasFilters = filterService || filterCategorie || filterPeriode;
   const hasLineData = lineData.length > 1;
+  const sortedRows = useMemo(() => [...filtered].sort((a, b) => b.margeTotal - a.margeTotal), [filtered]);
+
+  // Représentants pour le résumé exécutif
+  const bestEtoile = useMemo(() => [...filtered.filter(r => r.quadrant === 'etoile')].sort((a, b) => b.margeUnitaire - a.margeUnitaire)[0] ?? null, [filtered]);
+  const bestVache = useMemo(() => [...filtered.filter(r => r.quadrant === 'vache')].sort((a, b) => b.quantite - a.quantite)[0] ?? null, [filtered]);
+  const bestEnigme = useMemo(() => [...filtered.filter(r => r.quadrant === 'enigme')].sort((a, b) => b.margeUnitaire - a.margeUnitaire)[0] ?? null, [filtered]);
+  const worstMort = useMemo(() => [...filtered.filter(r => r.quadrant === 'poids_mort')].sort((a, b) => a.margeUnitaire - b.margeUnitaire)[0] ?? null, [filtered]);
+
+  function scrollToRow(rowId) {
+    const el = document.getElementById(`trow-${rowId}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setHighlightedRow(rowId);
+    setTimeout(() => setHighlightedRow(null), 2000);
+  }
+
+  const EXEC_CARDS = [
+    { plat: bestEtoile,  label: 'À conserver',   icon: '⭐', color: '#2D6A4F', bg: '#F0FDF4', border: '#86EFAC',  sub: p => `+${p.margeUnitaire.toFixed(2)} €/u` },
+    { plat: bestVache,   label: 'À retravailler', icon: '🐄', color: '#D97706', bg: '#FFFBEB', border: '#FCD34D',  sub: p => `${p.quantite} vendus` },
+    { plat: bestEnigme,  label: 'À pousser',      icon: '🔍', color: '#3B82F6', bg: '#EFF6FF', border: '#BFDBFE',  sub: p => `+${p.margeUnitaire.toFixed(2)} €/u` },
+    { plat: worstMort,   label: 'À sortir',       icon: '💀', color: '#DC2626', bg: '#FEF2F2', border: '#FCA5A5',  sub: p => `${p.margeUnitaire.toFixed(2)} €/u` },
+  ].filter(c => c.plat !== null);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', fontFamily: "'DM Sans', sans-serif" }}>
+      <style>{`
+        @keyframes me-pulse { 0%,100%{background:transparent} 35%,65%{background:rgba(201,168,76,0.18)} }
+        .me-row-pulse { animation: me-pulse 1.8s ease forwards; }
+        .me-exec-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:0.875rem; }
+        @media(max-width:860px){ .me-exec-grid{grid-template-columns:repeat(2,1fr);} }
+        @media(max-width:480px){ .me-exec-grid{grid-template-columns:1fr 1fr;gap:0.5rem;} }
+        .me-exec-card { border-radius:12px; padding:1rem 1.1rem; cursor:pointer; border-width:1px; border-style:solid; transition:box-shadow 0.15s,transform 0.12s; }
+        .me-exec-card:hover { box-shadow:0 6px 20px rgba(0,0,0,0.1); transform:translateY(-2px); }
+        .me-tbl-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+        .me-pill { padding:0.28rem 0.875rem; border-radius:99px; border:1px solid #D6D0C8; background:#fff; font-size:0.8rem; cursor:pointer; font-family:"DM Sans",sans-serif; transition:all 0.12s; }
+        .me-pill:hover { border-color:#2D6A4F; color:#2D6A4F; }
+        .me-pill-active { background:#2D6A4F!important; color:#fff!important; border-color:#2D6A4F!important; font-weight:700!important; }
+      `}</style>
 
-      {/* Filter bar */}
-      {(services.length > 0 || categories.length > 1 || periodes.length > 0) && (
-        <div style={{ background: '#fff', borderRadius: '10px', border: '1px solid #E8E2D9', padding: '0.875rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0 }}>Filtres</span>
-          {services.length > 0 && (
-            <select value={filterService} onChange={e => setFilterService(e.target.value)} style={{ ...inputSm }}>
-              <option value="">Tous les services</option>
-              {services.map(s => <option key={s} value={s}>{s === 'midi' ? 'Midi' : 'Soir'}</option>)}
-            </select>
-          )}
+      {/* ── 1. Filtres pills ── */}
+      {(categories.length > 1 || services.length > 0) && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
           {categories.length > 1 && (
-            <select value={filterCategorie} onChange={e => setFilterCategorie(e.target.value)} style={{ ...inputSm }}>
-              <option value="">Toutes les catégories</option>
-              {categories.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginRight: '4px', flexShrink: 0 }}>Catégorie</span>
+              {['', ...categories].map(cat => (
+                <button key={cat || '__all'} onClick={() => setFilterCategorie(cat)}
+                  className={`me-pill${filterCategorie === cat ? ' me-pill-active' : ''}`}>
+                  {cat || 'Tous'}
+                </button>
+              ))}
+            </div>
           )}
-          {periodes.length > 0 && (
-            <select value={filterPeriode} onChange={e => setFilterPeriode(e.target.value)} style={{ ...inputSm }}>
-              <option value="">Toute la période</option>
-              {periodes.map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
-          )}
-          {hasFilters && (
-            <button onClick={() => { setFilterService(''); setFilterCategorie(''); setFilterPeriode(''); }}
-              style={{ fontSize: '0.75rem', color: T.muted, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px', borderRadius: '4px', fontFamily: "'DM Sans', sans-serif" }}>
-              ✕ Effacer
-            </button>
+          {services.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginRight: '4px', flexShrink: 0 }}>Service</span>
+              {['', ...services].map(svc => (
+                <button key={svc || '__all'} onClick={() => setFilterService(svc)}
+                  className={`me-pill${filterService === svc ? ' me-pill-active' : ''}`}>
+                  {svc === '' ? 'Tous' : svc === 'midi' ? 'Midi' : 'Soir'}
+                </button>
+              ))}
+            </div>
           )}
         </div>
       )}
 
-      {/* KPI cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.875rem' }}>
-        {[
-          { label: 'Plats analysés', value: filtered.length, color: T.text },
-          { label: 'Portions vendues', value: totalVentes, color: T.text },
-          { label: 'Marge brute totale', value: totalMarge.toFixed(2) + ' €', color: totalMarge >= 0 ? T.green : '#DC2626' },
-          { label: 'Étoiles', value: filtered.filter(r => r.quadrant === 'etoile').length, color: T.green },
-        ].map(s => (
-          <div key={s.label} style={{ background: '#fff', borderRadius: '10px', border: '1px solid #E8E2D9', padding: '1rem 1.25rem' }}>
-            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>{s.label}</div>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.4rem', fontWeight: 700, color: s.color }}>{s.value}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── 2. Résumé exécutif ── */}
+      {EXEC_CARDS.length === 0 ? (
+        <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #E8E2D9', padding: '1.5rem', textAlign: 'center', color: T.muted, fontSize: '0.875rem' }}>
+          Aucun résultat pour les filtres sélectionnés.
+        </div>
+      ) : (
+        <div className="me-exec-grid">
+          {EXEC_CARDS.map((c, i) => {
+            const rowId = c.plat.recetteId || c.plat.nomFiche;
+            return (
+              <div key={i} className="me-exec-card"
+                style={{ background: c.bg, borderColor: c.border }}
+                onClick={() => scrollToRow(rowId)}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.6rem' }}>
+                  <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>{c.icon}</span>
+                  <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#fff', background: c.color, padding: '2px 8px', borderRadius: '99px', whiteSpace: 'nowrap' }}>
+                    {c.label}
+                  </span>
+                </div>
+                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '3px' }}>
+                  {c.plat.nomFiche}
+                </div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 600, color: c.color }}>
+                  {c.sub(c.plat)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
-      {/* Charts */}
+      {/* ── Graphiques ── */}
       <div style={{ display: 'grid', gridTemplateColumns: hasLineData ? '1fr 1fr' : '1fr', gap: '1rem' }}>
-        {/* Bar chart — top 10 par volume */}
-        <div style={{ ...card, padding: '1.25rem' }}>
+        <div style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', padding: '1.25rem' }}>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.9rem', fontWeight: 700, color: T.text, marginBottom: '1rem' }}>Top 10 — Volumes vendus</div>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={top10Bar} layout="vertical" margin={{ left: 0, right: 16, top: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F3EFE8" horizontal={false} />
               <XAxis type="number" tick={{ fontSize: 10, fill: T.muted }} axisLine={false} tickLine={false} />
               <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: T.text }} width={100} axisLine={false} tickLine={false} />
-              <Tooltip
-                contentStyle={{ fontSize: '0.78rem', borderRadius: '8px', border: '1px solid #E8E2D9' }}
-                formatter={(v) => [v + ' portions', 'Ventes']}
-              />
+              <Tooltip contentStyle={{ fontSize: '0.78rem', borderRadius: '8px', border: '1px solid #E8E2D9' }} formatter={v => [v + ' portions', 'Ventes']} />
               <Bar dataKey="ventes" fill={T.green} radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
-
-        {/* Line chart — évolution temporelle */}
         {hasLineData && (
-          <div style={{ ...card, padding: '1.25rem' }}>
+          <div style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', padding: '1.25rem' }}>
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.9rem', fontWeight: 700, color: T.text, marginBottom: '1rem' }}>Évolution de la marge brute</div>
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={lineData} margin={{ left: 0, right: 16, top: 4, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3EFE8" />
                 <XAxis dataKey="date" tick={{ fontSize: 9, fill: T.muted }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
                 <YAxis tick={{ fontSize: 10, fill: T.muted }} axisLine={false} tickLine={false} tickFormatter={v => v.toFixed(0) + '€'} />
-                <Tooltip
-                  contentStyle={{ fontSize: '0.78rem', borderRadius: '8px', border: '1px solid #E8E2D9' }}
-                  formatter={(v) => [v.toFixed(2) + ' €', 'Marge']}
-                />
+                <Tooltip contentStyle={{ fontSize: '0.78rem', borderRadius: '8px', border: '1px solid #E8E2D9' }} formatter={v => [v.toFixed(2) + ' €', 'Marge']} />
                 <Line type="monotone" dataKey="marge" stroke={T.gold} strokeWidth={2} dot={{ r: 3, fill: T.gold }} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
@@ -705,9 +738,9 @@ function ResultatsView({ resultats, onBack }) {
         )}
       </div>
 
-      {/* Matrice 2×2 */}
-      <div style={{ ...card, padding: '1.5rem' }}>
-        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, color: T.text, marginBottom: '1.25rem' }}>
+      {/* ── 3. Matrice 2×2 ── */}
+      <div style={{ background: '#fff', borderRadius: '14px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', padding: '1.5rem 1.5rem 1.25rem' }}>
+        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text, marginBottom: '1.25rem' }}>
           Matrice Menu Engineering
         </h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '0.75rem' }}>
@@ -715,110 +748,144 @@ function ResultatsView({ resultats, onBack }) {
             const q = QUADRANTS[key];
             const plats = filtered.filter(r => r.quadrant === key);
             return (
-              <div key={key} style={{ background: q.bg, border: `1px solid ${q.border}`, borderRadius: '10px', padding: '1rem', minHeight: '130px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+              <div key={key} style={{ background: q.bg, border: `2px solid ${q.border}`, borderRadius: '12px', padding: '1rem 1.1rem', minHeight: '120px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.88rem', color: q.color }}>{q.icon} {q.label}</div>
-                    <div style={{ fontSize: '0.68rem', color: T.muted, marginTop: '2px' }}>{q.desc}</div>
+                    <div style={{ fontWeight: 800, fontSize: '0.88rem', color: q.color }}>{q.icon} {q.label}</div>
+                    <div style={{ fontSize: '0.65rem', color: T.muted, marginTop: '1px', letterSpacing: '0.02em' }}>{q.desc}</div>
                   </div>
-                  <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.6rem', fontWeight: 700, color: q.color, lineHeight: 1 }}>{plats.length}</span>
+                  <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '2rem', fontWeight: 700, color: q.color, lineHeight: 1, background: 'rgba(255,255,255,0.65)', borderRadius: '8px', padding: '0 8px' }}>
+                    {plats.length}
+                  </span>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                   {plats.map(p => (
-                    <div key={p.recetteId || p.nomPOS} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', borderBottom: '1px solid rgba(0,0,0,0.04)', paddingBottom: '3px', gap: '4px' }}>
+                    <div key={p.recetteId || p.nomPOS} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', paddingBottom: '4px', borderBottom: `1px solid ${q.border}`, gap: '4px' }}>
                       <span style={{ color: T.text, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>{p.nomFiche}</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
                         {p.margeUnitaire < 0 && (
-                          <span style={{ fontSize: '0.6rem', fontWeight: 700, color: '#DC2626', background: '#FEF2F2', border: '1px solid #FCA5A5', padding: '1px 4px', borderRadius: '3px', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: '0.58rem', fontWeight: 700, color: '#DC2626', background: '#FEF2F2', border: '1px solid #FCA5A5', padding: '1px 4px', borderRadius: '3px', whiteSpace: 'nowrap' }}>
                             Marge négative
                           </span>
                         )}
-                        <span style={{ color: q.color, fontWeight: 700 }}>
-                          {p.margeUnitaire >= 0 ? '+' : ''}{p.margeUnitaire.toFixed(2)} €/u
+                        <span style={{ color: q.color, fontWeight: 700, fontSize: '0.78rem' }}>
+                          {p.margeUnitaire >= 0 ? '+' : ''}{p.margeUnitaire.toFixed(2)} €
                         </span>
                       </div>
                     </div>
                   ))}
                   {plats.length === 0 && (
-                    <div style={{ fontSize: '0.78rem', color: '#C4B9A8', fontStyle: 'italic' }}>Aucun plat dans ce quadrant</div>
+                    <div style={{ fontSize: '0.75rem', color: '#C4B9A8', fontStyle: 'italic', paddingTop: '2px' }}>Aucun plat dans ce quadrant</div>
                   )}
                 </div>
               </div>
             );
           })}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.68rem', color: '#9CA3AF', textAlign: 'center', paddingTop: '4px' }}>
-          <div>← Peu populaire · Populaire →</div>
-          <div>← Peu populaire · Populaire →</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', paddingTop: '4px' }}>
+          <div style={{ fontSize: '0.64rem', color: '#B0A898', textAlign: 'center' }}>← Peu populaire · Populaire →</div>
+          <div style={{ fontSize: '0.64rem', color: '#B0A898', textAlign: 'center' }}>← Peu populaire · Populaire →</div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'center', fontSize: '0.68rem', color: '#9CA3AF', marginTop: '2px' }}>
-          Axe vertical : Rentabilité (haut = marge élevée)
-        </div>
+        <div style={{ textAlign: 'center', fontSize: '0.64rem', color: '#B0A898', marginTop: '2px' }}>Axe vertical : Rentabilité (haut = marge élevée)</div>
       </div>
 
-      {/* Tableau détaillé */}
-      <div style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
-        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #F3EFE8' }}>
-          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, color: T.text, margin: 0 }}>
-            Analyse détaillée
-          </h3>
+      {/* ── 4. Tableau détaillé ── */}
+      <div style={{ background: '#fff', borderRadius: '14px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '2px solid #EFE9DF', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text, margin: 0 }}>Analyse détaillée</h3>
+          <span style={{ fontSize: '0.75rem', color: T.muted }}>{filtered.length} plat{filtered.length !== 1 ? 's' : ''}</span>
         </div>
-        <div style={{ overflowX: 'auto' }}>
+        <div className="me-tbl-wrap">
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
             <thead>
-              <tr style={{ background: '#FAFAF8' }}>
-                {['Plat', 'Catégorie', 'Ventes', 'Part', 'Prix vente', 'Coût mat.', 'Marge/u', 'Marge tot.', 'Recommandation'].map(h => (
-                  <th key={h} style={{ padding: '8px 12px', textAlign: h === 'Plat' || h === 'Catégorie' || h === 'Recommandation' ? 'left' : 'right', fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: T.muted, borderBottom: '2px solid #F3EFE8', whiteSpace: 'nowrap' }}>
-                    {h}
-                  </th>
+              <tr style={{ background: '#F5F2EC' }}>
+                {['Plat', 'Catégorie', 'Ventes', 'Part', 'Prix TTC', 'Coût mat.', 'Marge/u', 'Marge tot.', 'Action recommandée'].map(h => (
+                  <th key={h} style={{
+                    padding: '10px 14px',
+                    textAlign: ['Plat', 'Catégorie', 'Action recommandée'].includes(h) ? 'left' : 'right',
+                    fontSize: '0.63rem', fontWeight: 800, textTransform: 'uppercase',
+                    letterSpacing: '0.06em', color: '#8C7E6E',
+                    borderBottom: '2px solid #E8E2D9', whiteSpace: 'nowrap',
+                  }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {[...filtered].sort((a, b) => b.margeTotal - a.margeTotal).map((r, i) => {
+              {sortedRows.map((r, i) => {
                 const q = QUADRANTS[r.quadrant] || QUADRANTS.poids_mort;
                 const part = totalVentes > 0 ? (r.quantite / totalVentes * 100).toFixed(1) : '—';
+                const rowId = r.recetteId || r.nomFiche;
+                const isNeg = r.margeUnitaire < 0;
+                const isHl = highlightedRow === rowId;
                 return (
-                  <tr key={i}
-                    style={{ borderBottom: '1px solid #F9F7F4', transition: 'background 0.1s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#FAFAF8'}
-                    onMouseLeave={e => e.currentTarget.style.background = ''}
+                  <tr key={i} id={`trow-${rowId}`}
+                    className={isHl ? 'me-row-pulse' : ''}
+                    style={{ borderBottom: '1px solid #F3EDE4', transition: 'background 0.1s' }}
+                    onMouseEnter={e => { if (!isHl) e.currentTarget.style.background = '#FAFAF8'; }}
+                    onMouseLeave={e => { if (!isHl) e.currentTarget.style.background = ''; }}
                   >
-                    <td style={{ padding: '9px 12px', fontWeight: 600, color: T.text }}>{r.nomFiche}</td>
-                    <td style={{ padding: '9px 12px', color: T.muted, fontSize: '0.78rem' }}>{r.categorieMenu}</td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right', color: T.text }}>{r.quantite}</td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right', color: T.muted }}>{part}%</td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right' }}>{r.prixVente > 0 ? r.prixVente.toFixed(2) + ' €' : '—'}</td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right', color: '#DC2626' }}>{r.coutMat.toFixed(2)} €</td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 700, color: r.margeUnitaire >= 0 ? T.green : '#DC2626' }}>
+                    <td style={{ padding: '11px 14px', fontWeight: 700, color: T.text, whiteSpace: 'nowrap' }}>
+                      <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: q.color, marginRight: '8px', verticalAlign: 'middle', flexShrink: 0 }} />
+                      {r.nomFiche}
+                    </td>
+                    <td style={{ padding: '11px 14px', color: T.muted, fontSize: '0.76rem' }}>{r.categorieMenu}</td>
+                    <td style={{ padding: '11px 14px', textAlign: 'right', fontWeight: 600, color: T.text }}>{r.quantite}</td>
+                    <td style={{ padding: '11px 14px', textAlign: 'right', color: T.muted, fontSize: '0.78rem' }}>{part}%</td>
+                    <td style={{ padding: '11px 14px', textAlign: 'right', color: T.text }}>{r.prixVente > 0 ? r.prixVente.toFixed(2) + ' €' : '—'}</td>
+                    <td style={{ padding: '11px 14px', textAlign: 'right', color: '#DC2626' }}>{r.coutMat.toFixed(2)} €</td>
+                    <td style={{ padding: '11px 14px', textAlign: 'right', fontWeight: 700, fontFamily: "'Playfair Display', serif", color: isNeg ? '#DC2626' : T.green }}>
                       {r.margeUnitaire >= 0 ? '+' : ''}{r.margeUnitaire.toFixed(2)} €
                     </td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right', fontFamily: "'Playfair Display', serif", fontWeight: 700, color: T.text }}>
+                    <td style={{ padding: '11px 14px', textAlign: 'right', fontWeight: 700, fontFamily: "'Playfair Display', serif", color: r.margeTotal >= 0 ? T.text : '#DC2626' }}>
                       {r.margeTotal >= 0 ? '+' : ''}{r.margeTotal.toFixed(2)} €
                     </td>
-                    <td style={{ padding: '9px 12px' }}>
-                      <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 600, whiteSpace: 'nowrap', color: q.color, background: q.bg, border: `1px solid ${q.border}` }}>
-                        {q.icon} {RECOMMANDATIONS[r.quadrant]}
-                      </span>
+                    <td style={{ padding: '11px 14px' }}>
+                      {isNeg ? (
+                        <span style={{ display: 'inline-block', padding: '3px 9px', borderRadius: '5px', fontSize: '0.72rem', fontWeight: 700, color: '#fff', background: '#DC2626', whiteSpace: 'nowrap' }}>
+                          ⚠ Urgent — vous perdez de l'argent à chaque vente
+                        </span>
+                      ) : (
+                        <span style={{ display: 'inline-block', padding: '3px 9px', borderRadius: '5px', fontSize: '0.72rem', fontWeight: 600, color: q.color, background: q.bg, border: `1px solid ${q.border}`, whiteSpace: 'nowrap' }}>
+                          {q.icon} {RECOMMANDATIONS[r.quadrant]}
+                        </span>
+                      )}
                     </td>
                   </tr>
                 );
               })}
             </tbody>
+
+            {/* ── 5. Ligne totale ── */}
+            <tfoot>
+              <tr style={{ background: '#F5F2EC', borderTop: '2px solid #E8E2D9' }}>
+                <td colSpan={2} style={{ padding: '10px 14px', fontWeight: 700, color: T.text, fontSize: '0.82rem' }}>
+                  Total — {filtered.length} plat{filtered.length !== 1 ? 's' : ''}
+                </td>
+                <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: T.text }}>{totalVentes}</td>
+                <td style={{ padding: '10px 14px', textAlign: 'right', color: T.muted, fontSize: '0.78rem' }}>100%</td>
+                <td colSpan={3} />
+                <td style={{ padding: '10px 14px', textAlign: 'right', fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: '1rem', color: totalMarge >= 0 ? T.green : '#DC2626' }}>
+                  {totalMarge >= 0 ? '+' : ''}{totalMarge.toFixed(2)} €
+                </td>
+                <td style={{ padding: '10px 14px' }}>
+                  {totalMarge < 0 && (
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#DC2626', whiteSpace: 'nowrap' }}>
+                      ⚠ Attention — votre carte perd de l'argent sur cette période
+                    </span>
+                  )}
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
 
-      {/* Actions */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* ── Navigation ── */}
+      <div style={{ paddingBottom: '0.5rem' }}>
         <button onClick={onBack}
           style={{ padding: '0.6rem 1.25rem', background: 'none', border: '1px solid #E5E0D8', borderRadius: '8px', cursor: 'pointer', color: T.muted, fontFamily: "'DM Sans', sans-serif", fontSize: '0.875rem' }}>
           ← Modifier le matching
         </button>
-        <div style={{ fontSize: '0.8rem', color: T.muted }}>
-          {filtered.length} plat{filtered.length > 1 ? 's' : ''} · marge brute totale :{' '}
-          <strong style={{ color: totalMarge >= 0 ? T.green : '#DC2626' }}>{totalMarge.toFixed(2)} €</strong>
-        </div>
       </div>
     </div>
   );
