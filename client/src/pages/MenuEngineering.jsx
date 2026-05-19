@@ -44,9 +44,14 @@ function findBestMatch(nomPOS, recettes) {
 }
 
 function computeQuadrant(rows) {
-  const categories = [...new Set(rows.map(r => r.categorieMenu))];
+  // Règle absolue : marge négative = poids mort, hors matrice 2x2.
+  rows.forEach(row => { if (row.margeUnitaire < 0) row.quadrant = 'poids_mort'; });
+
+  // La matrice 2x2 ne s'applique qu'aux plats rentables (marge >= 0).
+  const positifs = rows.filter(r => r.margeUnitaire >= 0);
+  const categories = [...new Set(positifs.map(r => r.categorieMenu))];
   categories.forEach(cat => {
-    const catRows = rows.filter(r => r.categorieMenu === cat);
+    const catRows = positifs.filter(r => r.categorieMenu === cat);
     const avgQty = catRows.reduce((s, r) => s + r.quantite, 0) / catRows.length;
     const avgMarge = catRows.reduce((s, r) => s + r.margeUnitaire, 0) / catRows.length;
     catRows.forEach(row => {
@@ -720,11 +725,18 @@ function ResultatsView({ resultats, onBack }) {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   {plats.map(p => (
-                    <div key={p.recetteId || p.nomPOS} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '0.82rem', borderBottom: '1px solid rgba(0,0,0,0.04)', paddingBottom: '3px' }}>
-                      <span style={{ color: T.text, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '60%' }}>{p.nomFiche}</span>
-                      <span style={{ color: q.color, fontWeight: 700, flexShrink: 0 }}>
-                        {p.margeUnitaire >= 0 ? '+' : ''}{p.margeUnitaire.toFixed(2)} €/u
-                      </span>
+                    <div key={p.recetteId || p.nomPOS} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', borderBottom: '1px solid rgba(0,0,0,0.04)', paddingBottom: '3px', gap: '4px' }}>
+                      <span style={{ color: T.text, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>{p.nomFiche}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                        {p.margeUnitaire < 0 && (
+                          <span style={{ fontSize: '0.6rem', fontWeight: 700, color: '#DC2626', background: '#FEF2F2', border: '1px solid #FCA5A5', padding: '1px 4px', borderRadius: '3px', whiteSpace: 'nowrap' }}>
+                            Marge négative
+                          </span>
+                        )}
+                        <span style={{ color: q.color, fontWeight: 700 }}>
+                          {p.margeUnitaire >= 0 ? '+' : ''}{p.margeUnitaire.toFixed(2)} €/u
+                        </span>
+                      </div>
                     </div>
                   ))}
                   {plats.length === 0 && (
