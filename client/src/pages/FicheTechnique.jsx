@@ -7,6 +7,12 @@ import EtapesEditor from '../components/EtapesEditor.jsx';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
 
 const UNITES = ['g', 'kg', 'ml', 'L', 'piece', 'c.s.', 'c.c.', 'botte', 'tranche'];
+
+function baseUnit(unite) {
+  if (['kg', 'g', 'mg'].includes(unite)) return 'kg';
+  if (['L', 'l', 'ml', 'cl', 'c.c.', 'c.s.', 'càc', 'càs'].includes(unite)) return 'L';
+  return unite;
+}
 const ALLERGENES_LIST = [
   'gluten', 'crustaces', 'oeufs', 'poisson', 'arachides', 'soja', 'lait', 'fruits_a_coque',
   'celeri', 'moutarde', 'sesame', 'sulfites', 'lupin', 'mollusques',
@@ -280,8 +286,9 @@ export default function FicheTechnique() {
 
     const donutSVG = buildDonutSVG(recette.ingredients || []);
     const portionLabel = couverts !== form.portions ? ' — ajusté pour ' + couverts + ' couverts' : '';
+    const photoObjPos = ['top', 'center', 'bottom'][form.photoPosition ?? 1];
     const photoHtml = form.photo
-      ? '<div style="margin-bottom:20px;border-radius:8px;overflow:hidden"><img src="' + form.photo + '" style="width:100%;height:200px;object-fit:cover;display:block" /></div>'
+      ? '<div style="margin-bottom:20px;border-radius:8px;overflow:hidden;height:200px"><img src="' + form.photo + '" style="width:100%;height:100%;object-fit:cover;display:block;object-position:' + photoObjPos + '" /></div>'
       : '';
 
     const html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Fiche — ' + recette.nom + '</title><style>'
@@ -328,7 +335,7 @@ export default function FicheTechnique() {
     const ingTva = ing.tva ?? cat?.tva ?? 10;
     const coutHT = coutIng(ing) * scaleFactor;
     const coutTTC = coutHT * (1 + ingTva / 100);
-    return { ...ing, ingTva, coutHT, coutTTC, catUnite: cat?.unite };
+    return { ...ing, ingTva, coutHT, coutTTC, catUnite: cat ? baseUnit(cat.unite) : null };
   });
   const totalHTScaled = ingData.reduce((a, i) => a + i.coutHT, 0);
   const totalTTCScaled = ingData.reduce((a, i) => a + i.coutTTC, 0);
@@ -369,6 +376,8 @@ export default function FicheTechnique() {
   const sectionsDisponibles = selectedCarteId
     ? (cartes.find(c => c.id === selectedCarteId)?.sections || []).filter(s => !s.plats.find(p => p.recetteId === id))
     : [];
+
+  const posMap = ['top', 'center', 'bottom'];
 
   const btnPrimary = { padding: '0.5rem 1.25rem', borderRadius: '8px', border: 'none', background: T.green, color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif" };
   const btnSecondary = { padding: '0.5rem 1.25rem', borderRadius: '8px', border: '1px solid #E5E0D8', background: '#fff', color: T.text, cursor: 'pointer', fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif" };
@@ -465,8 +474,8 @@ export default function FicheTechnique() {
 
       {/* Photo du plat */}
       {!editMode && recette.photo && (
-        <div style={{ marginBottom: '1.5rem', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
-          <img src={recette.photo} alt={recette.nom} style={{ width: '100%', height: '220px', objectFit: 'cover', display: 'block' }} />
+        <div style={{ marginBottom: '1.5rem', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', height: '220px' }}>
+          <img src={recette.photo} alt={recette.nom} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', objectPosition: posMap[recette.photoPosition ?? 1], transform: `scale(${recette.photoZoom ?? 1})`, transformOrigin: 'center center' }} />
         </div>
       )}
       {!editMode && !recette.photo && (
@@ -481,20 +490,52 @@ export default function FicheTechnique() {
       {editMode && (
         <div style={{ marginBottom: '1.5rem' }}>
           {form.photo ? (
-            <div style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden' }}>
-              <img src={form.photo} alt="" style={{ width: '100%', height: '220px', objectFit: 'cover', display: 'block' }} />
-              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.35)' }}>
-                <label style={{ cursor: 'pointer', padding: '0.5rem 1.25rem', background: '#fff', borderRadius: '8px', fontWeight: 600, fontSize: '0.875rem', color: T.green, border: `1.5px solid ${T.green}` }}>
-                  Changer la photo
-                  <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={e => handlePhotoUpload(e.target.files[0])} />
-                </label>
+            <>
+              <div style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', height: '220px' }}>
+                <img src={form.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', objectPosition: posMap[form.photoPosition ?? 1], transform: `scale(${form.photoZoom ?? 1})`, transformOrigin: 'center center' }} />
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: '8px', padding: '0.75rem', background: 'linear-gradient(transparent, rgba(0,0,0,0.6))' }}>
+                  <label style={{ cursor: 'pointer', padding: '0.4rem 0.9rem', background: '#fff', borderRadius: '6px', fontWeight: 600, fontSize: '0.82rem', color: T.green, border: `1.5px solid ${T.green}` }}>
+                    ✎ Changer
+                    <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={e => handlePhotoUpload(e.target.files[0])} />
+                  </label>
+                  <button
+                    onClick={() => setForm(f => ({ ...f, photo: null, photoPosition: 1, photoZoom: 1 }))}
+                    style={{ padding: '0.4rem 0.9rem', background: '#fff', borderRadius: '6px', fontWeight: 600, fontSize: '0.82rem', color: '#dc2626', border: '1.5px solid #dc2626', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+                  >✕ Supprimer</button>
+                </div>
               </div>
-            </div>
+              <div style={{ marginTop: '0.75rem', background: '#F8F6F1', borderRadius: '8px', padding: '0.75rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{ fontSize: '0.72rem', color: T.muted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', width: '68px', flexShrink: 0 }}>Position</span>
+                  <input type="range" min="0" max="2" step="1"
+                    value={form.photoPosition ?? 1}
+                    onChange={e => setForm(f => ({ ...f, photoPosition: parseInt(e.target.value) }))}
+                    style={{ flex: 1, accentColor: T.green }} />
+                  <span style={{ fontSize: '0.78rem', color: T.text, fontWeight: 600, width: '44px', textAlign: 'right', flexShrink: 0 }}>
+                    {['Haut', 'Centre', 'Bas'][form.photoPosition ?? 1]}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{ fontSize: '0.72rem', color: T.muted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', width: '68px', flexShrink: 0 }}>Zoom</span>
+                  <input type="range" min="1" max="1.5" step="0.05"
+                    value={form.photoZoom ?? 1}
+                    onChange={e => setForm(f => ({ ...f, photoZoom: parseFloat(e.target.value) }))}
+                    style={{ flex: 1, accentColor: T.green }} />
+                  <span style={{ fontSize: '0.78rem', color: T.text, fontWeight: 600, width: '44px', textAlign: 'right', flexShrink: 0 }}>
+                    {Math.round((form.photoZoom ?? 1) * 100)}%
+                  </span>
+                </div>
+              </div>
+            </>
           ) : (
-            <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', cursor: 'pointer', minHeight: '120px', borderRadius: '12px', border: '2px dashed #E5E0D8', background: '#F8F6F1', transition: 'all 0.15s' }}>
-              <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📷</div>
-              <div style={{ fontWeight: 600, color: T.muted, fontSize: '0.875rem', marginBottom: '4px' }}>Ajouter une photo</div>
-              <div style={{ fontSize: '0.75rem', color: '#B0A898' }}>JPEG, PNG, WebP · max 10 Mo</div>
+            <label
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2.5rem 2rem', cursor: 'pointer', minHeight: '160px', borderRadius: '12px', border: '2px dashed #C9A84C', background: 'rgba(201,168,76,0.03)', transition: 'all 0.15s' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = T.green; e.currentTarget.style.background = 'rgba(45,106,79,0.04)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#C9A84C'; e.currentTarget.style.background = 'rgba(201,168,76,0.03)'; }}
+            >
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem', lineHeight: 1 }}>📷</div>
+              <div style={{ fontWeight: 700, color: T.text, fontSize: '0.95rem', marginBottom: '6px' }}>Ajouter une photo du plat</div>
+              <div style={{ fontSize: '0.78rem', color: T.muted }}>JPEG, PNG, WebP · max 10 Mo</div>
               <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={e => handlePhotoUpload(e.target.files[0])} />
             </label>
           )}
@@ -583,7 +624,7 @@ export default function FicheTechnique() {
                             : ing.catUnite
                               ? <>{ing.prixUnitaire} EUR&nbsp;/&nbsp;{ing.catUnite}</>
                               : ing.nom
-                                ? <>{ing.prixUnitaire} EUR&nbsp;/&nbsp;{ing.unite} <span title="Ingrédient absent de la base — prix saisi manuellement" style={{ cursor: 'help' }}>⚠️</span></>
+                                ? <>{ing.prixUnitaire} EUR&nbsp;/&nbsp;{baseUnit(ing.unite)} <span title="Ingrédient absent de la base — prix saisi manuellement" style={{ cursor: 'help' }}>⚠️</span></>
                                 : <>{ing.prixUnitaire} EUR</>
                           }
                         </span>
@@ -608,7 +649,7 @@ export default function FicheTechnique() {
                       <td colSpan={editMode ? 8 : 7} style={{ padding: '0.3rem 0.75rem 0.5rem 2.5rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                           <span style={{ fontSize: '0.75rem', color: '#92400E' }}>
-                            💡 Associer à <strong>{suggestion.nom}</strong> — {suggestion.prixUnitaire.toFixed(2)} EUR/{suggestion.unite} ?
+                            💡 Associer à <strong>{suggestion.nom}</strong> — {suggestion.prixUnitaire.toFixed(2)} EUR/{baseUnit(suggestion.unite)} ?
                           </span>
                           <button onClick={() => associerIngredient(idx, suggestion)}
                             style={{ padding: '2px 10px', fontSize: '0.75rem', background: '#d97706', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>

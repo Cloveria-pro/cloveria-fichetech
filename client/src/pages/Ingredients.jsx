@@ -973,32 +973,37 @@ function ImportFacture({ items, setItems }) {
         </div>
       )}
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', fontWeight: 700, color: T.text }}>Importer une facture</h2>
-        <span style={{ fontSize: '0.72rem', background: 'rgba(201,168,76,0.12)', color: '#8B6914', border: '1px solid rgba(201,168,76,0.3)', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>IA</span>
-        {aliases.length > 0 && <span style={{ fontSize: '0.72rem', color: T.muted }}>{aliases.length} alias mémorisé{aliases.length > 1 ? 's' : ''}</span>}
-      </div>
-      <p style={{ color: T.muted, fontSize: '0.875rem', marginBottom: '1.25rem' }}>
-        Déposez votre facture fournisseur — l'IA détecte les produits, vous choisissez de créer ou d'associer à un ingrédient existant.
-      </p>
-
       {!results && (
         <>
-          <div style={dropZoneStyle}
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 1.25rem', background: 'linear-gradient(135deg, rgba(201,168,76,0.06) 0%, rgba(201,168,76,0.02) 100%)', border: `1.5px solid ${dragOver ? '#C9A84C' : 'rgba(201,168,76,0.25)'}`, borderRadius: '12px', cursor: 'pointer', transition: 'all 0.15s' }}
             onClick={() => fileRef.current?.click()}
             onDragOver={e => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
             onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#C9A84C'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(201,168,76,0.1) 0%, rgba(201,168,76,0.04) 100%)'; }}
+            onMouseLeave={e => { if (!dragOver) { e.currentTarget.style.borderColor = 'rgba(201,168,76,0.25)'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(201,168,76,0.06) 0%, rgba(201,168,76,0.02) 100%)'; } }}
           >
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📄</div>
-            <div style={{ fontWeight: 600, color: T.text, marginBottom: '4px' }}>{file ? file.name : 'Glissez une facture ici'}</div>
-            <div style={{ fontSize: '0.8rem', color: T.muted }}>ou cliquez pour choisir — JPG, PNG, PDF · max 10 Mo</div>
+            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#C9A84C', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.25rem' }}>📄</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                <span style={{ fontWeight: 700, fontSize: '0.9rem', color: T.text }}>Importer une facture fournisseur</span>
+                <span style={{ fontSize: '0.65rem', background: 'rgba(201,168,76,0.15)', color: '#8B6914', border: '1px solid rgba(201,168,76,0.3)', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, letterSpacing: '0.04em' }}>IA</span>
+                {aliases.length > 0 && <span style={{ fontSize: '0.7rem', color: T.muted, flexShrink: 0 }}>{aliases.length} alias</span>}
+              </div>
+              <p style={{ margin: 0, fontSize: '0.78rem', color: T.muted }}>Glissez ou cliquez — JPG, PNG, PDF · l'IA met à jour vos prix automatiquement</p>
+            </div>
+            <span style={{ color: '#C9A84C', fontSize: '1.1rem', flexShrink: 0, fontWeight: 700 }}>→</span>
             <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,application/pdf" style={{ display: 'none' }} onChange={e => handleFile(e.target.files[0])} />
           </div>
           {file && (
-            <button onClick={analyser} disabled={loading} style={{ marginTop: '1rem', width: '100%', padding: '0.7rem', background: T.green, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: loading ? 'default' : 'pointer', fontSize: '0.9rem', fontFamily: "'DM Sans', sans-serif", opacity: loading ? 0.8 : 1 }}>
-              {loading ? '⏳ Analyse en cours...' : 'Analyser la facture'}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.75rem', padding: '0.6rem 1rem', background: '#F8F6F1', borderRadius: '8px', border: '1px solid #E5E0D8' }}>
+              <span style={{ fontSize: '0.82rem', color: T.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📎 {file.name}</span>
+              <button onClick={analyser} disabled={loading} style={{ padding: '0.4rem 1rem', background: T.green, color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: loading ? 'default' : 'pointer', fontSize: '0.82rem', fontFamily: "'DM Sans', sans-serif", opacity: loading ? 0.8 : 1, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                {loading ? '⏳ Analyse...' : 'Analyser'}
+              </button>
+              <button onClick={() => setFile(null)} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: '0.9rem', padding: '2px', flexShrink: 0, lineHeight: 1 }}>✕</button>
+            </div>
           )}
         </>
       )}
