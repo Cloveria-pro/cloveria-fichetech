@@ -122,11 +122,11 @@ function TileFiche({ r, cible, onDelete, onDuplicate, onUpdateCategorie, navigat
       {/* Dupliquer */}
       <button
         onClick={e => { e.stopPropagation(); onDuplicate(r); }}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', color: hovered ? '#D1C4B0' : 'transparent', fontSize: '14px', padding: '4px 6px', flexShrink: 0, transition: 'color 0.15s' }}
-        onMouseEnter={e => { e.stopPropagation(); e.currentTarget.style.color = '#2D6A4F'; }}
-        onMouseLeave={e => { e.currentTarget.style.color = hovered ? '#D1C4B0' : 'transparent'; }}
+        style={{ background: 'none', border: '1px solid #2D6A4F', borderRadius: '6px', cursor: 'pointer', color: '#2D6A4F', fontSize: '12px', padding: '3px 8px', flexShrink: 0, fontFamily: "'DM Sans', sans-serif", fontWeight: 600, transition: 'background 0.15s' }}
+        onMouseEnter={e => { e.stopPropagation(); e.currentTarget.style.background = 'rgba(45,106,79,0.08)'; }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
         title="Dupliquer"
-      >⎘</button>
+      >⎘ Dupliquer</button>
 
       {/* Supprimer */}
       <button

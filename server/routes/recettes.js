@@ -42,7 +42,7 @@ async function enrichIngredients(ingredients, userId, db) {
     if (!ing.nom) return ing;
     const found = catalog.find(c => norm(c.nom) === norm(ing.nom));
     return found
-      ? { ...ing, prixUnitaire: found.prixUnitaire }
+      ? { ...ing, prixUnitaire: found.prixUnitaire || ing.prixUnitaire || 0 }
       : { ...ing, prixUnitaire: ing.prixUnitaire ?? 0 };
   });
 }

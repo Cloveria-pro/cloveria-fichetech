@@ -149,6 +149,7 @@ export default function FicheTechnique() {
   const [selectedSection, setSelectedSection] = useState('');
   const [showCarteAdd, setShowCarteAdd] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [saveToast, setSaveToast] = useState('');
   const width = useWindowWidth();
   const isMobile = width < 768;
 
@@ -293,6 +294,14 @@ export default function FicheTechnique() {
     const saved = await api.recettes.update(id, updatedForm);
     setRecette(saved);
     setForm(saved);
+    setSaveToast('Sauvegardé');
+    setTimeout(() => setSaveToast(''), 2000);
+  }
+
+  async function dupliquerFiche() {
+    const { id: _id, createdAt, updatedAt, ...rest } = recette;
+    const newFiche = await api.recettes.create({ ...rest, nom: `${recette.nom} (copie)`, prixVentePratiqueTTC: null });
+    navigate(`/fiches-techniques/${newFiche.id}`);
   }
 
   async function exportPDF() {
@@ -511,11 +520,17 @@ export default function FicheTechnique() {
             </div>
           )}
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <button onClick={exportPDF} disabled={pdfLoading} style={{ ...btnSecondary, color: T.gold, borderColor: '#C9A84C', opacity: pdfLoading ? 0.7 : 1 }}
             onMouseEnter={e => { if (!pdfLoading) e.currentTarget.style.background = '#FFFBF0'; }} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
             {pdfLoading ? '⏳ PDF...' : '↓ PDF'}
           </button>
+          {!editMode && (
+            <button onClick={dupliquerFiche} style={{ ...btnSecondary, color: T.green, borderColor: '#2D6A4F' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(45,106,79,0.06)'} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
+              ⎘ Dupliquer
+            </button>
+          )}
           {editMode ? (
             <>
               <button onClick={() => { setForm(recette); setEditMode(false); }} style={btnSecondary}>Annuler</button>
@@ -889,6 +904,13 @@ export default function FicheTechnique() {
           })}
         </div>
       </div>
+
+      {/* Toast sauvegarde association */}
+      {saveToast && (
+        <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', background: T.green, color: '#fff', padding: '0.6rem 1.2rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, fontFamily: "'DM Sans', sans-serif", boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 9999 }}>
+          {saveToast}
+        </div>
+      )}
     </div>
   );
 }
