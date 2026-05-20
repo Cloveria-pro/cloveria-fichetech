@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { startTour } from './utils/onboardingTour.js';
-import { Routes, Route, NavLink, Link, Navigate } from 'react-router-dom';
+import { Routes, Route, NavLink, Link, Navigate, useNavigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard.jsx';
 import Recettes from './pages/Recettes.jsx';
 import FicheTechnique from './pages/FicheTechnique.jsx';
@@ -64,6 +64,7 @@ export default function App() {
   const isMobile = width < 768;
   const isTablet = width >= 768 && width < 1024;
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
 
   const [token, setToken] = useState(() => localStorage.getItem('token'));
   const [user, setUser] = useState(() => {
@@ -73,7 +74,7 @@ export default function App() {
   useEffect(() => {
     if (!token) return;
     if (localStorage.getItem('onboarding_done')) return;
-    const timer = setTimeout(() => startTour(), 800);
+    const timer = setTimeout(() => startTour(navigate), 800);
     return () => clearTimeout(timer);
   }, [token]);
 

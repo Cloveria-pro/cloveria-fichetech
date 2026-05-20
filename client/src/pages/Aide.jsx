@@ -68,7 +68,7 @@ export default function Aide() {
 
   function reopenDemo() {
     localStorage.removeItem('onboarding_done');
-    startTour();
+    startTour(navigate);
   }
 
   return (
