@@ -26,6 +26,15 @@ const PREV_ROUTES = [
   '/menu-engineering',  // step 7 → step 6
 ];
 
+// Popover config shared by all sidebar steps — centered on screen, close button always visible
+const sidebarPopover = (title, description) => ({
+  title,
+  description,
+  side: 'over',
+  align: 'center',
+  showButtons: ['next', 'previous', 'close'],
+});
+
 export function startTour(navigate) {
   let driverObj;
 
@@ -54,7 +63,7 @@ export function startTour(navigate) {
   driverObj = driver({
     animate: true,
     smoothScroll: true,
-    allowClose: true,
+    allowClose: false,
     overlayColor: 'rgba(0,0,0,0.75)',
     showProgress: true,
     nextBtnText: 'Suivant',
@@ -78,66 +87,52 @@ export function startTour(navigate) {
       },
       {
         element: '[data-tour="nav-parametres"]',
-        popover: {
-          title: 'Paramètres',
-          description: "Commencez ici — définissez votre food cost cible et votre TVA. Tout se calcule automatiquement à partir de ces valeurs.",
-          side: 'right',
-          align: 'center',
-        },
+        popover: sidebarPopover(
+          'Paramètres',
+          "Commencez ici — définissez votre food cost cible et votre TVA. Tout se calcule automatiquement à partir de ces valeurs."
+        ),
       },
       {
         element: '[data-tour="nav-ingredients"]',
-        popover: {
-          title: 'Ingrédients',
-          description: "Ajoutez vos ingrédients avec leurs prix, ou scannez directement une facture fournisseur — l'IA détecte les produits automatiquement.",
-          side: 'right',
-          align: 'center',
-        },
+        popover: sidebarPopover(
+          'Ingrédients',
+          "Ajoutez vos ingrédients avec leurs prix, ou scannez directement une facture fournisseur — l'IA détecte les produits automatiquement."
+        ),
       },
       {
         element: '[data-tour="nav-fiches"]',
-        popover: {
-          title: 'Fiches Techniques',
-          description: "Vous avez des fiches papier ? Importez-les en photo ou PDF — l'IA extrait les ingrédients et les quantités.",
-          side: 'right',
-          align: 'center',
-        },
+        popover: sidebarPopover(
+          'Fiches Techniques',
+          "Vous avez des fiches papier ? Importez-les en photo ou PDF — l'IA extrait les ingrédients et les quantités."
+        ),
       },
       {
         element: '[data-tour="btn-nouvelle-fiche"]',
-        popover: {
-          title: 'Nouvelle fiche',
-          description: "Ou décrivez un plat en langage naturel — l'IA génère la fiche technique complète en quelques secondes.",
-          side: 'right',
-          align: 'center',
-        },
+        popover: sidebarPopover(
+          'Nouvelle fiche',
+          "Ou décrivez un plat en langage naturel — l'IA génère la fiche technique complète en quelques secondes."
+        ),
       },
       {
         element: '[data-tour="nav-cartes"]',
-        popover: {
-          title: 'Cartes',
-          description: "Assemblez vos fiches en cartes de restaurant. Visualisez le food cost par section et ajustez les prix de vente.",
-          side: 'right',
-          align: 'center',
-        },
+        popover: sidebarPopover(
+          'Cartes',
+          "Assemblez vos fiches en cartes de restaurant. Visualisez le food cost par section et ajustez les prix de vente."
+        ),
       },
       {
         element: '[data-tour="nav-menu-engineering"]',
-        popover: {
-          title: 'Menu Engineering',
-          description: "Importez vos récapitulatifs de ventes caisse pour analyser la popularité et la rentabilité de chaque plat.",
-          side: 'right',
-          align: 'center',
-        },
+        popover: sidebarPopover(
+          'Menu Engineering',
+          "Importez vos récapitulatifs de ventes caisse pour analyser la popularité et la rentabilité de chaque plat."
+        ),
       },
       {
         element: '[data-tour="nav-dashboard"]',
-        popover: {
-          title: 'Dashboard',
-          description: "Votre tableau de bord — suivez le food cost global et les actions prioritaires du jour en un coup d'œil.",
-          side: 'right',
-          align: 'center',
-        },
+        popover: sidebarPopover(
+          'Dashboard',
+          "Votre tableau de bord — suivez le food cost global et les actions prioritaires du jour en un coup d'œil."
+        ),
       },
     ],
   });

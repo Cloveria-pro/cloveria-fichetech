@@ -29,6 +29,11 @@
   margin-top: 20px !important;
 }
 
+.driver-popover-footer button {
+  opacity: 1 !important;
+  filter: none !important;
+}
+
 .driver-popover-next-btn {
   background: #2D6A4F !important;
   color: #ffffff !important;
