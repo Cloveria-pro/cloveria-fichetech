@@ -2,6 +2,7 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { api, API_URL, authHeaders } from '../api.js';
 import { calculerCoutIngredient } from '../conversions.js';
+import { useWindowWidth } from '../hooks/useWindowWidth.js';
 
 function norm(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim(); }
 
@@ -469,12 +470,12 @@ export default function Ingredients() {
       ) : (<>
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', fontWeight: 700, color: T.text }}>Ingrédients</h1>
           <p style={{ color: T.muted, fontSize: '0.875rem', marginTop: '2px' }}>{items.length} ingrédient{items.length !== 1 ? 's' : ''} dans le catalogue</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
           {undoStack.length > 0 && (
             <button onClick={undo} style={{ ...btnSm, border: '1px solid #E5E0D8', background: '#fff', color: T.text, display: 'flex', alignItems: 'center', gap: '4px' }}>
               ↩ Annuler
@@ -520,7 +521,8 @@ export default function Ingredients() {
 
       {/* Tableau */}
       <div style={{ ...card, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
           <thead style={{ background: '#FAFAF8' }}>
             <tr>
               {[
@@ -746,6 +748,7 @@ export default function Ingredients() {
             </tfoot>
           )}
         </table>
+        </div>
       </div>
 
       {!showAdd && (
@@ -770,6 +773,9 @@ function ImportFacture({ items, setItems }) {
   const [aliases, setAliases] = useState([]);
   const [impactReport, setImpactReport] = useState(null);
   const fileRef = useRef(null);
+  const cameraRef = useRef(null);
+  const width = useWindowWidth();
+  const isMobile = width < 768;
 
   const UNITES_IA = ['kg', 'L', 'piece', 'g', 'ml', 'botte', 'c.s.', 'c.c.'];
   const inStyle = { border: '1px solid #E5E0D8', borderRadius: '4px', padding: '0.3rem 0.5rem', fontSize: '0.82rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' };
@@ -984,13 +990,13 @@ function ImportFacture({ items, setItems }) {
       {!results && (
         <>
           <div
-            style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 1.25rem', background: 'linear-gradient(135deg, rgba(201,168,76,0.06) 0%, rgba(201,168,76,0.02) 100%)', border: `1.5px solid ${dragOver ? '#C9A84C' : 'rgba(201,168,76,0.25)'}`, borderRadius: '12px', cursor: 'pointer', transition: 'all 0.15s' }}
-            onClick={() => fileRef.current?.click()}
+            style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 1.25rem', background: 'linear-gradient(135deg, rgba(201,168,76,0.06) 0%, rgba(201,168,76,0.02) 100%)', border: `1.5px solid ${dragOver ? '#C9A84C' : 'rgba(201,168,76,0.25)'}`, borderRadius: '12px', cursor: isMobile ? 'default' : 'pointer', transition: 'all 0.15s' }}
+            onClick={() => !isMobile && fileRef.current?.click()}
             onDragOver={e => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
             onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#C9A84C'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(201,168,76,0.1) 0%, rgba(201,168,76,0.04) 100%)'; }}
-            onMouseLeave={e => { if (!dragOver) { e.currentTarget.style.borderColor = 'rgba(201,168,76,0.25)'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(201,168,76,0.06) 0%, rgba(201,168,76,0.02) 100%)'; } }}
+            onMouseEnter={e => { if (!isMobile) { e.currentTarget.style.borderColor = '#C9A84C'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(201,168,76,0.1) 0%, rgba(201,168,76,0.04) 100%)'; } }}
+            onMouseLeave={e => { if (!dragOver && !isMobile) { e.currentTarget.style.borderColor = 'rgba(201,168,76,0.25)'; e.currentTarget.style.background = 'linear-gradient(135deg, rgba(201,168,76,0.06) 0%, rgba(201,168,76,0.02) 100%)'; } }}
           >
             <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#C9A84C', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.25rem' }}>📄</div>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -999,11 +1005,22 @@ function ImportFacture({ items, setItems }) {
                 <span style={{ fontSize: '0.65rem', background: 'rgba(201,168,76,0.15)', color: '#8B6914', border: '1px solid rgba(201,168,76,0.3)', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, letterSpacing: '0.04em' }}>IA</span>
                 {aliases.length > 0 && <span style={{ fontSize: '0.7rem', color: T.muted, flexShrink: 0 }}>{aliases.length} alias</span>}
               </div>
-              <p style={{ margin: 0, fontSize: '0.78rem', color: T.muted }}>Glissez ou cliquez — JPG, PNG, PDF · l'IA met à jour vos prix automatiquement</p>
+              <p style={{ margin: 0, fontSize: '0.78rem', color: T.muted }}>{isMobile ? 'Sélectionnez votre facture' : 'Glissez ou cliquez — JPG, PNG, PDF · l\'IA met à jour vos prix automatiquement'}</p>
             </div>
-            <span style={{ color: '#C9A84C', fontSize: '1.1rem', flexShrink: 0, fontWeight: 700 }}>→</span>
+            {!isMobile && <span style={{ color: '#C9A84C', fontSize: '1.1rem', flexShrink: 0, fontWeight: 700 }}>→</span>}
             <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,application/pdf" style={{ display: 'none' }} onChange={e => handleFile(e.target.files[0])} />
+            <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={e => handleFile(e.target.files[0])} />
           </div>
+          {isMobile && !file && (
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.75rem' }}>
+              <button onClick={() => cameraRef.current?.click()} style={{ flex: 1, padding: '0.65rem 0.5rem', background: '#2D6A4F', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                📷 Prendre une photo
+              </button>
+              <button onClick={() => fileRef.current?.click()} style={{ flex: 1, padding: '0.65rem 0.5rem', background: '#fff', color: T.text, border: '1px solid #E5E0D8', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                📁 Choisir un fichier
+              </button>
+            </div>
+          )}
           {file && (
             <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 1rem', background: '#F8F6F1', borderRadius: '8px', border: '1px solid #E5E0D8' }}>

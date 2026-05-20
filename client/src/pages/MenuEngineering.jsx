@@ -83,6 +83,7 @@ export default function MenuEngineering() {
   const [historique, setHistorique] = useState([]);
   const [histLoading, setHistLoading] = useState(false);
   const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
   const width = useWindowWidth();
   const isMobile = width < 768;
 
@@ -268,17 +269,19 @@ export default function MenuEngineering() {
                 onDragOver={e => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
                 onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
-                onClick={() => !loading && fileInputRef.current?.click()}
+                onClick={() => !loading && !isMobile && fileInputRef.current?.click()}
                 style={{
                   ...card,
                   padding: '3rem 2rem', textAlign: 'center',
-                  cursor: loading ? 'default' : 'pointer',
+                  cursor: loading || isMobile ? 'default' : 'pointer',
                   border: `2px dashed ${dragOver ? T.green : file && colonnes.length === 0 ? T.gold : colonnes.length > 0 ? T.green : '#C9A84C'}`,
                   background: dragOver ? 'rgba(45,106,79,0.04)' : '#FAFAF8',
                   transition: 'all 0.15s',
                 }}
               >
                 <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls,.pdf,.jpg,.jpeg,.png,.webp" style={{ display: 'none' }}
+                  onChange={e => handleFile(e.target.files[0])} />
+                <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }}
                   onChange={e => handleFile(e.target.files[0])} />
                 <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>{colonnes.length > 0 ? '✅' : '📊'}</div>
                 {file ? (
@@ -293,10 +296,20 @@ export default function MenuEngineering() {
                   <>
                     <div style={{ fontWeight: 700, color: T.text, fontSize: '0.95rem' }}>Déposez votre export de ventes ici</div>
                     <div style={{ color: T.muted, fontSize: '0.82rem', marginTop: '6px' }}>CSV, Excel, PDF, JPG, PNG · Max 10 Mo</div>
-                    <div style={{ color: T.gold, fontSize: '0.78rem', marginTop: '4px', fontWeight: 600 }}>ou cliquez pour parcourir</div>
+                    {!isMobile && <div style={{ color: T.gold, fontSize: '0.78rem', marginTop: '4px', fontWeight: 600 }}>ou cliquez pour parcourir</div>}
                   </>
                 )}
               </div>
+              {isMobile && !file && (
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button onClick={() => cameraInputRef.current?.click()} style={{ flex: 1, padding: '0.65rem 0.5rem', background: T.green, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                    📷 Prendre une photo
+                  </button>
+                  <button onClick={() => fileInputRef.current?.click()} style={{ flex: 1, padding: '0.65rem 0.5rem', background: '#fff', color: T.text, border: '1px solid #E5E0D8', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                    📁 Choisir un fichier
+                  </button>
+                </div>
+              )}
 
               <div style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.2)', borderRadius: '10px', padding: '0.875rem 1.25rem', fontSize: '0.8rem', color: '#78350F', lineHeight: 1.55 }}>
                 <strong>Formats acceptés :</strong> export CSV ou Excel depuis votre caisse (Lightspeed, Zelty, Cashpad, L'Addition, Trivec…), ou PDF / image de rapport de ventes. Le fichier doit contenir au minimum les noms des plats et les quantités vendues.

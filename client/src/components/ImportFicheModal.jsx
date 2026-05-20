@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
+import { useWindowWidth } from '../hooks/useWindowWidth.js';
 
 const T = { green: '#2D6A4F', gold: '#C9A84C', orange: '#D97706', text: '#1C2B1E', muted: '#6B7280', red: '#DC2626' };
 const CATEGORIES = ['Amuse-bouche', 'Entrée', 'Plat viande', 'Plat poisson', 'Plat végétarien', 'Dessert', 'Autre'];
@@ -62,6 +63,9 @@ function UncertainField({ label, uncertain, children }) {
 export default function ImportFicheModal({ onClose }) {
   const navigate = useNavigate();
   const fileRef = useRef();
+  const cameraRef = useRef();
+  const width = useWindowWidth();
+  const isMobile = width < 768;
   const [step, setStep] = useState(0);
   const [file, setFile] = useState(null);
   const [fileError, setFileError] = useState(null);
@@ -252,11 +256,11 @@ export default function ImportFicheModal({ onClose }) {
                 onDragEnter={e => { e.preventDefault(); setIsDragging(true); }}
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={handleDrop}
-                onClick={() => fileRef.current?.click()}
+                onClick={() => !isMobile && fileRef.current?.click()}
                 style={{
                   border: `2px dashed ${isDragging ? T.green : file ? T.green : '#D1C4B0'}`,
                   borderRadius: '12px', padding: '2.25rem 1.5rem', textAlign: 'center',
-                  cursor: 'pointer', transition: 'all 0.15s',
+                  cursor: isMobile ? 'default' : 'pointer', transition: 'all 0.15s',
                   background: isDragging ? 'rgba(45,106,79,0.04)' : file ? 'rgba(45,106,79,0.03)' : '#FAFAF8',
                 }}
               >
@@ -274,16 +278,30 @@ export default function ImportFicheModal({ onClose }) {
                   <>
                     <div style={{ fontSize: '2rem', marginBottom: '0.75rem', opacity: 0.6 }}>📂</div>
                     <div style={{ fontWeight: 600, color: T.text, fontSize: '0.9rem', marginBottom: '0.35rem' }}>
-                      Déposer un fichier ici
+                      {isMobile ? 'Sélectionnez votre fiche' : 'Déposer un fichier ici'}
                     </div>
-                    <div style={{ color: T.muted, fontSize: '0.78rem' }}>
-                      ou cliquer pour sélectionner · JPEG, PNG, WebP, PDF · 10 Mo max
-                    </div>
+                    {!isMobile && (
+                      <div style={{ color: T.muted, fontSize: '0.78rem' }}>
+                        ou cliquer pour sélectionner · JPEG, PNG, WebP, PDF · 10 Mo max
+                      </div>
+                    )}
                   </>
                 )}
                 <input ref={fileRef} type="file" accept=".jpg,.jpeg,.png,.webp,.pdf"
                   style={{ display: 'none' }} onChange={e => handleFileSelect(e.target.files[0])} />
+                <input ref={cameraRef} type="file" accept="image/*" capture="environment"
+                  style={{ display: 'none' }} onChange={e => handleFileSelect(e.target.files[0])} />
               </div>
+              {isMobile && !file && (
+                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.875rem' }}>
+                  <button onClick={() => cameraRef.current?.click()} style={{ flex: 1, padding: '0.65rem 0.5rem', background: T.green, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                    📷 Prendre une photo
+                  </button>
+                  <button onClick={() => fileRef.current?.click()} style={{ flex: 1, padding: '0.65rem 0.5rem', background: '#fff', color: T.text, border: '1px solid #E5E0D8', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                    📁 Choisir un fichier
+                  </button>
+                </div>
+              )}
 
               {fileError && <p style={{ color: T.red, fontSize: '0.8rem', marginTop: '0.6rem', margin: '0.6rem 0 0' }}>{fileError}</p>}
               {apiError && <p style={{ color: T.red, fontSize: '0.8rem', marginTop: '0.6rem' }}>{apiError}</p>}

@@ -34,7 +34,7 @@ function Col({ label, value, color, italic }) {
   );
 }
 
-function TileFiche({ r, cible, onDelete, onUpdateCategorie, navigate }) {
+function TileFiche({ r, cible, onDelete, onDuplicate, onUpdateCategorie, navigate }) {
   const [hovered, setHovered] = useState(false);
   const [catEdit, setCatEdit] = useState(false);
   const cpTTC = coutPortionTTC(r);
@@ -119,6 +119,15 @@ function TileFiche({ r, cible, onDelete, onUpdateCategorie, navigate }) {
         )}
       </div>
 
+      {/* Dupliquer */}
+      <button
+        onClick={e => { e.stopPropagation(); onDuplicate(r); }}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: hovered ? '#D1C4B0' : 'transparent', fontSize: '14px', padding: '4px 6px', flexShrink: 0, transition: 'color 0.15s' }}
+        onMouseEnter={e => { e.stopPropagation(); e.currentTarget.style.color = '#2D6A4F'; }}
+        onMouseLeave={e => { e.currentTarget.style.color = hovered ? '#D1C4B0' : 'transparent'; }}
+        title="Dupliquer"
+      >⎘</button>
+
       {/* Supprimer */}
       <button
         onClick={e => { e.stopPropagation(); if (!confirm('Supprimer cette fiche ?')) return; onDelete(r.id); }}
@@ -144,6 +153,7 @@ export default function Recettes() {
   const [statusFilter, setStatusFilter] = useState('');
   const [sectionsOpen, setSectionsOpen] = useState({});
   const [showImport, setShowImport] = useState(false);
+  const [duplicationToast, setDuplicationToast] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -157,6 +167,16 @@ export default function Recettes() {
 
   function supprimer(id) {
     api.recettes.delete(id).then(() => setRecettes(prev => prev.filter(r => r.id !== id)));
+  }
+
+  function dupliquer(r) {
+    const { id, createdAt, updatedAt, ...rest } = r;
+    api.recettes.create({ ...rest, nom: `${r.nom} (copie)`, prixVentePratiqueTTC: null })
+      .then(newFiche => {
+        setRecettes(prev => [...prev, newFiche]);
+        setDuplicationToast('Fiche dupliquée ✓');
+        setTimeout(() => setDuplicationToast(''), 3000);
+      });
   }
 
   function updateCategorie(id, newCat) {
@@ -203,6 +223,11 @@ export default function Recettes() {
   return (
     <div>
       {showImport && <ImportFicheModal onClose={() => setShowImport(false)} />}
+      {duplicationToast && (
+        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', background: '#2D6A4F', color: '#fff', padding: '0.75rem 1.5rem', borderRadius: '8px', fontWeight: 600, fontSize: '0.9rem', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', zIndex: 500, fontFamily: "'DM Sans', sans-serif" }}>
+          {duplicationToast}
+        </div>
+      )}
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
@@ -327,6 +352,7 @@ export default function Recettes() {
                     r={r}
                     cible={params.foodCostCible}
                     onDelete={supprimer}
+                    onDuplicate={dupliquer}
                     onUpdateCategorie={updateCategorie}
                     navigate={navigate}
                   />
