@@ -32,6 +32,9 @@
 .driver-popover-footer button {
   opacity: 1 !important;
   filter: none !important;
+  -webkit-font-smoothing: antialiased !important;
+  text-rendering: optimizeLegibility !important;
+  font-weight: 600 !important;
 }
 
 .driver-popover-next-btn {

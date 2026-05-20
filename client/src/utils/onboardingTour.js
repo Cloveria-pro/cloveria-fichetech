@@ -26,10 +26,12 @@ const PREV_ROUTES = [
   '/menu-engineering',  // step 7 → step 6
 ];
 
+const LOGO_HTML = `<img src="/logo.png" style="width:48px;height:auto;display:block;margin:0 auto 8px;object-fit:contain" />`;
+
 // Popover config shared by all sidebar steps — centered on screen, close button always visible
 const sidebarPopover = (title, description) => ({
   title,
-  description,
+  description: LOGO_HTML + description,
   side: 'over',
   align: 'center',
   showButtons: ['next', 'previous', 'close'],
@@ -64,6 +66,7 @@ export function startTour(navigate) {
     animate: true,
     smoothScroll: true,
     allowClose: false,
+    stagePadding: 4,
     overlayColor: 'rgba(0,0,0,0.75)',
     showProgress: true,
     nextBtnText: 'Suivant',
