@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CloverIA — Fiches techniques et food cost automatisés</title>
+  <title>CloverIA : Fiches techniques et food cost automatisés</title>
   <meta name="description" content="CloverIA automatise vos fiches techniques et calcule vos coûts en temps réel. Moins de temps sur les chiffres, plus de temps en cuisine." />
-  <meta property="og:title" content="CloverIA — Fiches techniques et food cost automatisés" />
+  <meta property="og:title" content="CloverIA : Fiches techniques et food cost automatisés" />
   <meta property="og:description" content="Créez vos fiches techniques en 30 secondes, suivez vos marges en temps réel. Essai gratuit 14 jours." />
   <meta property="og:image" content="images/1.webp" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -141,15 +141,26 @@
       align-items: center;
       gap: 0.6rem;
     }
+    .logo-img-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+      padding: 6px;
+      flex-shrink: 0;
+    }
     .logo img {
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       object-fit: contain;
     }
     .logo-name {
       font-family: 'Playfair Display', serif;
       font-weight: 700;
-      font-size: 1.125rem;
+      font-size: 1.25rem;
       color: var(--text);
       letter-spacing: -0.01em;
     }
@@ -171,12 +182,32 @@
     #hero {
       padding: 140px 0 80px;
       overflow: hidden;
+      position: relative;
+    }
+    #hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url('images/cuisine.png');
+      background-size: cover;
+      background-position: center;
+      filter: saturate(0.6);
+      z-index: 0;
+    }
+    #hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(248,246,241,0.93);
+      z-index: 1;
     }
     .hero-inner {
       display: grid;
       grid-template-columns: 1fr 1fr;
       align-items: center;
       gap: 4rem;
+      position: relative;
+      z-index: 2;
     }
     .hero-text {}
     .hero-eyebrow {
@@ -218,8 +249,17 @@
       font-size: 1.0625rem;
       line-height: 1.7;
       color: var(--muted);
-      margin-bottom: 2rem;
+      margin-bottom: 0.75rem;
       max-width: 480px;
+    }
+    .hero-tagline-italic {
+      font-size: 0.9375rem;
+      font-style: italic;
+      line-height: 1.6;
+      color: var(--muted);
+      max-width: 480px;
+      margin-bottom: 2rem;
+      opacity: 0.8;
     }
     .hero-cta {
       display: flex;
@@ -733,8 +773,10 @@
   <header id="header">
     <div class="container">
       <div class="header-inner">
-        <a href="#" class="logo" aria-label="CloverIA — Accueil">
-          <img src="../client/public/logo.png" alt="CloverIA" />
+        <a href="#" class="logo" aria-label="CloverIA, Accueil">
+          <span class="logo-img-wrap">
+            <img src="../client/public/logo.png" alt="CloverIA" />
+          </span>
           <span class="logo-name">CloverIA</span>
         </a>
         <nav class="header-nav">
@@ -757,7 +799,10 @@
             <em>sans prise de tête.</em>
           </h1>
           <p class="hero-subtitle fade-up delay-2">
-            CloverIA automatise vos fiches techniques et calcule vos coûts en temps réel — moins de temps sur les chiffres et plus en cuisine.
+            CloverIA automatise vos fiches techniques et calcule vos coûts en temps réel, pour que vous passiez moins de temps sur les chiffres et plus de temps en cuisine.
+          </p>
+          <p class="hero-tagline-italic fade-up delay-2">
+            Pensé pour les chefs, les restaurateurs et les cuisines qui veulent garder le contrôle sur leurs coûts.
           </p>
           <div class="hero-cta fade-up delay-3">
             <a href="https://app.cloveria-pro.fr" class="btn btn-primary btn-lg">
@@ -771,7 +816,7 @@
           <div class="hero-visual-deco2"></div>
           <img
             src="images/1.webp"
-            alt="Dashboard CloverIA — vue d'ensemble des food costs"
+            alt="Dashboard CloverIA, vue d'ensemble des food costs"
             class="hero-screenshot"
             loading="eager"
           />
@@ -798,16 +843,16 @@
       <div class="features-header fade-up">
         <span class="section-label">Fonctionnalités</span>
         <h2 class="section-title">Tout ce dont vous avez besoin,<br />exactement là où il faut.</h2>
-        <p class="section-sub">De la fiche technique à l'analyse de rentabilité, CloverIA centralise tout pour que vous gardez le contrôle.</p>
+        <p class="section-sub">De la fiche technique à l'analyse de rentabilité, CloverIA centralise tout pour que vous gardiez le contrôle.</p>
       </div>
 
       <!-- Feature 1 -->
       <div class="feature-block">
         <div class="feature-text fade-up">
-          <span class="feature-num">01 — Gain de temps</span>
+          <span class="feature-num">01 · Gain de temps</span>
           <h3 class="feature-title">Créez une fiche technique en 30 secondes</h3>
           <p class="feature-desc">
-            Décrivez votre plat en langage naturel ou importez une photo de votre fiche papier — l'IA extrait les ingrédients, les quantités et calcule immédiatement votre coût matière.
+            Décrivez votre plat en langage naturel ou importez une photo de votre fiche papier : l'IA extrait les ingrédients, les quantités et calcule immédiatement votre coût matière.
           </p>
           <div class="feature-pills">
             <span class="pill">IA générative</span>
@@ -823,7 +868,7 @@
       <!-- Feature 2 -->
       <div class="feature-block reverse">
         <div class="feature-text fade-up">
-          <span class="feature-num">02 — Pilotage</span>
+          <span class="feature-num">02 · Pilotage</span>
           <h3 class="feature-title">Suivez vos food costs en temps réel</h3>
           <p class="feature-desc">
             Dès que vous mettez à jour un prix d'ingrédient, toutes vos fiches recalculent automatiquement. Vous savez immédiatement où vous en êtes par rapport à votre cible food cost.
@@ -842,10 +887,10 @@
       <!-- Feature 3 -->
       <div class="feature-block">
         <div class="feature-text fade-up">
-          <span class="feature-num">03 — Rentabilité</span>
+          <span class="feature-num">03 · Rentabilité</span>
           <h3 class="feature-title">Pilotez la rentabilité de votre carte</h3>
           <p class="feature-desc">
-            Importez vos ventes caisse et obtenez instantanément la matrice popularité / rentabilité de chaque plat — pour décider ce qu'il faut garder, valoriser ou retirer.
+            Analysez vos ventes et visualisez la rentabilité de chaque plat pour décider ce qu'il faut garder, valoriser ou ajuster.
           </p>
           <div class="feature-pills">
             <span class="pill">Menu Engineering</span>
@@ -877,7 +922,7 @@
         <div class="step fade-up delay-2">
           <div class="step-num">2</div>
           <h3 class="step-title">Importez ou créez vos fiches</h3>
-          <p class="step-desc">Photographiez vos fiches papier ou décrivez vos plats — l'IA se charge du reste.</p>
+          <p class="step-desc">Photographiez vos fiches papier ou décrivez vos plats, l'IA se charge du reste.</p>
         </div>
         <div class="step fade-up delay-3">
           <div class="step-num">3</div>
@@ -898,8 +943,8 @@
       </div>
       <div class="pricing-card fade-up delay-1">
         <span class="pricing-badge">Tout inclus</span>
-        <div class="pricing-price">39€ <span>/ mois</span></div>
-        <p class="pricing-period">HT — Résiliable à tout moment</p>
+        <div class="pricing-price">39€ TTC <span>/ mois</span></div>
+        <p class="pricing-period">Résiliable à tout moment</p>
         <div class="pricing-divider"></div>
         <ul class="pricing-features">
           <li>Fiches techniques illimitées</li>
@@ -1002,8 +1047,9 @@
           <img src="../client/public/logo.png" alt="" aria-hidden="true" />
           <span class="footer-logo-name">CloverIA</span>
         </a>
-        <p class="footer-copy">© 2026 CloverIA — Tous droits réservés</p>
+        <p class="footer-copy">© 2026 CloverIA. Tous droits réservés</p>
         <div class="footer-links">
+          <a href="#">CGU</a>
           <a href="#">Politique de confidentialité</a>
           <a href="mailto:contact@cloveria.fr">contact@cloveria.fr</a>
         </div>
@@ -1029,7 +1075,7 @@
       window.addEventListener('scroll', onScroll, { passive: true });
     })();
 
-    // Intersection Observer — fade-up animations
+    // Intersection Observer - fade-up animations
     (function () {
       const targets = document.querySelectorAll('.fade-up');
       const observer = new IntersectionObserver(
