@@ -29,6 +29,8 @@ async function ensureDemoUser() {
     food_cost_cible: 30,
     tva_defaut: 10,
     onboardingComplete: true,
+    betaAccess: true,
+    subscriptionStatus: 'active',
     created_at: new Date().toISOString(),
   });
   console.log('Compte demo cree : demo@cloveria.fr / Demo1234!');
@@ -48,6 +50,8 @@ router.post('/register', async (req, res) => {
   }
 
   const hash = await bcrypt.hash(password, 10);
+  const now = new Date();
+  const trialEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
   const user = {
     id: uuidv4(),
     email: email.toLowerCase().trim(),
@@ -56,7 +60,7 @@ router.post('/register', async (req, res) => {
     plan: 'free',
     food_cost_cible: 30,
     tva_defaut: 10,
-    created_at: new Date().toISOString(),
+    created_at: now.toISOString(),
     prenom: '',
     typeEtablissement: '',
     role: '',
@@ -64,6 +68,13 @@ router.post('/register', async (req, res) => {
     nbPlats: '',
     foodCostCible: 30,
     onboardingComplete: false,
+    trialStartDate: now.toISOString(),
+    trialEndDate: trialEnd.toISOString(),
+    subscriptionStatus: 'trial',
+    stripeCustomerId: null,
+    stripeSubscriptionId: null,
+    betaAccess: false,
+    emailsEnvoyes: [],
   };
   await col.insertOne(user);
   delete user._id;

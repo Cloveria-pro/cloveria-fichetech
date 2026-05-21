@@ -15,6 +15,8 @@ import Aide from './pages/Aide.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import Onboarding from './pages/Onboarding.jsx';
+import Abonnement from './pages/Abonnement.jsx';
+import AbonnementConfirme from './pages/AbonnementConfirme.jsx';
 import { useWindowWidth } from './hooks/useWindowWidth.js';
 
 const SIDEBAR_W = '224px';
@@ -79,6 +81,12 @@ export default function App() {
     const timer = setTimeout(() => startTour(navigate), 1500);
     return () => clearTimeout(timer);
   }, [token, user?.onboardingComplete]);
+
+  useEffect(() => {
+    const handler = () => navigate('/abonnement');
+    window.addEventListener('trial_expired', handler);
+    return () => window.removeEventListener('trial_expired', handler);
+  }, [navigate]);
 
   function handleLogin(newToken, newUser) {
     localStorage.setItem('token', newToken);
@@ -252,6 +260,8 @@ export default function App() {
           <Route path="/documents" element={<Documents />} />
           <Route path="/parametres" element={<Parametres />} />
           <Route path="/aide" element={<Aide />} />
+          <Route path="/abonnement" element={<Abonnement />} />
+          <Route path="/abonnement-confirme" element={<AbonnementConfirme />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="/register" element={<Navigate to="/" replace />} />
         </Routes>

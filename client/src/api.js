@@ -15,7 +15,13 @@ async function request(path, options = {}) {
     ...options
   });
   const body = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(body?.message || 'Erreur de communication');
+  if (!res.ok) {
+    if (res.status === 403 && body?.error === 'trial_expired') {
+      window.dispatchEvent(new CustomEvent('trial_expired', { detail: body }));
+      throw new Error('trial_expired');
+    }
+    throw new Error(body?.error || body?.message || 'Erreur de communication');
+  }
   return body;
 }
 
@@ -102,6 +108,9 @@ export const api = {
   profil: {
     get: () => request('/auth/profil'),
     update: (data) => request('/auth/profil', { method: 'PUT', body: JSON.stringify(data) }),
+  },
+  stripe: {
+    createCheckoutSession: () => request('/stripe/create-checkout-session', { method: 'POST' }),
   },
 };
 
