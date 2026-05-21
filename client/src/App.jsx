@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { startTour } from './utils/onboardingTour.js';
-import { Routes, Route, NavLink, Link, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, NavLink, Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Dashboard from './pages/Dashboard.jsx';
 import Recettes from './pages/Recettes.jsx';
 import FicheTechnique from './pages/FicheTechnique.jsx';
@@ -70,6 +70,11 @@ export default function App() {
   const isTablet = width >= 768 && width < 1024;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Pages légales — toujours publiques, sans sidebar, sans contrôle d'auth
+  if (location.pathname === '/cgu') return <CGU />;
+  if (location.pathname === '/politique-confidentialite') return <PolitiqueConfidentialite />;
 
   const [token, setToken] = useState(() => localStorage.getItem('token'));
   const [user, setUser] = useState(() => {
