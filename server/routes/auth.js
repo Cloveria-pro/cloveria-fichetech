@@ -106,7 +106,7 @@ router.put('/profil', authMiddleware, async (req, res) => {
   const existing = await col.findOne({ id: req.userId }, { projection: { _id: 0 } });
   if (!existing) return res.status(404).json({ error: 'Utilisateur introuvable' });
 
-  const ALLOWED = ['prenom', 'etablissement', 'typeEtablissement', 'role', 'objectifs', 'nbPlats', 'foodCostCible', 'onboardingComplete'];
+  const ALLOWED = ['prenom', 'etablissement', 'typeEtablissement', 'role', 'objectifs', 'nbPlats', 'foodCostCible', 'onboardingComplete', 'sourceDecouverte'];
   const updates = {};
   for (const key of ALLOWED) {
     if (req.body[key] !== undefined) updates[key] = req.body[key];

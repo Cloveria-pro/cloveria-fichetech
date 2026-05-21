@@ -74,10 +74,11 @@ export default function App() {
 
   useEffect(() => {
     if (!token) return;
+    if (user?.onboardingComplete === false) return;
     if (localStorage.getItem('onboarding_done')) return;
-    const timer = setTimeout(() => startTour(navigate), 800);
+    const timer = setTimeout(() => startTour(navigate), 1500);
     return () => clearTimeout(timer);
-  }, [token]);
+  }, [token, user?.onboardingComplete]);
 
   function handleLogin(newToken, newUser) {
     localStorage.setItem('token', newToken);

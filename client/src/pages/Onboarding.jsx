@@ -15,8 +15,9 @@ const FC_PRESETS = {
 
 const TYPES_ETAB = ['Gastro', 'Brasserie / traditionnel', 'Fast-food / snacking', 'Traiteur', "Hôtel / restaurant d'hôtel", 'Autre'];
 const ROLES = ['Chef', 'Gérant', 'Responsable cuisine', "Directeur d'établissement", 'Autre'];
-const OBJECTIFS = ['Mieux gérer mes fiches techniques', 'Suivre mes coûts matière', 'Mieux piloter mes marges', 'Centraliser mes documents', 'Gagner du temps au quotidien'];
+const OBJECTIFS = ['Mieux gérer mes fiches techniques', 'Suivre mes coûts matière', 'Mieux piloter mes marges', 'Centraliser mes documents', 'Gagner du temps au quotidien', 'Autre'];
 const NB_PLATS = ['Moins de 10', 'Entre 10 et 30', 'Entre 30 et 60', 'Plus de 60'];
+const SOURCES = ['Bouche à oreille', 'Internet / Google', 'Facebook', 'LinkedIn', 'Instagram', 'Autre réseau'];
 
 function CardSelect({ options, value, onChange, multi = false }) {
   return (
@@ -54,7 +55,7 @@ function CardSelect({ options, value, onChange, multi = false }) {
 
 function ProgressBar({ step }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginBottom: '2rem' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginBottom: '1.75rem' }}>
       {[1, 2, 3, 4].map(i => (
         <div key={i} style={{
           width: i === step ? '28px' : '8px',
@@ -68,13 +69,13 @@ function ProgressBar({ step }) {
   );
 }
 
-function Logo({ size }) {
+function Logo() {
   return (
-    <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+    <div style={{ textAlign: 'center', padding: '0.5rem 0 2rem' }}>
       <img
         src="/logo.png"
         alt="CloverIA"
-        style={{ width: `${size}px`, height: 'auto', objectFit: 'contain', display: 'inline-block' }}
+        style={{ width: '180px', height: 'auto', objectFit: 'contain', display: 'inline-block' }}
         onError={e => { e.currentTarget.style.display = 'none'; }}
       />
     </div>
@@ -85,6 +86,7 @@ export default function Onboarding({ onComplete }) {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [autreObjectif, setAutreObjectif] = useState('');
   const [data, setData] = useState({
     prenom: '',
     etablissement: '',
@@ -93,6 +95,7 @@ export default function Onboarding({ onComplete }) {
     objectifs: [],
     nbPlats: '',
     foodCostCible: 30,
+    sourceDecouverte: '',
   });
 
   function selectType(type) {
@@ -111,7 +114,12 @@ export default function Onboarding({ onComplete }) {
   async function finish() {
     setSaving(true);
     try {
-      await api.profil.update({ ...data, onboardingComplete: true });
+      // Remplace "Autre" dans objectifs par le texte libre si renseigné
+      const finalObjectifs = data.objectifs.map(o =>
+        o === 'Autre' && autreObjectif.trim() ? autreObjectif.trim() : o
+      );
+      localStorage.removeItem('onboarding_done');
+      await api.profil.update({ ...data, objectifs: finalObjectifs, onboardingComplete: true });
       onComplete();
       navigate('/');
     } catch {
@@ -150,9 +158,9 @@ export default function Onboarding({ onComplete }) {
 
   return (
     <div style={{ minHeight: '100vh', background: T.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem' }}>
-      <div style={{ width: '100%', maxWidth: '480px', background: '#fff', borderRadius: '20px', boxShadow: '0 4px 32px rgba(0,0,0,0.08)', padding: '2.5rem 2rem' }}>
+      <div style={{ width: '100%', maxWidth: '500px', background: '#fff', borderRadius: '20px', boxShadow: '0 4px 32px rgba(0,0,0,0.08)', padding: '2rem 2rem 2.5rem' }}>
 
-        <Logo size={step === 4 ? 120 : 80} />
+        <Logo />
         <ProgressBar step={step} />
 
         {/* ── Écran 1 : Votre établissement ── */}
@@ -217,6 +225,22 @@ export default function Onboarding({ onComplete }) {
               Qu'est-ce qui vous amène ?
             </h1>
             <CardSelect options={OBJECTIFS} value={data.objectifs} onChange={toggleObjectif} multi />
+
+            {/* Champ libre si "Autre" est sélectionné */}
+            {data.objectifs.includes('Autre') && (
+              <div style={{ marginTop: '0.75rem' }}>
+                <input
+                  value={autreObjectif}
+                  onChange={e => setAutreObjectif(e.target.value)}
+                  placeholder="Décrivez votre objectif..."
+                  style={inputStyle}
+                  onFocus={e => e.target.style.borderColor = T.green}
+                  onBlur={e => e.target.style.borderColor = T.border}
+                  autoFocus
+                />
+              </div>
+            )}
+
             <p style={subTitle}>Combien de plats gérez-vous environ ?</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
               {NB_PLATS.map(opt => (
@@ -237,6 +261,14 @@ export default function Onboarding({ onComplete }) {
                 </label>
               ))}
             </div>
+
+            <p style={subTitle}>Comment nous avez-vous connu ?</p>
+            <CardSelect
+              options={SOURCES}
+              value={data.sourceDecouverte}
+              onChange={src => setData(d => ({ ...d, sourceDecouverte: src }))}
+            />
+
             <button
               style={btnStyle()}
               onClick={() => setStep(4)}
