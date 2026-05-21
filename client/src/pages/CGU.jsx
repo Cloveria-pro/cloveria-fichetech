@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useWindowWidth } from '../hooks/useWindowWidth.js';
 
 const T = { green: '#2D6A4F', text: '#1C2B1E', muted: '#6B7280', bg: '#F8F6F1', border: '#E5E0D8' };
 
@@ -16,6 +17,10 @@ function Section({ title, children }) {
 }
 
 export default function CGU() {
+  const width = useWindowWidth();
+  const isMobile = width < 600;
+  const cardPad = isMobile ? '1.25rem' : '2.5rem';
+
   return (
     <div style={{ minHeight: '100vh', background: T.bg, padding: '2rem 1rem' }}>
       <div style={{ maxWidth: '760px', margin: '0 auto' }}>
@@ -23,13 +28,13 @@ export default function CGU() {
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <img src="/logo.png" alt="CloverIA" style={{ width: '80px', height: 'auto', objectFit: 'contain', display: 'inline-block', marginBottom: '1rem' }}
             onError={e => { e.currentTarget.style.display = 'none'; }} />
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.75rem', fontWeight: 700, color: T.text, marginBottom: '0.5rem' }}>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: isMobile ? '1.4rem' : '1.75rem', fontWeight: 700, color: T.text, marginBottom: '0.5rem' }}>
             Conditions Générales d'Utilisation
           </h1>
           <p style={{ color: T.muted, fontSize: '0.875rem' }}>Dernière mise à jour : mai 2025</p>
         </div>
 
-        <div style={{ background: '#fff', borderRadius: '16px', boxShadow: '0 2px 16px rgba(0,0,0,0.06)', padding: '2.5rem' }}>
+        <div style={{ background: '#fff', borderRadius: '16px', boxShadow: '0 2px 16px rgba(0,0,0,0.06)', padding: cardPad }}>
 
           <Section title="Article 1 — Objet">
             <p>CloverIA FicheTech est un logiciel en ligne (SaaS) de gestion de fiches techniques, de calcul de food cost et de pilotage de rentabilité, destiné aux professionnels de la restauration.</p>

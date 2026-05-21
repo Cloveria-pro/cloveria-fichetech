@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 
 const T = { green: '#2D6A4F', text: '#1C2B1E', muted: '#6B7280', bg: '#F8F6F1' };
@@ -107,6 +108,11 @@ export default function Abonnement() {
         <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.8rem', color: T.muted }}>
           Une question ?{' '}
           <a href="mailto:contact@cloveria.fr" style={{ color: T.green, fontWeight: 600, textDecoration: 'none' }}>contact@cloveria.fr</a>
+        </p>
+        <p style={{ textAlign: 'center', marginTop: '0.75rem', fontSize: '0.75rem', color: T.muted }}>
+          <Link to="/cgu" target="_blank" rel="noopener noreferrer" style={{ color: T.muted, textDecoration: 'none' }}>CGU</Link>
+          {' · '}
+          <Link to="/politique-confidentialite" target="_blank" rel="noopener noreferrer" style={{ color: T.muted, textDecoration: 'none' }}>Politique de confidentialité</Link>
         </p>
       </div>
     </div>

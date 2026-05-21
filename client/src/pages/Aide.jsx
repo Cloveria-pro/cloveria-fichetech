@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { useWindowWidth } from '../hooks/useWindowWidth.js';
 import { startTour } from '../utils/onboardingTour.js';
 
 const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280' };
@@ -65,6 +66,8 @@ function SvgIcon({ d }) {
 export default function Aide() {
   const [openIdx, setOpenIdx] = useState(null);
   const navigate = useNavigate();
+  const width = useWindowWidth();
+  const isMobile = width < 640;
 
   function reopenDemo() {
     localStorage.removeItem('onboarding_done');
@@ -97,7 +100,7 @@ export default function Aide() {
         <h2 style={{ fontSize: '0.7rem', fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem' }}>
           Pour démarrer
         </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '1rem' }}>
           {CARDS.map(card => (
             <button
               key={card.to}
@@ -129,7 +132,7 @@ export default function Aide() {
       </div>
 
       {/* Bloc 2 — FAQ */}
-      <div>
+      <div style={{ marginBottom: '2.5rem' }}>
         <h2 style={{ fontSize: '0.7rem', fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem' }}>
           Questions fréquentes
         </h2>
@@ -160,6 +163,21 @@ export default function Aide() {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* Documents légaux */}
+      <div style={{ marginTop: '1rem', paddingTop: '1.5rem', borderTop: '1px solid #E8E2D9' }}>
+        <h2 style={{ fontSize: '0.7rem', fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>
+          Documents légaux
+        </h2>
+        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+          <Link to="/cgu" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.875rem', color: T.green, fontWeight: 600, textDecoration: 'none' }}>
+            CGU
+          </Link>
+          <Link to="/politique-confidentialite" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.875rem', color: T.green, fontWeight: 600, textDecoration: 'none' }}>
+            Politique de confidentialité
+          </Link>
         </div>
       </div>
     </div>

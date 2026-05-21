@@ -146,9 +146,9 @@ export default function Login({ onLogin }) {
             </Link>
           </p>
           <p style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.75rem', color: T.muted }}>
-            <Link to="/cgu" style={{ color: T.muted, textDecoration: 'none' }}>CGU</Link>
+            <a href="/cgu" target="_blank" rel="noopener noreferrer" style={{ color: T.muted, textDecoration: 'none' }}>CGU</a>
             {' · '}
-            <Link to="/politique-confidentialite" style={{ color: T.muted, textDecoration: 'none' }}>Confidentialité</Link>
+            <a href="/politique-confidentialite" target="_blank" rel="noopener noreferrer" style={{ color: T.muted, textDecoration: 'none' }}>Politique de confidentialité</a>
           </p>
         </div>
       </div>
