@@ -104,6 +104,12 @@ export default function Register({ onLogin }) {
             Déjà un compte ?{' '}
             <Link to="/login" style={{ color: T.green, fontWeight: 600, textDecoration: 'none' }}>Se connecter</Link>
           </p>
+          <p style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.75rem', color: T.muted }}>
+            En créant un compte, vous acceptez nos{' '}
+            <Link to="/cgu" style={{ color: T.muted, textDecoration: 'underline' }}>CGU</Link>
+            {' et notre '}
+            <Link to="/politique-confidentialite" style={{ color: T.muted, textDecoration: 'underline' }}>politique de confidentialité</Link>.
+          </p>
         </div>
       </div>
     </div>

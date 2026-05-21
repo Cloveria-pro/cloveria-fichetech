@@ -145,6 +145,11 @@ export default function Login({ onLogin }) {
               S'inscrire
             </Link>
           </p>
+          <p style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.75rem', color: T.muted }}>
+            <Link to="/cgu" style={{ color: T.muted, textDecoration: 'none' }}>CGU</Link>
+            {' · '}
+            <Link to="/politique-confidentialite" style={{ color: T.muted, textDecoration: 'none' }}>Confidentialité</Link>
+          </p>
         </div>
       </div>
 

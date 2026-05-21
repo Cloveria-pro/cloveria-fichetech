@@ -17,6 +17,8 @@ import Register from './pages/Register.jsx';
 import Onboarding from './pages/Onboarding.jsx';
 import Abonnement from './pages/Abonnement.jsx';
 import AbonnementConfirme from './pages/AbonnementConfirme.jsx';
+import CGU from './pages/CGU.jsx';
+import PolitiqueConfidentialite from './pages/PolitiqueConfidentialite.jsx';
 import { useWindowWidth } from './hooks/useWindowWidth.js';
 
 const SIDEBAR_W = '224px';
@@ -108,6 +110,8 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login onLogin={handleLogin} />} />
         <Route path="/register" element={<Register onLogin={handleLogin} />} />
+        <Route path="/cgu" element={<CGU />} />
+        <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
@@ -124,6 +128,8 @@ export default function App() {
             setUser(newUser);
           }} />
         } />
+        <Route path="/cgu" element={<CGU />} />
+        <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
         <Route path="*" element={<Navigate to="/onboarding" replace />} />
       </Routes>
     );
@@ -262,6 +268,8 @@ export default function App() {
           <Route path="/aide" element={<Aide />} />
           <Route path="/abonnement" element={<Abonnement />} />
           <Route path="/abonnement-confirme" element={<AbonnementConfirme />} />
+          <Route path="/cgu" element={<CGU />} />
+          <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="/register" element={<Navigate to="/" replace />} />
         </Routes>

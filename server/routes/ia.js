@@ -325,22 +325,30 @@ router.post('/description-commerciale', async (req, res) => {
   const { nom, ingredients, portions } = req.body;
   if (!nom) return res.status(400).json({ error: 'nom requis' });
 
-  const ingList = (ingredients || []).map(i => `${i.quantite} ${i.unite} de ${i.nom}`).join(', ');
-  const userMsg = `Plat : "${nom}"${portions ? `, ${portions} portions` : ''}. Ingrédients : ${ingList || 'non spécifiés'}.
+  const ingList = (ingredients || []).map(i => i.nom).filter(Boolean).join(', ');
 
-Génère UNIQUEMENT ce JSON : { "description_commerciale": "string" }
+  const systemPrompt = `Tu es un ami gourmand qui recommande des plats à des clients au restaurant. Tu parles uniquement de ce qu'on ressent dans l'assiette : les goûts, les textures, les parfums, les émotions que le plat provoque. Tu ne mentionnes jamais comment le plat est préparé.
 
-2 à 3 phrases simples et naturelles pour donner envie au client. Parle UNIQUEMENT du résultat dans l'assiette — goûts, textures, ce que ça évoque. Jamais de comment c'est fait, jamais de gestes de cuisine, jamais d'ustensiles, jamais de températures, jamais de temps de cuisson. Ton naturel et chaleureux, comme un ami qui recommande un plat. JAMAIS les mots ni leurs dérivés : sublimé, nappé, réalisé, élaboré, déglacer, thermoplongeur, bain-marie, blanchir, monter, infuser, chiffonnade, fouetter, incorporer, blanchiment, mélanger, tamiser, beurrer, chemiser, cuire, rôtir, tapisser, déposer, enfourner, préparer.
+MOTS ET EXPRESSIONS STRICTEMENT INTERDITS (et tous leurs dérivés) : cuire, rôtir, tapisser, déposer, enfourner, préparer, réaliser, fouetter, incorporer, blanchir, tamiser, beurrer, chemiser, thermoplongeur, bain-marie, poêler, dorer, caraméliser, réduire, déglacer, monter, infuser, napper, sublimer, élaborer, mélanger, chiffonnade, mijoter, sauter, snacker, mariner, assaisonner, dresser, disposer. Aussi interdit : toute température en degrés, tout temps de cuisson, tout nom d'ustensile de cuisine.
 
-Exemples corrects :
-- "Un burger avec un steak maison, des légumes frais et notre sauce maison. Costaud et vraiment bon."
-- "Un fondant au chocolat avec le cœur qui coule, accompagné de framboises fraîches. Pour les amateurs de chocolat, c'est le dessert parfait."
-- "Une salade fraîche avec de la pastèque, de la feta et de la menthe. Simple, légère et pleine de goût — parfaite pour l'été."`;
+RÈGLE D'OR : si tu te retrouves à expliquer comment le plat est fait, tu t'es trompé. Parle uniquement de ce qu'on voit, sent, goûte et ressent.
+
+FORMAT : 2 à 3 phrases maximum. Ton naturel, chaleureux, gourmand — comme si tu parlais à un ami à table. Retourne UNIQUEMENT ce JSON : { "description_commerciale": "string" }`;
+
+  const userMsg = `Plat : "${nom}"${portions ? ` (${portions} portions)` : ''}.${ingList ? ` Il contient : ${ingList}.` : ''}
+
+Exemples du ton attendu :
+- Cromesquis foie gras : "Une bouchée croustillante qui cache du foie gras fondant et une touche de gelée de Sauternes. Le genre de petit truc qu'on redemande aussitôt."
+- Magret sauce miel balsamique : "Du magret juteux avec une sauce qui mêle le doux du miel et l'acidité du balsamique, sur un lit de patate douce. C'est généreux, équilibré, vraiment bon."
+- Salade pastèque feta : "Fraîche, légère, avec la douceur de la pastèque contre le sel de la feta et la menthe qui réveille tout. Parfaite pour les jours où on veut manger en terrasse."
+- Fondant chocolat : "Un fondant avec le cœur qui coule au moindre coup de cuillère, accompagné de framboises qui tranchent avec l'intensité du chocolat. Le dessert qu'on commande les yeux fermés."
+- Burger maison : "Un burger costaud avec un steak maison bien moelleux, des légumes croquants et une sauce qu'on retrouve nulle part ailleurs. Rassasiant et vraiment savoureux."`;
 
   try {
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 256,
+      system: systemPrompt,
       messages: [{ role: 'user', content: userMsg }],
     });
     const text = message.content[0].text;
