@@ -197,14 +197,19 @@
       background-image: url('images/cuisine.png');
       background-size: cover;
       background-position: center;
-      filter: saturate(0.2) brightness(0.9);
+      filter: saturate(0.48) brightness(0.88);
       z-index: 0;
     }
     #hero::after {
       content: '';
       position: absolute;
       inset: 0;
-      background: rgba(248,246,241,0.93);
+      background: linear-gradient(
+        to right,
+        rgba(248,246,241,0.78) 0%,
+        rgba(248,246,241,0.65) 52%,
+        rgba(248,246,241,0.42) 100%
+      );
       z-index: 1;
     }
     .hero-inner {
@@ -216,13 +221,19 @@
       z-index: 2;
     }
     .hero-text {
-      max-width: 560px;
+      max-width: 540px;
+      background: rgba(248,246,241,0.84);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 2.5rem 2.25rem;
+      border: 1px solid rgba(220,231,227,0.55);
     }
     .hero-eyebrow {
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
-      background: rgba(255,255,255,0.92);
+      background: rgba(15,76,151,0.07);
       border: 1px solid rgba(15,76,151,0.18);
       color: #0F4C97;
       font-size: 0.8125rem;
@@ -295,7 +306,7 @@
     .hero-screenshot {
       width: 100%;
       border-radius: var(--radius);
-      box-shadow: 0 24px 80px rgba(15,76,151,0.15), 0 4px 16px rgba(15,76,151,0.09);
+      box-shadow: 0 24px 80px rgba(15,76,151,0.18), 0 4px 16px rgba(15,76,151,0.1);
       border: 1px solid rgba(220,231,227,0.85);
     }
     .hero-visual-deco {
@@ -487,9 +498,18 @@
     /* ── How it works ── */
     #how {
       padding: 96px 0;
-      background: #FCFBF8;
-      border-top: 1px solid #DCE7E3;
-      border-bottom: 1px solid #DCE7E3;
+      background: linear-gradient(155deg, #0F2F5C 0%, #123D7A 60%, #0E3464 100%);
+      border-top: none;
+      border-bottom: none;
+    }
+    #how .section-label {
+      color: #7DD3D6;
+    }
+    #how .section-title {
+      color: #F8FAFC;
+    }
+    #how .section-sub {
+      color: rgba(248,250,252,0.78);
     }
     .how-header {
       text-align: center;
@@ -511,20 +531,21 @@
       left: calc(16.67% + 1rem);
       right: calc(16.67% + 1rem);
       height: 1px;
-      background: linear-gradient(to right, #DCE7E3 0%, #159A9C 50%, #DCE7E3 100%);
-      opacity: 0.6;
+      background: linear-gradient(to right, rgba(255,255,255,0.08) 0%, rgba(125,211,214,0.5) 50%, rgba(255,255,255,0.08) 100%);
+      opacity: 1;
     }
     .step {
       text-align: center;
       padding: 2rem 1.5rem;
       border-radius: var(--radius);
-      background: #F4F7F6;
-      border: 1px solid #DCE7E3;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
       position: relative;
-      transition: box-shadow 0.2s, transform 0.2s;
+      transition: box-shadow 0.2s, transform 0.2s, background 0.2s;
     }
     .step:hover {
-      box-shadow: 0 2px 12px rgba(15,76,151,0.07);
+      background: rgba(255,255,255,0.11);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.22);
       transform: translateY(-3px);
     }
     .step-num {
@@ -539,19 +560,19 @@
       align-items: center;
       justify-content: center;
       margin: 0 auto 1.25rem;
-      box-shadow: 0 4px 14px rgba(21,154,156,0.28);
+      box-shadow: 0 4px 18px rgba(21,154,156,0.45);
     }
     .step-title {
       font-family: 'Playfair Display', serif;
       font-size: 1.125rem;
       font-weight: 700;
-      color: #123D7A;
+      color: #F8FAFC;
       margin-bottom: 0.625rem;
     }
     .step-desc {
       font-size: 0.9375rem;
       line-height: 1.65;
-      color: #4F6B7A;
+      color: rgba(248,250,252,0.78);
     }
 
     /* ── Pricing ── */
@@ -949,7 +970,7 @@
           </div>
         </div>
         <div class="feature-visual fade-up delay-2">
-          <img src="images/5.webp" alt="Suivi des food costs en temps réel" class="feature-screenshot" loading="lazy" />
+          <img src="images/5.png" alt="Suivi des food costs en temps réel" class="feature-screenshot" loading="lazy" />
         </div>
       </div>
 
