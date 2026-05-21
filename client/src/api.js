@@ -99,6 +99,10 @@ export const api = {
     getFile: (type, id) => request(`/documents/${type}/${id}/file`),
     delete: (type, id) => request(`/documents/${type}/${id}`, { method: 'DELETE' }),
   },
+  profil: {
+    get: () => request('/auth/profil'),
+    update: (data) => request('/auth/profil', { method: 'PUT', body: JSON.stringify(data) }),
+  },
 };
 
 export function saveToken(token) {

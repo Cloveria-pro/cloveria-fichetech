@@ -1,4 +1,5 @@
 ﻿import { useEffect, useState } from 'react';
+import { api } from '../api.js';
 
 const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280', orange: '#D97706', red: '#DC2626' };
 const card = { background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' };
@@ -8,13 +9,48 @@ const labelStyle = { fontSize: '0.78rem', color: T.muted, display: 'block', marg
 function fcColor(pct) { if (pct < 30) return T.green; if (pct <= 35) return T.orange; return T.red; }
 function fcLabel(pct) { if (pct < 30) return 'Excellent'; if (pct <= 35) return 'Acceptable'; return 'A retravailler'; }
 
+const TYPE_FC = {
+  'Gastro': { thresholds: [28, 33], msgs: ['Excellent pour un gastro — marges très confortables', 'Acceptable pour un gastro', 'À surveiller pour un gastro'] },
+  'Brasserie / traditionnel': { thresholds: [32, 36], msgs: ['Excellent pour une brasserie', 'Acceptable pour une brasserie', 'À surveiller pour une brasserie'] },
+  'Fast-food / snacking': { thresholds: [32, 36], msgs: ['Excellent pour le snacking', 'Acceptable pour le snacking', 'À surveiller pour le snacking'] },
+  'Traiteur': { thresholds: [32, 36], msgs: ['Excellent pour un traiteur', 'Acceptable pour un traiteur', 'À surveiller pour un traiteur'] },
+  "Hôtel / restaurant d'hôtel": { thresholds: [30, 35], msgs: ["Excellent pour un hôtel-restaurant", "Acceptable pour un hôtel-restaurant", "À surveiller pour un hôtel-restaurant"] },
+};
+
+const IND_BG = { [T.green]: 'rgba(45,106,79,0.06)', [T.orange]: 'rgba(217,119,6,0.06)', [T.red]: 'rgba(220,38,38,0.06)' };
+const IND_BORDER = { [T.green]: 'rgba(45,106,79,0.2)', [T.orange]: 'rgba(217,119,6,0.2)', [T.red]: 'rgba(220,38,38,0.2)' };
+
+function getIndicator(cible, type) {
+  const conf = TYPE_FC[type];
+  if (!conf) {
+    return {
+      color: fcColor(cible),
+      label: fcLabel(cible),
+      msg: cible < 28 ? '— Marges très confortables, vérifiez la qualité.' : cible < 32 ? '— Zone idéale pour la restauration gastronomique.' : cible < 36 ? '— Acceptable, surveillez les matières premières.' : '— Trop élevé, révisez vos recettes ou vos prix.',
+    };
+  }
+  const [t1, t2] = conf.thresholds;
+  const idx = cible < t1 ? 0 : cible <= t2 ? 1 : 2;
+  const colors = [T.green, T.orange, T.red];
+  const labels = ['Excellent', 'Acceptable', 'À retravailler'];
+  return { color: colors[idx], label: labels[idx], msg: '— ' + conf.msgs[idx] };
+}
+
 export default function Parametres() {
   const [form, setForm] = useState({ etablissement: '', foodCostCible: 30, tva: 10 });
+  const [profil, setProfil] = useState(null);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/parametres').then(r => r.json()).then(data => { setForm(data); setLoading(false); });
+    Promise.all([
+      fetch('/api/parametres').then(r => r.json()),
+      api.profil.get().catch(() => null),
+    ]).then(([params, p]) => {
+      setForm(params);
+      setProfil(p);
+      setLoading(false);
+    });
   }, []);
 
   function sauvegarder(e) {
@@ -27,6 +63,7 @@ export default function Parametres() {
   }
 
   const cible = form.foodCostCible;
+  const indicator = getIndicator(cible, profil?.typeEtablissement);
 
   if (loading) return <p style={{ color: T.muted }}>Chargement...</p>;
 
@@ -68,7 +105,7 @@ export default function Parametres() {
                 fontFamily: "'Playfair Display', serif",
                 fontSize: '1.8rem',
                 fontWeight: 700,
-                color: fcColor(cible),
+                color: indicator.color,
                 pointerEvents: 'none',
                 whiteSpace: 'nowrap',
                 lineHeight: 1,
@@ -77,7 +114,7 @@ export default function Parametres() {
                 type="range" min="20" max="50" step="1"
                 value={cible}
                 onChange={e => setForm(f => ({ ...f, foodCostCible: parseInt(e.target.value) }))}
-                style={{ width: '100%', accentColor: fcColor(cible), cursor: 'pointer', display: 'block' }}
+                style={{ width: '100%', accentColor: indicator.color, cursor: 'pointer', display: 'block' }}
               />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: T.muted, marginTop: '4px' }}>
@@ -85,14 +122,12 @@ export default function Parametres() {
             </div>
 
             {/* Indicateur visuel */}
-            <div style={{ marginTop: '1rem', padding: '0.875rem 1rem', borderRadius: '8px', background: cible < 30 ? 'rgba(45,106,79,0.06)' : cible <= 35 ? 'rgba(217,119,6,0.06)' : 'rgba(220,38,38,0.06)', border: '1px solid ' + (cible < 30 ? 'rgba(45,106,79,0.2)' : cible <= 35 ? 'rgba(217,119,6,0.2)' : 'rgba(220,38,38,0.2)') }}>
+            <div style={{ marginTop: '1rem', padding: '0.875rem 1rem', borderRadius: '8px', background: IND_BG[indicator.color], border: '1px solid ' + IND_BORDER[indicator.color] }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: fcColor(cible), flexShrink: 0 }} />
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: indicator.color, flexShrink: 0 }} />
                 <div>
-                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: fcColor(cible) }}>{fcLabel(cible)}</span>
-                  <span style={{ fontSize: '0.78rem', color: T.muted, marginLeft: '8px' }}>
-                    {cible < 28 ? '— Marges très confortables, vérifiez la qualité.' : cible < 32 ? '— Zone idéale pour la restauration gastronomique.' : cible < 36 ? '— Acceptable, surveillez les matières premières.' : '— Trop élevé, révisez vos recettes ou vos prix.'}
-                  </span>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: indicator.color }}>{indicator.label}</span>
+                  <span style={{ fontSize: '0.78rem', color: T.muted, marginLeft: '8px' }}>{indicator.msg}</span>
                 </div>
               </div>
             </div>

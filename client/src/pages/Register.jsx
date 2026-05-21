@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280' };
 
 export default function Register({ onLogin }) {
+  const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '', confirm: '', etablissement: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,6 +26,7 @@ export default function Register({ onLogin }) {
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Erreur lors de l\'inscription'); return; }
       onLogin(data.token, data.user);
+      navigate('/onboarding');
     } catch {
       setError('Erreur réseau. Vérifiez que le serveur est démarré.');
     } finally {

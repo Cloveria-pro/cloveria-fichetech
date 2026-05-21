@@ -14,6 +14,7 @@ import Parametres from './pages/Parametres.jsx';
 import Aide from './pages/Aide.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
+import Onboarding from './pages/Onboarding.jsx';
 import { useWindowWidth } from './hooks/useWindowWidth.js';
 
 const SIDEBAR_W = '224px';
@@ -99,6 +100,22 @@ export default function App() {
         <Route path="/login" element={<Login onLogin={handleLogin} />} />
         <Route path="/register" element={<Register onLogin={handleLogin} />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+
+  // Onboarding gate — new users only
+  if (user?.onboardingComplete === false) {
+    return (
+      <Routes>
+        <Route path="/onboarding" element={
+          <Onboarding onComplete={() => {
+            const newUser = { ...user, onboardingComplete: true };
+            localStorage.setItem('user', JSON.stringify(newUser));
+            setUser(newUser);
+          }} />
+        } />
+        <Route path="*" element={<Navigate to="/onboarding" replace />} />
       </Routes>
     );
   }

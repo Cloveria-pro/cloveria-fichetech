@@ -8,7 +8,7 @@
   <meta property="og:title" content="CloverIA : Fiches techniques et food cost automatisés" />
   <meta property="og:description" content="Créez vos fiches techniques en 30 secondes, suivez vos marges en temps réel. Essai gratuit 14 jours." />
   <meta property="og:image" content="images/1.png" />
-  <link rel="icon" type="image/png" href="../client/public/favicon.png" />
+  <link rel="icon" type="image/png" href="images/logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400;1,700&display=swap" rel="stylesheet" />
@@ -845,12 +845,71 @@
       .footer-links { justify-content: center; }
     }
 
+    @media (max-width: 768px) {
+      /* Header mobile: boutons empilés en colonne, pleine largeur */
+      .header-inner {
+        height: auto;
+        padding: 0.6rem 0;
+        align-items: center;
+      }
+      .header-nav {
+        flex-direction: column;
+        gap: 0.35rem;
+        align-items: stretch;
+        min-width: 130px;
+      }
+      .header-nav .btn-ghost,
+      .header-nav .btn-primary {
+        width: 100%;
+        justify-content: center;
+        font-size: 0.75rem;
+        padding: 0.4rem 0.7rem;
+      }
+
+      /* Hero mobile: dark bg, single column, text above screenshot */
+      #hero::before { filter: none; opacity: 0; }
+      #hero::after { background: none; }
+      #hero {
+        background: #123D7A;
+        padding: 100px 0 60px;
+      }
+      .hero-inner {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        text-align: center;
+      }
+      .hero-text {
+        background: transparent;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        border: none;
+        padding: 0;
+        order: 1;
+      }
+      .hero-visual { order: 2; }
+      .hero-eyebrow {
+        background: rgba(255,255,255,0.12);
+        border-color: rgba(255,255,255,0.25);
+        color: #7DD3D6;
+        margin: 0 auto 1rem;
+      }
+      .hero-title { color: #F8FAFC; }
+      .hero-title em { color: #159A9C; }
+      .hero-subtitle { color: rgba(255,255,255,0.9); }
+      .hero-tagline-italic { color: rgba(255,255,255,0.78); }
+      .hero-note { color: rgba(255,255,255,0.7); }
+      .hero-cta { justify-content: center; }
+      .reassurance-list { justify-content: center; }
+      #reassurance { background: rgba(255,255,255,0.92); border-top: none; }
+      .reassurance-item { color: #123D7A; }
+      .reassurance-check { color: #159A9C; }
+    }
+
     @media (max-width: 600px) {
       .container { padding: 0 1.25rem; }
-      #hero { padding: 100px 0 60px; }
       #features, #how, #pricing, #faq { padding: 64px 0; }
-      .hero-cta { flex-direction: column; align-items: flex-start; }
-      .header-nav .btn-ghost { display: none; }
+      .hero-cta { flex-direction: column; align-items: center; }
+
       .reassurance-list { gap: 1rem; }
       .reassurance-item { font-size: 0.8125rem; }
       .pricing-price { font-size: 3rem; }
@@ -865,13 +924,13 @@
       <div class="header-inner">
         <a href="#" class="logo" aria-label="CloverIA, Accueil">
           <span class="logo-img-wrap">
-            <img src="../client/public/logo.png" alt="CloverIA" />
+            <img src="images/logo.png" alt="CloverIA" />
           </span>
           <span class="logo-name">CloverIA</span>
         </a>
         <nav class="header-nav">
-          <a href="https://app.cloveria-pro.fr" class="btn btn-ghost">Se connecter</a>
-          <a href="https://app.cloveria-pro.fr" class="btn btn-primary">Essai gratuit</a>
+          <a href="https://app.cloveria-pro.fr/login" class="btn btn-ghost">Se connecter</a>
+          <a href="https://app.cloveria-pro.fr/register" class="btn btn-primary">Essai gratuit</a>
         </nav>
       </div>
     </div>
@@ -895,7 +954,7 @@
             Pensé pour les chefs, les restaurateurs et les cuisines qui veulent garder le contrôle sur leurs coûts.
           </p>
           <div class="hero-cta fade-up delay-3">
-            <a href="https://app.cloveria-pro.fr" class="btn btn-primary btn-lg">
+            <a href="https://app.cloveria-pro.fr/register" class="btn btn-primary btn-lg">
               Essayer gratuitement 14 jours
             </a>
             <span class="hero-note">Sans engagement</span>
@@ -1063,7 +1122,7 @@
           <li>Export PDF des fiches</li>
           <li>Support inclus par email</li>
         </ul>
-        <a href="https://app.cloveria-pro.fr" class="btn btn-primary btn-lg pricing-cta">
+        <a href="https://app.cloveria-pro.fr/register" class="btn btn-primary btn-lg pricing-cta">
           Commencer l'essai gratuit
         </a>
         <p class="pricing-note">14 jours gratuits · Sans carte bancaire · Sans engagement</p>
@@ -1154,7 +1213,7 @@
       <div class="footer-inner">
         <a href="#" class="footer-logo" aria-label="CloverIA">
           <span class="logo-img-wrap">
-            <img src="../client/public/logo.png" alt="" aria-hidden="true" />
+            <img src="images/logo.png" alt="" aria-hidden="true" />
           </span>
           <span class="footer-logo-name">CloverIA</span>
         </a>
