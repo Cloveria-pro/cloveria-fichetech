@@ -6,6 +6,7 @@ const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280'
 export default function Register({ onLogin }) {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '', confirm: '', etablissement: '' });
+  const [cguAccepted, setCguAccepted] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -81,19 +82,34 @@ export default function Register({ onLogin }) {
                 style={inputStyle} onFocus={e => e.target.style.borderColor = T.green} onBlur={e => e.target.style.borderColor = '#E5E0D8'} />
             </div>
 
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '1.25rem', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={cguAccepted}
+                onChange={e => setCguAccepted(e.target.checked)}
+                style={{ marginTop: '3px', width: '16px', height: '16px', flexShrink: 0, accentColor: T.green, cursor: 'pointer' }}
+              />
+              <span style={{ fontSize: '0.8rem', color: T.muted, lineHeight: 1.5 }}>
+                J'accepte les{' '}
+                <a href="/cgu" target="_blank" rel="noopener noreferrer" style={{ color: T.green, fontWeight: 600, textDecoration: 'none' }}>CGU</a>
+                {' '}et la{' '}
+                <a href="/politique-confidentialite" target="_blank" rel="noopener noreferrer" style={{ color: T.green, fontWeight: 600, textDecoration: 'none' }}>Politique de confidentialité</a>
+              </span>
+            </label>
+
             {error && (
               <div style={{ background: '#FEE2E2', border: '1px solid #FCA5A5', borderRadius: '8px', padding: '0.65rem 0.9rem', marginBottom: '1.25rem', fontSize: '0.875rem', color: '#991B1B' }}>
                 {error}
               </div>
             )}
 
-            <button type="submit" disabled={loading} style={{
+            <button type="submit" disabled={loading || !cguAccepted} style={{
               width: '100%', padding: '0.75rem', background: T.green, color: '#fff',
               border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '0.9rem',
-              cursor: loading ? 'default' : 'pointer', fontFamily: "'DM Sans', sans-serif",
-              opacity: loading ? 0.8 : 1, transition: 'background 0.15s', minHeight: '44px',
+              cursor: (loading || !cguAccepted) ? 'default' : 'pointer', fontFamily: "'DM Sans', sans-serif",
+              opacity: (loading || !cguAccepted) ? 0.45 : 1, transition: 'background 0.15s, opacity 0.15s', minHeight: '44px',
             }}
-              onMouseEnter={e => { if (!loading) e.currentTarget.style.background = '#1e4d38'; }}
+              onMouseEnter={e => { if (!loading && cguAccepted) e.currentTarget.style.background = '#1e4d38'; }}
               onMouseLeave={e => e.currentTarget.style.background = T.green}
             >
               {loading ? 'Création du compte...' : 'Créer mon compte'}
@@ -103,12 +119,6 @@ export default function Register({ onLogin }) {
           <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.875rem', color: T.muted }}>
             Déjà un compte ?{' '}
             <Link to="/login" style={{ color: T.green, fontWeight: 600, textDecoration: 'none' }}>Se connecter</Link>
-          </p>
-          <p style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.75rem', color: T.muted }}>
-            En créant un compte, vous acceptez nos{' '}
-            <Link to="/cgu" style={{ color: T.muted, textDecoration: 'underline' }}>CGU</Link>
-            {' et notre '}
-            <Link to="/politique-confidentialite" style={{ color: T.muted, textDecoration: 'underline' }}>politique de confidentialité</Link>.
           </p>
         </div>
       </div>
