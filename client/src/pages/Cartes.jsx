@@ -147,13 +147,98 @@ async function downloadPDF(htmlString, filename, landscape = false) {
   }
 }
 
+// ─── Description editor inline ───────────────────────────────────────────────
+function DescriptionEditor({ recette, onSaved }) {
+  const [value, setValue] = useState(recette?.description_commerciale || '');
+  const [iaLoading, setIaLoading] = useState(false);
+  const debounceRef = useRef(null);
+  const taRef = useRef(null);
+
+  useEffect(() => {
+    setValue(recette?.description_commerciale || '');
+  }, [recette?.id]);
+
+  useEffect(() => {
+    if (taRef.current) {
+      taRef.current.style.height = 'auto';
+      taRef.current.style.height = taRef.current.scrollHeight + 'px';
+    }
+  }, [value]);
+
+  function handleChange(e) {
+    const val = e.target.value;
+    setValue(val);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      api.recettes.update(recette.id, { ...recette, description_commerciale: val })
+        .then(updated => onSaved?.(updated))
+        .catch(() => {});
+    }, 500);
+  }
+
+  async function handleGenerate(e) {
+    e.stopPropagation();
+    if (!recette) return;
+    setIaLoading(true);
+    try {
+      const result = await api.ia.descriptionCommerciale({
+        nom: recette.nom,
+        description: recette.description,
+        categorie: recette.categorie,
+        ingredients: recette.ingredients,
+      });
+      const desc = result.description_commerciale || result.description || result.text || '';
+      setValue(desc);
+      const updated = await api.recettes.update(recette.id, { ...recette, description_commerciale: desc });
+      onSaved?.(updated);
+    } catch {}
+    finally { setIaLoading(false); }
+  }
+
+  if (!recette) return null;
+
+  return (
+    <div style={{ marginTop: '5px', display: 'flex', gap: '5px', alignItems: 'flex-start' }} onClick={e => e.stopPropagation()}>
+      <textarea
+        ref={taRef}
+        value={value}
+        onChange={handleChange}
+        placeholder="Description commerciale..."
+        rows={1}
+        style={{
+          flex: 1, resize: 'none', overflow: 'hidden',
+          padding: '4px 7px', border: '1px solid #E5E0D8', borderRadius: '6px',
+          fontSize: '0.78rem', fontFamily: "'DM Sans', sans-serif", color: T.text,
+          lineHeight: 1.45, fontStyle: 'italic', outline: 'none', background: 'transparent',
+        }}
+      />
+      <button
+        onClick={handleGenerate}
+        disabled={iaLoading}
+        title="Générer avec l'IA"
+        style={{
+          flexShrink: 0, padding: '4px 7px',
+          background: iaLoading ? '#9CA3AF' : T.green,
+          color: '#fff', border: 'none', borderRadius: '6px',
+          fontSize: '0.68rem', fontWeight: 600,
+          cursor: iaLoading ? 'default' : 'pointer',
+          fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap',
+        }}
+      >{iaLoading ? '...' : '✨ IA'}</button>
+    </div>
+  );
+}
+
 // ─── Vue consultant ───────────────────────────────────────────────────────────
 function VueCarte({ carte, recettes, parametres, onEdit, onBack, onAutoSave }) {
   // showAllergenesMenu removed — buttons are now direct
   const [closedSections, setClosedSections] = useState(new Set());
   const [pdfLoading, setPdfLoading] = useState(false);
   const [localSections, setLocalSections] = useState(carte?.sections || []);
+  const [localRecettes, setLocalRecettes] = useState(recettes);
   const autoSaveTimerVC = useRef(null);
+
+  useEffect(() => { setLocalRecettes(recettes); }, [recettes]);
   const width = useWindowWidth();
   const isMobile = width < 900;
   const date = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -189,7 +274,7 @@ function VueCarte({ carte, recettes, parametres, onEdit, onBack, onAutoSave }) {
   const allSectionsWithData = localSections.map(section => ({
     ...section,
     platsData: section.plats.map(plat => {
-      const rec = recettes.find(r => r.id === plat.recetteId);
+      const rec = localRecettes.find(r => r.id === plat.recetteId);
       const cp = rec ? coutPortion(rec) : 0;
       const fc = fcNum(cp, plat.prixVente);
       return { ...plat, rec, cp, fc };
@@ -412,11 +497,10 @@ ${sections}
                               onMouseEnter={e => e.currentTarget.style.color = T.green}
                               onMouseLeave={e => e.currentTarget.style.color = T.text}
                             >{plat.nom}</Link>
-                            {(plat.rec?.description_commerciale || plat.rec?.description) && (
-                              <p style={{ fontSize: '0.8rem', color: T.muted, margin: '3px 0 0', lineHeight: 1.4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', fontStyle: plat.rec?.description_commerciale ? 'italic' : 'normal' }}>
-                                {plat.rec.description_commerciale || plat.rec.description}
-                              </p>
-                            )}
+                            <DescriptionEditor
+                              recette={plat.rec}
+                              onSaved={updated => setLocalRecettes(prev => prev.map(r => r.id === updated.id ? updated : r))}
+                            />
                             {badge && (
                               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', marginTop: '5px', fontSize: '0.68rem', fontWeight: 600, padding: '1px 7px', borderRadius: '99px', background: badge.bg, color: badge.color }}>
                                 {badge.icon} {badge.label} {plat.fc !== null ? `— ${plat.fc.toFixed(1)}%` : ''}
