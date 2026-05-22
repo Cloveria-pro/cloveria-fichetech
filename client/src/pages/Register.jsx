@@ -94,6 +94,8 @@ export default function Register({ onLogin }) {
                 <a href="/cgu" target="_blank" rel="noopener noreferrer" style={{ color: T.green, fontWeight: 600, textDecoration: 'none' }}>CGU</a>
                 {' '}et la{' '}
                 <a href="/politique-confidentialite" target="_blank" rel="noopener noreferrer" style={{ color: T.green, fontWeight: 600, textDecoration: 'none' }}>Politique de confidentialité</a>
+                {' · '}
+                <a href="/mentions-legales" target="_blank" rel="noopener noreferrer" style={{ color: T.green, fontWeight: 600, textDecoration: 'none' }}>Mentions légales</a>
               </span>
             </label>
 
