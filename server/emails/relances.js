@@ -1,5 +1,8 @@
 import nodemailer from 'nodemailer';
 
+console.log('[Relances] EMAIL_USER:', process.env.EMAIL_USER || '(non défini)');
+console.log('[Relances] EMAIL_PASS:', process.env.EMAIL_PASS ? '***' : '(non défini)');
+
 function createTransporter() {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return null;
   return nodemailer.createTransport({
@@ -7,6 +10,9 @@ function createTransporter() {
     port: 465,
     secure: true,
     auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
   });
 }
 
@@ -127,10 +133,12 @@ export async function envoyerRelance(user, jour) {
     return;
   }
 
+  console.log(`[Relance] Envoi j${jour} à ${user.email}...`);
   await transporter.sendMail({
     from: `CloverIA FicheTech <${process.env.EMAIL_USER}>`,
     to: user.email,
     subject: tpl.subject,
     html: tpl.html(user.prenom),
   });
+  console.log(`[Relance] j${jour} envoyé avec succès à ${user.email}`);
 }
