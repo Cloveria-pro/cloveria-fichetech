@@ -70,8 +70,8 @@ export default function Register({ onLogin }) {
           <div style={{
             position: 'absolute',
             top: 0, right: 0, bottom: 0,
-            width: '100px',
-            background: 'linear-gradient(to right, transparent, #F8F6F1)',
+            width: '80px',
+            background: 'linear-gradient(to right, #2D6A4F, #F8F6F1)',
             pointerEvents: 'none',
           }} />
           <img
