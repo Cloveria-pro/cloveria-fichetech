@@ -329,20 +329,20 @@ router.post('/description-commerciale', async (req, res) => {
 
   const systemPrompt = `Tu es un ami gourmand qui recommande des plats à des clients au restaurant. Tu parles uniquement de ce qu'on ressent dans l'assiette : les goûts, les textures, les parfums, les émotions que le plat provoque. Tu ne mentionnes jamais comment le plat est préparé.
 
-MOTS ET EXPRESSIONS STRICTEMENT INTERDITS (et tous leurs dérivés) : cuire, rôtir, tapisser, déposer, enfourner, préparer, réaliser, fouetter, incorporer, blanchir, tamiser, beurrer, chemiser, thermoplongeur, bain-marie, poêler, dorer, caraméliser, réduire, déglacer, monter, infuser, napper, sublimer, élaborer, mélanger, chiffonnade, mijoter, sauter, snacker, mariner, assaisonner, dresser, disposer. Aussi interdit : toute température en degrés, tout temps de cuisson, tout nom d'ustensile de cuisine.
+MOTS STRICTEMENT INTERDITS (et tous leurs dérivés) : cuire, rôtir, tapisser, déposer, enfourner, préparer, réaliser, fouetter, incorporer, blanchir, tamiser, beurrer, chemiser, thermoplongeur, bain-marie, poêler, dorer, caraméliser, réduire, déglacer, monter, infuser, napper, sublimer, élaborer, mélanger, chiffonnade, mijoter, sauter, snacker, mariner, assaisonner, dresser, disposer, enrobe, basculer, fond en bouche, généreux, délicat, subtil, raffiné, savoureux, succulent, divin, exquis, incontournable, inimitable. Aussi interdit : toute température, tout temps de cuisson, tout ustensile.
 
-RÈGLE D'OR : si tu te retrouves à expliquer comment le plat est fait, tu t'es trompé. Parle uniquement de ce qu'on voit, sent, goûte et ressent.
+RÈGLE D'OR : si tu expliques comment c'est fait, tu t'es trompé. Parle uniquement de ce qu'on perçoit dans l'assiette.
 
-FORMAT : 2 à 3 phrases maximum. Ton naturel, chaleureux, gourmand — comme si tu parlais à un ami à table. Retourne UNIQUEMENT ce JSON : { "description_commerciale": "string" }`;
+FORMAT : exactement 2 phrases. Pas plus. Ton direct, chaleureux, appétissant. Retourne UNIQUEMENT ce JSON : { "description_commerciale": "string" }`;
 
   const userMsg = `Plat : "${nom}"${portions ? ` (${portions} portions)` : ''}.${ingList ? ` Il contient : ${ingList}.` : ''}
 
-Exemples du ton attendu :
+Exemples du ton attendu (exactement 2 phrases, naturel, zéro mot interdit) :
 - Cromesquis foie gras : "Une bouchée croustillante qui cache du foie gras fondant et une touche de gelée de Sauternes. Le genre de petit truc qu'on redemande aussitôt."
-- Magret sauce miel balsamique : "Du magret juteux avec une sauce qui mêle le doux du miel et l'acidité du balsamique, sur un lit de patate douce. C'est généreux, équilibré, vraiment bon."
-- Salade pastèque feta : "Fraîche, légère, avec la douceur de la pastèque contre le sel de la feta et la menthe qui réveille tout. Parfaite pour les jours où on veut manger en terrasse."
+- Magret sauce miel balsamique : "Du magret juteux avec une sauce qui joue entre le doux du miel et l'acidité du balsamique, sur un lit de patate douce. Équilibré et vraiment bon."
+- Salade pastèque feta : "La douceur de la pastèque contre le sel de la feta, avec la menthe qui réveille tout. Parfaite pour les jours où on veut manger léger."
 - Fondant chocolat : "Un fondant avec le cœur qui coule au moindre coup de cuillère, accompagné de framboises qui tranchent avec l'intensité du chocolat. Le dessert qu'on commande les yeux fermés."
-- Burger maison : "Un burger costaud avec un steak maison bien moelleux, des légumes croquants et une sauce qu'on retrouve nulle part ailleurs. Rassasiant et vraiment savoureux."`;
+- Burger maison : "Un burger costaud avec un steak maison bien moelleux, des légumes croquants et une sauce qu'on retrouve nulle part ailleurs. Rassasiant et vraiment bon."`;
 
   try {
     const message = await client.messages.create({
