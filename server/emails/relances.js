@@ -38,7 +38,7 @@ function layout(contenu) {
   <div class="outer">
     <div class="card">
       <div class="header">
-        <div style="background:white;border-radius:50%;width:90px;height:90px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;"><img src="https://app.cloveria-pro.fr/logo.png" alt="CloverIA" style="width:70px;height:70px;object-fit:contain;"></div>
+        <div style="text-align:center;"><div style="background:white;border-radius:50%;width:110px;height:110px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;"><img src="https://app.cloveria-pro.fr/logo.png" alt="CloverIA" style="width:90px;height:90px;object-fit:contain;"></div></div>
         <p class="header-title">CloverIA FicheTech</p>
       </div>
       <div class="gold-bar"></div>
@@ -71,7 +71,7 @@ const TEMPLATES = {
         <span class="price-badge">39 € / mois · Sans engagement</span>
       </div>
       <div class="cta-wrap">
-        <a href="${CHECKOUT_URL}" class="cta">Continuer l'aventure →</a>
+        <a href="${CHECKOUT_URL}" class="cta" style="color:#ffffff;">Continuer l'aventure →</a>
       </div>
     `),
   },
@@ -88,7 +88,7 @@ const TEMPLATES = {
         <span class="price-badge">39 € / mois · Annulable à tout moment</span>
       </div>
       <div class="cta-wrap">
-        <a href="${CHECKOUT_URL}" class="cta">Je garde mon accès →</a>
+        <a href="${CHECKOUT_URL}" class="cta" style="color:#ffffff;">Je garde mon accès →</a>
       </div>
     `),
   },
@@ -105,7 +105,7 @@ const TEMPLATES = {
         <span class="price-badge">39 € / mois · Accès immédiat à la souscription</span>
       </div>
       <div class="cta-wrap">
-        <a href="${CHECKOUT_URL}" class="cta">Reprendre CloverIA →</a>
+        <a href="${CHECKOUT_URL}" class="cta" style="color:#ffffff;">Reprendre CloverIA →</a>
       </div>
     `),
   },
