@@ -84,10 +84,17 @@ async function sendTrialEmails() {
     const daysElapsed = Math.round(msElapsed / (1000 * 60 * 60 * 24));
     const emailsEnvoyes = user.emailsEnvoyes || [];
 
+    const trialEndDate = new Date(trialEnd.getFullYear(), trialEnd.getMonth(), trialEnd.getDate());
+    const daysAfterTrial = Math.round((today - trialEndDate) / (1000 * 60 * 60 * 24));
+
     let jour = null;
     if (daysElapsed === 14 && !emailsEnvoyes.includes('j14')) jour = 14;
     else if (daysElapsed === 12 && !emailsEnvoyes.includes('j12')) jour = 12;
     else if (daysElapsed === 9 && !emailsEnvoyes.includes('j9')) jour = 9;
+    else if (daysAfterTrial === 40 && !emailsEnvoyes.includes('post40')) jour = 'post40';
+    else if (daysAfterTrial === 15 && !emailsEnvoyes.includes('post15')) jour = 'post15';
+    else if (daysAfterTrial === 7 && !emailsEnvoyes.includes('post7')) jour = 'post7';
+    else if (daysAfterTrial === 2 && !emailsEnvoyes.includes('post2')) jour = 'post2';
 
     if (!jour) continue;
 
@@ -95,9 +102,9 @@ async function sendTrialEmails() {
       await envoyerRelance(user, jour);
       await db.collection('users').updateOne(
         { id: user.id },
-        { $push: { emailsEnvoyes: `j${jour}` } }
+        { $push: { emailsEnvoyes: typeof jour === 'number' ? `j${jour}` : jour } }
       );
-      console.log(`[Relance] j${jour} envoyé à ${user.email}`);
+      console.log(`[Relance] ${typeof jour === 'number' ? `j${jour}` : jour} envoyé à ${user.email}`);
     } catch (err) {
       console.error(`[Relance] Erreur j${jour} pour ${user.email}:`, err.message);
     }

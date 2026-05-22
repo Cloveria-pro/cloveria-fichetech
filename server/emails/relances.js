@@ -103,6 +103,66 @@ const TEMPLATES = {
       <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:24px 0;"><a href="https://app.cloveria-pro.fr/abonnement" target="_blank" style="background-color:#2D6A4F;color:#ffffff !important;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:16px;display:inline-block;mso-padding-alt:0;font-family:Arial,sans-serif;">Reprendre CloverIA →</a></td></tr></table>
     `),
   },
+
+  post2: {
+    subject: 'Vos fiches vous attendent 🍀',
+    html: (prenom) => layout(`
+      <h2>${prenom ? `${prenom}, tout` : 'Tout'} est encore là pour vous</h2>
+      <p>Votre essai s'est terminé il y a 2 jours. On voulait juste vous dire : pas de pression, pas d'urgence. Votre travail est en sécurité.</p>
+      <div class="highlight">
+        <p>🍀 Toutes vos fiches techniques, vos ingrédients et vos calculs sont sauvegardés. Vous pouvez reprendre exactement là où vous en étiez, à tout moment.</p>
+      </div>
+      <p>Si vous avez envie de continuer à piloter vos coûts et à construire votre cuisine de manière rentable, on est là. Sans engagement, 39 € par mois.</p>
+      <div style="text-align:center; margin: 8px 0 24px;">
+        <span class="price-badge">39 € / mois · Sans engagement</span>
+      </div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:24px 0;"><a href="https://app.cloveria-pro.fr/abonnement" target="_blank" style="background-color:#2D6A4F;color:#ffffff !important;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:16px;display:inline-block;mso-padding-alt:0;font-family:Arial,sans-serif;">Reprendre où j'en étais →</a></td></tr></table>
+    `),
+  },
+
+  post7: {
+    subject: 'Une semaine sans CloverIA 🍀',
+    html: (prenom) => layout(`
+      <h2>${prenom ? `${prenom}, une` : 'Une'} semaine s'est passée</h2>
+      <p>Ça fait 7 jours que vous n'avez plus accès à vos fiches. On se demandait si vous aviez eu le temps de recalculer vos marges à la main, de vérifier vos food costs, de suivre vos coûts matière sur chaque plat.</p>
+      <div class="highlight">
+        <p>🍀 Avec CloverIA, tout ça se fait en quelques clics. Vos recettes sont déjà là, vos ingrédients aussi. Il suffit de réactiver votre accès pour reprendre le contrôle.</p>
+      </div>
+      <p>Chaque semaine sans suivi, ce sont des marges qui glissent sans qu'on le voit. On pense que vous méritez mieux que ça.</p>
+      <div style="text-align:center; margin: 8px 0 24px;">
+        <span class="price-badge">39 € / mois · Annulable à tout moment</span>
+      </div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:24px 0;"><a href="https://app.cloveria-pro.fr/abonnement" target="_blank" style="background-color:#2D6A4F;color:#ffffff !important;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:16px;display:inline-block;mso-padding-alt:0;font-family:Arial,sans-serif;">Je reviens →</a></td></tr></table>
+    `),
+  },
+
+  post15: {
+    subject: 'On pense encore à vous 🍀',
+    html: (prenom) => layout(`
+      <h2>Un message de Sébastien</h2>
+      <p>${prenom ? `${prenom}, je` : 'Je'} voulais vous écrire directement, sans discours commercial. CloverIA FicheTech, c'est un projet que je construis pour aider les restaurateurs à mieux piloter leur cuisine. Et vous en faites partie.</p>
+      <div class="highlight">
+        <p>🍀 Vos données sont toujours là, intactes. Si la période n'était pas la bonne, si vous avez eu d'autres priorités, c'est tout à fait normal. La porte reste ouverte.</p>
+      </div>
+      <p>Si vous avez des questions, des retours, ou simplement envie de discuter, répondez directement à cet email. Je lis tout personnellement.</p>
+      <p>Et si vous êtes prêt·e à reprendre, c'est toujours 39 € par mois, sans engagement.</p>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:24px 0;"><a href="https://app.cloveria-pro.fr/abonnement" target="_blank" style="background-color:#2D6A4F;color:#ffffff !important;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:16px;display:inline-block;mso-padding-alt:0;font-family:Arial,sans-serif;">Reprendre CloverIA →</a></td></tr></table>
+    `),
+  },
+
+  post40: {
+    subject: 'On ne vous oublie pas 🍀',
+    html: (prenom) => layout(`
+      <h2>De Sébastien, 40 jours plus tard</h2>
+      <p>${prenom ? `${prenom}, je` : 'Je'} ne voulais pas vous laisser partir sans vous écrire une dernière fois. Ce n'est pas un email automatique de relance. C'est juste moi, qui pense à toutes les personnes qui ont essayé CloverIA et qui sont passées à autre chose.</p>
+      <div class="highlight">
+        <p>🍀 Depuis votre essai, j'ai continué à améliorer la plateforme : l'import de factures par IA, le menu engineering, les fiches allergènes. CloverIA est plus solide qu'avant.</p>
+      </div>
+      <p>Si le moment est mieux maintenant, vos données sont encore là. Si ce n'est pas le bon moment, c'est très bien aussi. Dans tous les cas, merci d'avoir essayé.</p>
+      <p style="color:#6B7280;font-size:14px;">Sébastien, fondateur de CloverIA</p>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:24px 0;"><a href="https://app.cloveria-pro.fr/abonnement" target="_blank" style="background-color:#2D6A4F;color:#ffffff !important;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:16px;display:inline-block;mso-padding-alt:0;font-family:Arial,sans-serif;">Voir ce qui a changé →</a></td></tr></table>
+    `),
+  },
 };
 
 export async function envoyerRelance(user, jour) {
