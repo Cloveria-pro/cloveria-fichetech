@@ -166,8 +166,21 @@ export default function Aide() {
         </div>
       </div>
 
+      {/* Nous contacter */}
+      <div style={{ marginBottom: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #E8E2D9' }}>
+        <h2 style={{ fontSize: '0.7rem', fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>
+          Nous contacter
+        </h2>
+        <p style={{ fontSize: '0.875rem', color: T.muted, lineHeight: 1.65, margin: '0 0 0.5rem' }}>
+          Une question, un problème ou une suggestion ?
+        </p>
+        <a href="mailto:contact@cloveria.fr" style={{ fontSize: '0.875rem', fontWeight: 600, color: T.green, textDecoration: 'none' }}>
+          contact@cloveria.fr
+        </a>
+      </div>
+
       {/* Documents légaux */}
-      <div style={{ marginTop: '1rem', paddingTop: '1.5rem', borderTop: '1px solid #E8E2D9' }}>
+      <div style={{ paddingTop: '1.5rem', borderTop: '1px solid #E8E2D9' }}>
         <h2 style={{ fontSize: '0.7rem', fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>
           Documents légaux
         </h2>

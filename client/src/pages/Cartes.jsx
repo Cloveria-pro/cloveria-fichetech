@@ -13,7 +13,6 @@ const card = { background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px 
 const inputStyle = { padding: '0.45rem 0.7rem', border: '1px solid #E5E0D8', borderRadius: '6px', fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif", outline: 'none', color: T.text, width: '100%' };
 
 const SECTIONS_DEFAULT = ['Amuse-bouche', 'Entrées', 'Plats', 'Desserts'];
-const SAISONS = ['Printemps 2026', 'Été 2026', 'Automne 2026', 'Hiver 2026', "Toute l'année"];
 const CATEGORIES = ['Amuse-bouche', 'Entrée', 'Plat', 'Dessert', 'Boisson', 'Snack'];
 
 const ALLERGENES_14 = [
@@ -138,7 +137,6 @@ function ListeCartes({ cartes, onNew, onOpen, onDelete }) {
                             {!search && (
                               <span {...dragHandleProps} onClick={e => e.stopPropagation()} style={{ cursor: 'grab', color: '#C5BDB0', fontSize: '1rem', lineHeight: 1, flexShrink: 0 }} title="Glisser pour réordonner">⠿</span>
                             )}
-                            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: T.gold, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{carte.saison}</div>
                           </div>
                           <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.15rem', fontWeight: 700, color: T.text }}>{carte.nom}</h2>
                         </div>
@@ -509,7 +507,6 @@ ${sections}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: '0.875rem', flexShrink: 0 }}>← Cartes</button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: '0.68rem', fontWeight: 700, color: T.gold, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{carte.saison}</div>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', fontWeight: 700, color: T.text, margin: 0, lineHeight: 1.2 }}>{carte.nom}</h1>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
@@ -673,13 +670,13 @@ function SortableSection({ id, children }) {
 // ─── Éditeur de carte ─────────────────────────────────────────────────────────
 function EditeurCarte({ carte, recettes, onSave, onBack, onAutoSave }) {
   const [form, setForm] = useState(carte || {
-    nom: '', saison: SAISONS[0],
+    nom: '',
     sections: SECTIONS_DEFAULT.map(t => ({ titre: t, plats: [] })),
   });
 
   useEffect(() => {
     setForm(carte || {
-      nom: '', saison: SAISONS[0],
+      nom: '',
       sections: SECTIONS_DEFAULT.map(t => ({ titre: t, plats: [] })),
     });
   }, [carte?.id]);
