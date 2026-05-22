@@ -36,6 +36,7 @@ app.post('/api/stripe/webhook', stripeWebhook);
 
 // ── Route de test emails (temporaire) ───────────────────────────────────────
 app.get('/api/test-email', async (req, res) => {
+  console.log('test-email appelé');
   const fakeUser = { email: 'contact@cloveria.fr', prenom: 'Sébastien' };
   const results = [];
   for (const jour of [9, 12, 14]) {
