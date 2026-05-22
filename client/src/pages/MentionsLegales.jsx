@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import { useWindowWidth } from '../hooks/useWindowWidth.js';
 
 const T = { green: '#2D6A4F', text: '#1C2B1E', muted: '#6B7280', bg: '#F8F6F1', border: '#E5E0D8' };
 
@@ -17,9 +16,8 @@ function Section({ title, children }) {
 }
 
 export default function MentionsLegales() {
-  const width = useWindowWidth();
-  const isMobile = width < 600;
-  const cardPad = isMobile ? '1.25rem' : '2.5rem';
+  const isMobile = false;
+  const cardPad = '2.5rem';
 
   return (
     <div style={{ minHeight: '100vh', background: T.bg, padding: '2rem 1rem' }}>
