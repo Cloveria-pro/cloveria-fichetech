@@ -1,6 +1,6 @@
 # CloverIA FicheTech — Contexte projet
 
-> Dernière mise à jour : 2026-05-18
+> Dernière mise à jour : 2026-05-21
 
 ---
 
@@ -10,7 +10,8 @@
 |---|---|
 | **Backend (Render)** | `https://cloveria-fichetech.onrender.com` |
 | **API base** | `https://cloveria-fichetech.onrender.com/api` |
-| **Frontend (Vercel)** | configuré via `client/vercel.json` |
+| **Frontend app (Vercel)** | `https://app.cloveria-pro.fr` — configuré via `client/vercel.json` |
+| **Landing page (Vercel)** | `https://cloveria-pro.fr` — repo séparé `cloveria-landing` |
 | **Health check** | `GET /api/health` → `{ "status": "ok" }` |
 
 **Compte démo** : `demo@cloveria.fr` / `Demo1234!`  
@@ -54,6 +55,12 @@ npm run dev           # lance les deux en parallèle (concurrently)
 | `JWT_SECRET` | Non | Défaut : `cloveria-fichetech-secret-2026` |
 | `PORT` | Non | Défaut : `3001` |
 | `CORS_ORIGIN` | Non | Origines autorisées, séparées par virgule (défaut : `*`) |
+| `STRIPE_SECRET_KEY` | Oui (prod) | Clé secrète Stripe (`sk_live_...` ou `sk_test_...`) |
+| `STRIPE_PUBLISHABLE_KEY` | Oui (prod) | Clé publique Stripe (exposée côté client via l'API) |
+| `STRIPE_PRICE_ID` | Oui (prod) | ID du prix Stripe pour l'abonnement 39 €/mois |
+| `STRIPE_WEBHOOK_SECRET` | Oui (prod) | Secret de signature des webhooks Stripe (`whsec_...`) |
+| `EMAIL_USER` | Non | Adresse email expéditeur (relances Stripe) |
+| `EMAIL_PASS` | Non | Mot de passe SMTP / app password pour `EMAIL_USER` |
 
 ---
 
@@ -69,14 +76,18 @@ cloveria-fichetech/
 │   ├── env.js                      # chargement dotenv
 │   ├── middleware/auth.js           # vérifie JWT → req.userId
 │   ├── routes/
-│   │   ├── auth.js                 # /auth/login, /auth/register
+│   │   ├── auth.js                 # /auth/login, /auth/register, /auth/profil
 │   │   ├── recettes.js             # CRUD + PUT /:id/prix (sync cascade)
 │   │   ├── ingredients.js          # CRUD
 │   │   ├── cartes.js               # CRUD
 │   │   ├── parametres.js           # GET/PUT (1 doc par user)
 │   │   ├── ia.js                   # /structurer, /description-commerciale, /analyser-facture
 │   │   ├── aliases.js              # GET/POST (upsert) — mapping noms ingrédients
-│   │   └── historique_prix.js      # GET/POST/DELETE — horodatage ISO 8601 complet
+│   │   ├── historique_prix.js      # GET/POST/DELETE — horodatage ISO 8601 complet
+│   │   ├── sous_recettes.js        # CRUD sous-recettes (préparations de base réutilisables)
+│   │   ├── ventes.js               # GET/POST/DELETE — ventes pour menu engineering
+│   │   ├── stripe.js               # /stripe/checkout, /stripe/portal, /stripe/webhook
+│   │   └── documents.js            # GET/POST/DELETE — archive factures fournisseurs
 │   └── data/                       # JSON de seed (insérés si collection vide au démarrage)
 │       ├── users.json, ingredients.json, recettes.json
 │       ├── cartes.json, parametres.json, historique_prix.json
@@ -89,16 +100,29 @@ cloveria-fichetech/
         ├── utils.js                # coutIng, coutPortionHT/TTC, foodCostPct, prixSuggereTTC
         ├── conversions.js          # Table unités → base (kg, L, pièce)
         ├── pages/
-        │   ├── Dashboard.jsx       # KPIs globaux + food cost moyen
-        │   ├── Recettes.jsx        # Liste fiches techniques
-        │   ├── NouvelleRecette.jsx # Création par IA (description libre)
-        │   ├── FicheTechnique.jsx  # Détail + édition + calculs + export PDF
-        │   ├── Ingredients.jsx     # CRUD + historique prix + comparaison fournisseurs
-        │   ├── Cartes.jsx          # Éditeur cartes (EditeurCarte) + vue consultant (VueCarte)
-        │   ├── Parametres.jsx      # Food cost cible, TVA, nom établissement
+        │   ├── Dashboard.jsx           # KPIs globaux + food cost moyen
+        │   ├── Recettes.jsx            # Liste fiches techniques (+ duplication)
+        │   ├── NouvelleRecette.jsx     # Création par IA (description libre)
+        │   ├── FicheTechnique.jsx      # Détail + édition + calculs + export PDF
+        │   ├── Ingredients.jsx         # CRUD + historique prix + comparaison fournisseurs + scan caméra mobile
+        │   ├── Cartes.jsx              # Éditeur cartes (EditeurCarte) + vue consultant (VueCarte)
+        │   ├── SousRecettes.jsx        # CRUD sous-recettes (préparations de base)
+        │   ├── MenuEngineering.jsx     # Analyse ventes + matrice BCG (Stars/Plowhorses/Puzzles/Dogs)
+        │   ├── Documents.jsx           # Archive factures fournisseurs
+        │   ├── Parametres.jsx          # Food cost cible, TVA, nom établissement
+        │   ├── Abonnement.jsx          # Page paywall fin d'essai → Stripe Checkout (39 €/mois)
+        │   ├── AbonnementConfirme.jsx  # Page succès post-paiement Stripe
+        │   ├── Onboarding.jsx          # Onboarding inscription 3 écrans (déclencheur post-register)
+        │   ├── Aide.jsx                # FAQ + liens vers sections + documents légaux
+        │   ├── CGU.jsx                 # Conditions Générales d'Utilisation (12 articles, public)
+        │   ├── PolitiqueConfidentialite.jsx # Politique RGPD (11 sections, public)
         │   └── Login.jsx / Register.jsx
+        ├── hooks/
+        │   └── useWindowWidth.js       # Hook responsive → isMobile (< 640/768px)
+        ├── utils/
+        │   └── onboardingTour.js       # Product tour driver.js (7 étapes)
         └── components/
-            ├── EtapesEditor.jsx    # Éditeur étapes avec DnD + insert gap
+            ├── EtapesEditor.jsx        # Éditeur étapes avec DnD + insert gap
             └── IngredientAutocomplete.jsx
 ```
 
@@ -202,6 +226,13 @@ Toutes les routes sauf `/api/auth/*` et `/api/health` requièrent `Authorization
 | POST | `/api/ia/analyser-facture` | Image/PDF facture → liste produits JSON |
 | GET/POST/DELETE | `/api/historique-prix` | Historique prix ingrédients |
 | GET/POST | `/api/aliases` | Mapping noms ingrédients (upsert) |
+| GET/POST/PUT/DELETE | `/api/sous-recettes/:id?` | CRUD sous-recettes (préparations de base réutilisables comme ingrédient) |
+| GET/POST/DELETE | `/api/ventes` | Ventes par plat (pour menu engineering) |
+| GET/PUT | `/api/auth/profil` | Lecture et mise à jour du profil utilisateur |
+| GET/POST/DELETE | `/api/documents/:id?` | Archive factures fournisseurs (upload + liste) |
+| POST | `/api/stripe/checkout` | Crée une session Stripe Checkout (abonnement 39 €/mois) |
+| POST | `/api/stripe/portal` | Crée une session Stripe Customer Portal (gestion abonnement) |
+| POST | `/api/stripe/webhook` | Webhook Stripe (activation/désactivation abonnement) |
 
 ---
 
@@ -246,6 +277,51 @@ Toutes les routes sauf `/api/auth/*` et `/api/health` requièrent `Authorization
 - **Export Allergènes** : ouvre Format A (tableau paysage serveurs, 14 colonnes) dans nouvel onglet
 - **Export Argumentation** : document A4 par catégorie, nom en gras + `description_commerciale`
 - Aucun `window.print()` automatique — le chef choisit d'imprimer ou non
+
+### Sous-recettes
+- CRUD de préparations de base (fond de veau, pâte sablée, sauce…) avec coût calculé
+- Réutilisables comme ingrédient dans n'importe quelle fiche technique
+- Même modèle de calcul que les recettes (`coutPortionHT`)
+
+### Menu Engineering
+- Import des ventes (nom plat + quantité vendue sur une période)
+- Matrice BCG automatique : **Stars** (marge haute + ventes hautes), **Plowhorses** (marge faible + ventes hautes), **Puzzles** (marge haute + ventes faibles), **Dogs** (marge faible + ventes faibles)
+- Recommandations automatiques par catégorie (garder, valoriser, ajuster prix, retirer)
+
+### Onboarding & Product Tour
+- **Onboarding inscription** : 3 écrans au premier login (bienvenue → type établissement → objectif)
+- **Product tour driver.js** : visite guidée 7 étapes déclenchée post-onboarding, relançable depuis Aide → "Revoir la démonstration"
+- `localStorage.onboarding_done` contrôle le déclenchement
+
+### Abonnement Stripe
+- Essai gratuit 14 jours dès l'inscription (sans carte bancaire)
+- Abonnement mensuel 39 €/mois sans engagement, via Stripe Checkout
+- Page `/abonnement` (paywall) affichée automatiquement après expiration de l'essai
+- Page `/abonnement-confirme` (succès post-paiement)
+- Webhook Stripe gère activation/désactivation du compte
+- Champ `trialEndsAt` + `subscriptionStatus` sur le document `users`
+
+### Documents
+- Archive des factures fournisseurs uploadées (JPEG/PNG/PDF)
+- Lié au scan facture de la page Ingrédients
+
+### Landing page
+- Fichier HTML statique dans `landing/index.html`, repo séparé `cloveria-landing`
+- Déployée sur `cloveria-pro.fr` (Vercel)
+- Sections : Hero, Reassurance, Features (4 blocs alternés), How it works, Pricing, FAQ, Footer
+- Lightbox images, FAQ accordion, fade-up animations
+
+### Légal & Conformité RGPD
+- **CGU** : 12 articles (Objet → Droit applicable), accessible sans login sur `/cgu`
+- **Politique de confidentialité** : 11 sections RGPD, données obligatoires/facultatives labellisées, sous-traitants, transferts hors UE, cookies, droits exercice — accessible sans login sur `/politique-confidentialite`
+- Case à cocher CGU obligatoire à l'inscription
+- Liens CGU/Politique dans : Login, Register, Abonnement, Aide, footer landing
+
+### Autres fonctionnalités récentes
+- **Duplication de fiche technique** : depuis la liste Recettes
+- **Scan caméra mobile** : capture photo facture directement depuis l'appareil photo du téléphone
+- **Responsive mobile** : `useWindowWidth` hook, `isMobile` dans toutes les pages, sidebar hamburger
+- **Page Aide** : FAQ, raccourcis vers sections principales, product tour, documents légaux
 
 ### IA — qualité des prompts
 - **Temps de cuisson** : calculés analytiquement ingrédient par ingrédient. Si aucun ingrédient n'est soumis à chaleur directe, `tempsCuisson = 0`.
@@ -330,8 +406,9 @@ Il est passé en `key` à `<EditeurCarte key={...}>` pour forcer son remontage e
 ## Ce qui reste à faire
 
 ### Priorité haute
+- [x] **Mentions légales** : page `/mentions-legales` (éditeur, hébergeur, directeur de publication)
+- [ ] **Emails de relance Stripe** : séquence automatique J+9 / J+12 / J+14 (rappel fin d'essai, puis expiration)
 - [ ] Isolation des données démo : les données du compte `demo` ne devraient pas être partagées entre tous les utilisateurs non-démo
-- [ ] Duplication d'une fiche technique
 - [ ] Import/export CSV des ingrédients
 
 ### Priorité moyenne
@@ -340,9 +417,15 @@ Il est passé en `key` à `<EditeurCarte key={...}>` pour forcer son remontage e
 - [ ] Indicateurs visuels fiches incomplètes dans la liste (sans prix, sans ingrédients)
 - [ ] Historique des modifications d'une fiche (versioning léger)
 - [ ] Section "Plat du jour" dans les cartes (mise en avant visuelle)
+- [ ] Page Aide → lier le product tour aux vraies cibles DOM de chaque section
 
 ### Priorité basse / idées
 - [ ] QR Code allergènes (lien vers Format B en ligne)
 - [ ] Calcul commandes fournisseurs depuis un nombre de couverts prévu
 - [ ] Multi-restaurants (1 compte = N établissements)
 - [ ] Application mobile (PWA)
+
+### Modifications diverses en attente
+- [ ] Landing page : corriger le bug de remplacement des href footer par `/#` (source externe probable — extension navigateur ou service worker)
+- [ ] Vérifier le déclenchement correct du product tour sur mobile (scroll + highlight)
+- [ ] Ajouter `rel="noopener noreferrer"` systématiquement sur tous les liens externes `target="_blank"`

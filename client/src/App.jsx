@@ -19,6 +19,7 @@ import Abonnement from './pages/Abonnement.jsx';
 import AbonnementConfirme from './pages/AbonnementConfirme.jsx';
 import CGU from './pages/CGU.jsx';
 import PolitiqueConfidentialite from './pages/PolitiqueConfidentialite.jsx';
+import MentionsLegales from './pages/MentionsLegales.jsx';
 import { useWindowWidth } from './hooks/useWindowWidth.js';
 
 const SIDEBAR_W = '224px';
@@ -75,6 +76,7 @@ export default function App() {
   // Pages légales — toujours publiques, sans sidebar, sans contrôle d'auth
   if (location.pathname === '/cgu') return <CGU />;
   if (location.pathname === '/politique-confidentialite') return <PolitiqueConfidentialite />;
+  if (location.pathname === '/mentions-legales') return <MentionsLegales />;
 
   const [token, setToken] = useState(() => localStorage.getItem('token'));
   const [user, setUser] = useState(() => {
@@ -117,6 +119,7 @@ export default function App() {
         <Route path="/register" element={<Register onLogin={handleLogin} />} />
         <Route path="/cgu" element={<CGU />} />
         <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
+        <Route path="/mentions-legales" element={<MentionsLegales />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
@@ -135,6 +138,7 @@ export default function App() {
         } />
         <Route path="/cgu" element={<CGU />} />
         <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
+        <Route path="/mentions-legales" element={<MentionsLegales />} />
         <Route path="*" element={<Navigate to="/onboarding" replace />} />
       </Routes>
     );
@@ -275,6 +279,7 @@ export default function App() {
           <Route path="/abonnement-confirme" element={<AbonnementConfirme />} />
           <Route path="/cgu" element={<CGU />} />
           <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
+          <Route path="/mentions-legales" element={<MentionsLegales />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="/register" element={<Navigate to="/" replace />} />
         </Routes>

@@ -178,6 +178,9 @@ export default function Aide() {
           <Link to="/politique-confidentialite" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.875rem', color: T.green, fontWeight: 600, textDecoration: 'none' }}>
             Politique de confidentialité
           </Link>
+          <Link to="/mentions-legales" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.875rem', color: T.green, fontWeight: 600, textDecoration: 'none' }}>
+            Mentions légales
+          </Link>
         </div>
       </div>
     </div>

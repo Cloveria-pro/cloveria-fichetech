@@ -120,6 +120,13 @@ export default function Register({ onLogin }) {
             Déjà un compte ?{' '}
             <Link to="/login" style={{ color: T.green, fontWeight: 600, textDecoration: 'none' }}>Se connecter</Link>
           </p>
+          <p style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.75rem', color: T.muted }}>
+            <a href="/cgu" target="_blank" rel="noopener noreferrer" style={{ color: T.muted, textDecoration: 'none' }}>CGU</a>
+            {' · '}
+            <a href="/politique-confidentialite" target="_blank" rel="noopener noreferrer" style={{ color: T.muted, textDecoration: 'none' }}>Politique de confidentialité</a>
+            {' · '}
+            <a href="/mentions-legales" target="_blank" rel="noopener noreferrer" style={{ color: T.muted, textDecoration: 'none' }}>Mentions légales</a>
+          </p>
         </div>
       </div>
     </div>

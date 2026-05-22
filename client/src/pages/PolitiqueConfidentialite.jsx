@@ -154,6 +154,8 @@ export default function PolitiqueConfidentialite() {
             Contact : <a href="mailto:contact@cloveria.fr" style={{ color: T.green, textDecoration: 'none', fontWeight: 600 }}>contact@cloveria.fr</a>
             {' '}·{' '}
             <Link to="/cgu" style={{ color: T.green, textDecoration: 'none', fontWeight: 600 }}>CGU</Link>
+            {' '}·{' '}
+            <Link to="/mentions-legales" style={{ color: T.green, textDecoration: 'none', fontWeight: 600 }}>Mentions légales</Link>
           </div>
         </div>
       </div>

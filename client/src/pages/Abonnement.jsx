@@ -113,6 +113,8 @@ export default function Abonnement() {
           <Link to="/cgu" target="_blank" rel="noopener noreferrer" style={{ color: T.muted, textDecoration: 'none' }}>CGU</Link>
           {' · '}
           <Link to="/politique-confidentialite" target="_blank" rel="noopener noreferrer" style={{ color: T.muted, textDecoration: 'none' }}>Politique de confidentialité</Link>
+          {' · '}
+          <Link to="/mentions-legales" target="_blank" rel="noopener noreferrer" style={{ color: T.muted, textDecoration: 'none' }}>Mentions légales</Link>
         </p>
       </div>
     </div>
