@@ -2,6 +2,5 @@
   "rewrites": [
     { "source": "/api/(.*)", "destination": "https://cloveria-fichetech.onrender.com/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
-  ],
-  "_build": "2026-05-22"
+  ]
 }
