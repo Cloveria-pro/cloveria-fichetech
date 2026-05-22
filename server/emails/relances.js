@@ -38,7 +38,7 @@ function layout(contenu) {
   <div class="outer">
     <div class="card">
       <div class="header">
-        <img src="https://app.cloveria-pro.fr/logo.png" alt="CloverIA" style="width:80px;height:80px;object-fit:contain;">
+        <div style="background:white;border-radius:50%;width:90px;height:90px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;"><img src="https://app.cloveria-pro.fr/logo.png" alt="CloverIA" style="width:70px;height:70px;object-fit:contain;"></div>
         <p class="header-title">CloverIA FicheTech</p>
       </div>
       <div class="gold-bar"></div>
@@ -59,12 +59,12 @@ function layout(contenu) {
 
 const TEMPLATES = {
   9: {
-    subject: 'Votre cuisine mérite le meilleur 🍽️',
+    subject: 'Votre cuisine mérite le meilleur 🍀',
     html: (prenom) => layout(`
       <h2>${prenom ? `${prenom}, votre` : 'Votre'} aventure CloverIA continue !</h2>
       <p>Ça fait 9 jours que vous utilisez CloverIA FicheTech,vos fiches techniques prennent forme, vos food costs sont sous contrôle, votre cuisine s'optimise. On est vraiment fiers de vous accompagner.</p>
       <div class="highlight">
-        <p>⏳ Il vous reste <strong>5 jours</strong> sur votre essai gratuit. On ne veut surtout pas que vous perdiez vos recettes, vos calculs et tout le travail accompli.</p>
+        <p>🍀 Il vous reste <strong>5 jours</strong> sur votre essai gratuit. On ne veut surtout pas que vous perdiez vos recettes, vos calculs et tout le travail accompli.</p>
       </div>
       <p>Pour continuer sans interruption et garder l'accès à toutes vos fiches, c'est simple :</p>
       <div style="text-align:center; margin: 8px 0 24px;">
@@ -79,11 +79,11 @@ const TEMPLATES = {
     subject: 'Plus que 48h... on y tient 🍀',
     html: (prenom) => layout(`
       <h2>${prenom ? `${prenom}, il` : 'Il'} reste 48h sur votre essai</h2>
-      <p>Vos recettes sont là. Vos calculs de food cost aussi. Tout ce que vous avez bâti pendant ces 12 jours vous attend,on voulait juste vous le rappeler avec douceur.</p>
+      <p>Vos recettes sont là. Vos calculs de food cost aussi. Tout ce que vous avez bâti pendant ces 12 jours vous attend, on voulait juste vous le rappeler avec douceur.</p>
       <div class="highlight">
         <p>🍀 Dans 48 heures, votre accès sera suspendu si aucun abonnement n'est activé. Vos données sont conservées, mais vous ne pourrez plus y accéder ni créer de nouvelles fiches.</p>
       </div>
-      <p>Rejoindre CloverIA FicheTech, c'est investir dans votre rentabilité,pour le prix d'un repas par mois.</p>
+      <p>Rejoindre CloverIA FicheTech, c'est investir dans votre rentabilité, pour le prix d'un repas par mois.</p>
       <div style="text-align:center; margin: 8px 0 24px;">
         <span class="price-badge">39 € / mois · Annulable à tout moment</span>
       </div>
@@ -93,12 +93,12 @@ const TEMPLATES = {
     `),
   },
   14: {
-    subject: 'Vos fiches vous attendent 👨‍🍳',
+    subject: 'Vos fiches vous attendent 🍀',
     html: (prenom) => layout(`
       <h2>${prenom ? `${prenom}, votre` : 'Votre'} essai est terminé</h2>
-      <p>Votre période d'essai gratuite de 14 jours est arrivée à son terme. Merci d'avoir pris le temps de découvrir CloverIA FicheTech,on espère que ça vous a été utile.</p>
+      <p>Votre période d'essai gratuite de 14 jours est arrivée à son terme. Merci d'avoir pris le temps de découvrir CloverIA FicheTech, on espère que ça vous a été utile.</p>
       <div class="highlight">
-        <p>📂 Bonne nouvelle : <strong>toutes vos données sont sauvegardées</strong>. Vos fiches techniques, vos ingrédients, vos calculs,tout est là, intact, qui vous attend.</p>
+        <p>🍀 Bonne nouvelle : <strong>toutes vos données sont sauvegardées</strong>. Vos fiches techniques, vos ingrédients, vos calculs, tout est là, intact, qui vous attend.</p>
       </div>
       <p>Dès que vous êtes prêt·e, vous pouvez reprendre exactement là où vous en étiez. Sans rien recommencer à zéro.</p>
       <div style="text-align:center; margin: 8px 0 24px;">
