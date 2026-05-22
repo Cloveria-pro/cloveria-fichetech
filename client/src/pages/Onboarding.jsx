@@ -14,7 +14,7 @@ const FC_PRESETS = {
 };
 
 const TYPES_ETAB = ['Gastro', 'Brasserie / traditionnel', 'Fast-food / snacking', 'Traiteur', "Hôtel / restaurant d'hôtel", 'Autre'];
-const ROLES = ['Chef', 'Gérant', 'Responsable cuisine', "Directeur d'établissement", 'Autre'];
+const ROLES = ['Chef', 'Gérant', "Directeur d'établissement", 'Autre'];
 const OBJECTIFS = ['Mieux gérer mes fiches techniques', 'Suivre mes coûts matière', 'Mieux piloter mes marges', 'Centraliser mes documents', 'Gagner du temps au quotidien', 'Autre'];
 const NB_PLATS = ['Moins de 10', 'Entre 10 et 30', 'Entre 30 et 60', 'Plus de 60'];
 const SOURCES = ['Bouche à oreille', 'Internet / Google', 'Facebook', 'LinkedIn', 'Instagram', 'Autre réseau'];
