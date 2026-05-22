@@ -38,7 +38,7 @@ function layout(contenu) {
   <div class="outer">
     <div class="card">
       <div class="header">
-        <div style="text-align:center;"><div style="background:white;border-radius:50%;width:110px;height:110px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;"><img src="https://app.cloveria-pro.fr/logo.png" alt="CloverIA" style="width:90px;height:90px;object-fit:contain;"></div></div>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:24px 0 12px;"><div style="background:white;border-radius:50%;width:110px;height:110px;display:inline-flex;align-items:center;justify-content:center;"><img src="https://app.cloveria-pro.fr/logo.png" alt="CloverIA" style="width:90px;height:90px;object-fit:contain;"></div></td></tr></table>
         <p class="header-title">CloverIA FicheTech</p>
       </div>
       <div class="gold-bar"></div>
@@ -70,9 +70,7 @@ const TEMPLATES = {
       <div style="text-align:center; margin: 8px 0 24px;">
         <span class="price-badge">39 € / mois · Sans engagement</span>
       </div>
-      <div class="cta-wrap">
-        <a href="${CHECKOUT_URL}" class="cta" style="color:#ffffff;">Continuer l'aventure →</a>
-      </div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:24px 0;"><a href="https://app.cloveria-pro.fr/abonnement" target="_blank" style="background-color:#2D6A4F;color:#ffffff !important;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:16px;display:inline-block;mso-padding-alt:0;font-family:Arial,sans-serif;">Continuer l'aventure →</a></td></tr></table>
     `),
   },
   12: {
@@ -87,9 +85,7 @@ const TEMPLATES = {
       <div style="text-align:center; margin: 8px 0 24px;">
         <span class="price-badge">39 € / mois · Annulable à tout moment</span>
       </div>
-      <div class="cta-wrap">
-        <a href="${CHECKOUT_URL}" class="cta" style="color:#ffffff;">Je garde mon accès →</a>
-      </div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:24px 0;"><a href="https://app.cloveria-pro.fr/abonnement" target="_blank" style="background-color:#2D6A4F;color:#ffffff !important;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:16px;display:inline-block;mso-padding-alt:0;font-family:Arial,sans-serif;">Je garde mon accès →</a></td></tr></table>
     `),
   },
   14: {
@@ -104,9 +100,7 @@ const TEMPLATES = {
       <div style="text-align:center; margin: 8px 0 24px;">
         <span class="price-badge">39 € / mois · Accès immédiat à la souscription</span>
       </div>
-      <div class="cta-wrap">
-        <a href="${CHECKOUT_URL}" class="cta" style="color:#ffffff;">Reprendre CloverIA →</a>
-      </div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:24px 0;"><a href="https://app.cloveria-pro.fr/abonnement" target="_blank" style="background-color:#2D6A4F;color:#ffffff !important;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:16px;display:inline-block;mso-padding-alt:0;font-family:Arial,sans-serif;">Reprendre CloverIA →</a></td></tr></table>
     `),
   },
 };
