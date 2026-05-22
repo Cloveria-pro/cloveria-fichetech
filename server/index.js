@@ -34,6 +34,21 @@ app.use('/api/auth', authRouter);
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.post('/api/stripe/webhook', stripeWebhook);
 
+// ── Route de test emails (temporaire) ───────────────────────────────────────
+app.get('/api/test-email', async (req, res) => {
+  const fakeUser = { email: 'contact@cloveria.fr', prenom: 'Sébastien' };
+  const results = [];
+  for (const jour of [9, 12, 14]) {
+    try {
+      await envoyerRelance(fakeUser, jour);
+      results.push({ jour, status: 'ok' });
+    } catch (err) {
+      results.push({ jour, status: 'error', message: err.message });
+    }
+  }
+  res.json({ results });
+});
+
 // ── Routes protégées ────────────────────────────────────────────────────────
 app.use('/api', authMiddleware);
 app.use('/api', checkAccess);
