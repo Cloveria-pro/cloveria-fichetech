@@ -66,10 +66,18 @@ export default function Register({ onLogin }) {
           top: 0,
           height: '100vh',
         }}>
+          {/* Fondu horizontal vers la colonne droite */}
+          <div style={{
+            position: 'absolute',
+            top: 0, right: 0, bottom: 0,
+            width: '100px',
+            background: 'linear-gradient(to right, transparent, #F8F6F1)',
+            pointerEvents: 'none',
+          }} />
           <img
             src="/logo.png"
             alt="CloverIA"
-            style={{ width: '300px', height: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)', marginBottom: '2.5rem' }}
+            style={{ width: '500px', height: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)', marginBottom: '2.5rem' }}
             onError={e => { e.currentTarget.style.display = 'none'; }}
           />
           <p style={{
