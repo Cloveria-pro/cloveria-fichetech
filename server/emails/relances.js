@@ -38,7 +38,7 @@ function layout(contenu) {
   <div class="outer">
     <div class="card">
       <div class="header">
-        <span class="header-logo">🍃</span>
+        <img src="https://app.cloveria-pro.fr/logo.png" alt="CloverIA" style="width:80px;height:80px;object-fit:contain;">
         <p class="header-title">CloverIA FicheTech</p>
       </div>
       <div class="gold-bar"></div>
@@ -76,12 +76,12 @@ const TEMPLATES = {
     `),
   },
   12: {
-    subject: 'Plus que 48h... on y tient 🌿',
+    subject: 'Plus que 48h... on y tient 🍀',
     html: (prenom) => layout(`
       <h2>${prenom ? `${prenom}, il` : 'Il'} reste 48h sur votre essai</h2>
       <p>Vos recettes sont là. Vos calculs de food cost aussi. Tout ce que vous avez bâti pendant ces 12 jours vous attend — on voulait juste vous le rappeler avec douceur.</p>
       <div class="highlight">
-        <p>🌿 Dans 48 heures, votre accès sera suspendu si aucun abonnement n'est activé. Vos données sont conservées, mais vous ne pourrez plus y accéder ni créer de nouvelles fiches.</p>
+        <p>🍀 Dans 48 heures, votre accès sera suspendu si aucun abonnement n'est activé. Vos données sont conservées, mais vous ne pourrez plus y accéder ni créer de nouvelles fiches.</p>
       </div>
       <p>Rejoindre CloverIA FicheTech, c'est investir dans votre rentabilité — pour le prix d'un repas par mois.</p>
       <div style="text-align:center; margin: 8px 0 24px;">
