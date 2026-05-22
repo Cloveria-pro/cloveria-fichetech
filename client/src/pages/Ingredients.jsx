@@ -496,6 +496,12 @@ export default function Ingredients() {
 
       <ImportFacture items={items} setItems={setItems} />
 
+      {!showAdd && (
+        <button onClick={() => { setShowAdd(true); setEditId(null); }} style={{ marginBottom: '1.25rem', background: 'none', border: '1px dashed #C9A84C', color: T.muted, borderRadius: '8px', padding: '0.5rem 1.25rem', cursor: 'pointer', fontSize: '0.85rem', width: '100%', fontFamily: "'DM Sans', sans-serif" }}>
+          + Ajouter un ingrédient
+        </button>
+      )}
+
       {/* Filtres */}
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
         <input
