@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { SortableContext, verticalListSortingStrategy, rectSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
 import { coutIng } from '../utils.js';
@@ -50,14 +50,55 @@ function relDate(iso) {
   if (d < 7) return `Il y a ${d}j`; return `Il y a ${Math.floor(d / 7)}sem`;
 }
 
+// ─── Sortable carte card ──────────────────────────────────────────────────────
+function SortableCarteCard({ id, children }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  return (
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.45 : 1 }}>
+      {children({ dragHandleProps: { ...attributes, ...listeners } })}
+    </div>
+  );
+}
+
 // ─── Vue liste ────────────────────────────────────────────────────────────────
 function ListeCartes({ cartes, onNew, onOpen, onDelete }) {
+  const [search, setSearch] = useState('');
+  const [localCartes, setLocalCartes] = useState(() =>
+    [...cartes].sort((a, b) => (a.ordre ?? Infinity) - (b.ordre ?? Infinity))
+  );
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+  useEffect(() => {
+    setLocalCartes([...cartes].sort((a, b) => (a.ordre ?? Infinity) - (b.ordre ?? Infinity)));
+  }, [cartes]);
+
+  const filtered = search
+    ? localCartes.filter(c => c.nom.toLowerCase().includes(search.toLowerCase()))
+    : localCartes;
+
+  function handleDragEnd(event) {
+    if (search) return;
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setLocalCartes(prev => {
+      const oi = prev.findIndex(c => c.id === active.id);
+      const ni = prev.findIndex(c => c.id === over.id);
+      const next = arrayMove(prev, oi, ni);
+      next.forEach((c, i) => {
+        if ((c.ordre ?? -1) !== i) {
+          api.cartes.update(c.id, { ...c, ordre: i }).catch(() => {});
+        }
+      });
+      return next.map((c, i) => ({ ...c, ordre: i }));
+    });
+  }
+
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.5rem' }}>
         <div>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', fontWeight: 700, color: T.text }}>Cartes</h1>
-          <p style={{ color: T.muted, fontSize: '0.875rem', marginTop: '2px' }}>{cartes.length} carte{cartes.length !== 1 ? 's' : ''}</p>
+          <p style={{ color: T.muted, fontSize: '0.875rem', marginTop: '2px' }}>{localCartes.length} carte{localCartes.length !== 1 ? 's' : ''}</p>
         </div>
         <button onClick={onNew} style={{ padding: '0.55rem 1.25rem', background: T.green, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
           onMouseEnter={e => e.currentTarget.style.background = '#1e4d38'}
@@ -65,43 +106,67 @@ function ListeCartes({ cartes, onNew, onOpen, onDelete }) {
         >+ Nouvelle carte</button>
       </div>
 
-      {cartes.length === 0 && <p style={{ color: T.muted }}>Aucune carte. Créez-en une !</p>}
+      <input
+        type="search"
+        placeholder="Rechercher une carte..."
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        style={{ ...inputStyle, marginBottom: '1.5rem', maxWidth: '320px' }}
+      />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
-        {cartes.map(carte => {
-          const nb = (carte.sections || []).reduce((s, sec) => s + (sec.plats || []).length, 0);
-          return (
-            <div key={carte.id} style={{ ...card, padding: '1.5rem', cursor: 'pointer', transition: 'box-shadow 0.15s, transform 0.15s' }}
-              onClick={() => onOpen(carte)}
-              onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 24px rgba(45,106,79,0.12)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-              onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.06)'; e.currentTarget.style.transform = ''; }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: T.gold, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>{carte.saison}</div>
-                  <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.15rem', fontWeight: 700, color: T.text }}>{carte.nom}</h2>
-                </div>
-                <button onClick={e => { e.stopPropagation(); onDelete(carte.id); }} style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '1rem', padding: '2px 6px' }}
-                  onMouseEnter={e => e.currentTarget.style.color = T.red}
-                  onMouseLeave={e => e.currentTarget.style.color = '#D1C4B0'}
-                >✕</button>
-              </div>
-              <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', fontSize: '0.8rem', color: T.muted }}>
-                <span>{(carte.sections || []).length} sections</span>
-                <span>·</span>
-                <span>{nb} plat{nb !== 1 ? 's' : ''}</span>
-                <span>·</span>
-                <span>{relDate(carte.createdAt)}</span>
-              </div>
-              <div style={{ marginTop: '0.75rem', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                {(carte.sections || []).map(s => (
-                  <span key={s.titre} style={{ fontSize: '0.7rem', background: '#F3EFE8', color: T.muted, padding: '2px 8px', borderRadius: '4px' }}>{s.titre}</span>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {localCartes.length === 0 && <p style={{ color: T.muted }}>Aucune carte. Créez-en une !</p>}
+      {filtered.length === 0 && localCartes.length > 0 && (
+        <p style={{ color: T.muted }}>Aucune carte ne correspond à votre recherche.</p>
+      )}
+
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={filtered.map(c => c.id)} strategy={rectSortingStrategy}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
+            {filtered.map(carte => {
+              const nb = (carte.sections || []).reduce((s, sec) => s + (sec.plats || []).length, 0);
+              return (
+                <SortableCarteCard key={carte.id} id={carte.id}>
+                  {({ dragHandleProps }) => (
+                    <div style={{ ...card, padding: '1.5rem', cursor: 'pointer', transition: 'box-shadow 0.15s, transform 0.15s' }}
+                      onClick={() => onOpen(carte)}
+                      onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 24px rgba(45,106,79,0.12)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.06)'; e.currentTarget.style.transform = ''; }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                            {!search && (
+                              <span {...dragHandleProps} onClick={e => e.stopPropagation()} style={{ cursor: 'grab', color: '#C5BDB0', fontSize: '1rem', lineHeight: 1, flexShrink: 0 }} title="Glisser pour réordonner">⠿</span>
+                            )}
+                            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: T.gold, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{carte.saison}</div>
+                          </div>
+                          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.15rem', fontWeight: 700, color: T.text }}>{carte.nom}</h2>
+                        </div>
+                        <button onClick={e => { e.stopPropagation(); onDelete(carte.id); }} style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '1rem', padding: '2px 6px' }}
+                          onMouseEnter={e => e.currentTarget.style.color = T.red}
+                          onMouseLeave={e => e.currentTarget.style.color = '#D1C4B0'}
+                        >✕</button>
+                      </div>
+                      <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', fontSize: '0.8rem', color: T.muted }}>
+                        <span>{(carte.sections || []).length} sections</span>
+                        <span>·</span>
+                        <span>{nb} plat{nb !== 1 ? 's' : ''}</span>
+                        <span>·</span>
+                        <span>{relDate(carte.createdAt)}</span>
+                      </div>
+                      <div style={{ marginTop: '0.75rem', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                        {(carte.sections || []).map(s => (
+                          <span key={s.titre} style={{ fontSize: '0.7rem', background: '#F3EFE8', color: T.muted, padding: '2px 8px', borderRadius: '4px' }}>{s.titre}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </SortableCarteCard>
+              );
+            })}
+          </div>
+        </SortableContext>
+      </DndContext>
     </div>
   );
 }
