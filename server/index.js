@@ -39,7 +39,7 @@ app.get('/api/test-email', async (req, res) => {
   console.log('test-email appelé');
   const fakeUser = { email: 'contact@cloveria.fr', prenom: 'Sébastien' };
   const results = [];
-  for (const jour of [9, 12, 14]) {
+  for (const jour of [9, 12, 14, 'post2', 'post7', 'post15', 'post40']) {
     try {
       await envoyerRelance(fakeUser, jour);
       results.push({ jour, status: 'ok' });
