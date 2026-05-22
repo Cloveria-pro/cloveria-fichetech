@@ -1,24 +1,8 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-console.log('[Relances] EMAIL_USER:', process.env.EMAIL_USER || '(non défini)');
-console.log('[Relances] EMAIL_PASS:', process.env.EMAIL_PASS ? '***' : '(non défini)');
+console.log('[Relances] RESEND_API_KEY:', process.env.RESEND_API_KEY ? '***' : '(non défini)');
 
-function createTransporter() {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return null;
-  return nodemailer.createTransport({
-    host: 'smtp.hostinger.com',
-    port: 587,
-    secure: false,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-    tls: { rejectUnauthorized: false },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
-  });
-}
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const CHECKOUT_URL = 'https://app.cloveria-pro.fr/abonnement';
 
@@ -131,15 +115,14 @@ export async function envoyerRelance(user, jour) {
   const tpl = TEMPLATES[jour];
   if (!tpl) throw new Error(`Template inconnu pour le jour ${jour}`);
 
-  const transporter = createTransporter();
-  if (!transporter) {
-    console.warn('[Relance] EMAIL_USER ou EMAIL_PASS manquant — email non envoyé');
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('[Relance] RESEND_API_KEY manquant — email non envoyé');
     return;
   }
 
   console.log(`[Relance] Envoi j${jour} à ${user.email}...`);
-  await transporter.sendMail({
-    from: `CloverIA FicheTech <${process.env.EMAIL_USER}>`,
+  await resend.emails.send({
+    from: 'CloverIA <contact@cloveria.fr>',
     to: user.email,
     subject: tpl.subject,
     html: tpl.html(user.prenom),
