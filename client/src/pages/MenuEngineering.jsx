@@ -513,30 +513,38 @@ export default function MenuEngineering() {
               {colonnes.length > 0 && (
                 <div style={{ ...card, padding: '1.25rem' }}>
                   <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.95rem', fontWeight: 700, color: T.text, marginBottom: '0.5rem' }}>
-                    Ce fichier contient-il une date par ligne ?
+                    Granularité des données
                   </h3>
-                  <p style={{ fontSize: '0.78rem', color: T.muted, marginBottom: '0.875rem', marginTop: 0 }}>
-                    Si oui, les ventes peuvent être analysées jour par jour. Sinon, elles sont rattachées à la période globale uniquement.
-                  </p>
-                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: hasLineDates === false ? '0.875rem' : 0 }}>
                     {[
-                      { val: true,  label: '📅 Oui, chaque ligne a sa date' },
-                      { val: false, label: '📋 Non, données globales sur la période' },
+                      { val: true,  label: '📅 Chaque ligne contient une date exploitable' },
+                      { val: false, label: '📋 Données globales sur la période' },
                     ].map(({ val, label }) => {
                       const active = hasLineDates === val;
+                      const disabled = val === true && hasLineDates === false;
                       return (
-                        <button key={String(val)} type="button" onClick={() => setHasLineDates(val)} style={{
-                          padding: '0.55rem 1.1rem', borderRadius: '8px',
-                          border: `1.5px solid ${active ? T.green : '#D6D0C8'}`,
-                          background: active ? 'rgba(45,106,79,0.08)' : '#fff',
-                          color: active ? T.green : T.muted,
-                          fontSize: '0.82rem', fontWeight: active ? 700 : 400,
-                          cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
-                          transition: 'all 0.12s',
-                        }}>{label}</button>
+                        <button key={String(val)} type="button"
+                          disabled={disabled}
+                          onClick={() => !disabled && setHasLineDates(val)}
+                          style={{
+                            padding: '0.55rem 1.1rem', borderRadius: '8px',
+                            border: `1.5px solid ${active ? T.green : disabled ? '#E5E0D8' : '#D6D0C8'}`,
+                            background: active ? 'rgba(45,106,79,0.08)' : '#fff',
+                            color: active ? T.green : disabled ? '#C5BDB0' : T.muted,
+                            fontSize: '0.82rem', fontWeight: active ? 700 : 400,
+                            cursor: disabled ? 'not-allowed' : 'pointer',
+                            fontFamily: "'DM Sans', sans-serif",
+                            transition: 'all 0.12s',
+                            opacity: disabled ? 0.5 : 1,
+                          }}>{label}</button>
                       );
                     })}
                   </div>
+                  {hasLineDates === false && (
+                    <div style={{ background: 'rgba(217,119,6,0.06)', border: '1px solid rgba(217,119,6,0.25)', borderRadius: '8px', padding: '0.65rem 0.9rem', fontSize: '0.8rem', color: '#92400E', lineHeight: 1.55 }}>
+                      ⚠️ Ce rapport ne contient aucune date par ligne exploitable. L'analyse fine par sous-période n'est pas possible — les données seront rattachées à la période globale.
+                    </div>
+                  )}
                 </div>
               )}
 
