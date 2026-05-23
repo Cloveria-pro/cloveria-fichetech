@@ -347,7 +347,14 @@ export default function MenuEngineering() {
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '4px', marginBottom: '1.75rem', background: '#fff', border: '1px solid #E8E2D9', borderRadius: '10px', padding: '4px', width: 'fit-content' }}>
         {[{ key: 'import', label: 'Nouvel import' }, { key: 'historique', label: 'Historique' }, { key: 'analyse', label: 'Analyse' }].map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)} style={{
+          <button key={t.key} onClick={() => {
+            if (t.key === 'import') {
+              setStep(1); setFile(null); setColonnes([]); setMatchings([]);
+              setResultats([]); setRapportEnCours(null); setHasLineDates(null);
+              setDateDebut(''); setDateFin(''); setCartesSelectes(['__all']);
+            }
+            setTab(t.key);
+          }} style={{
             padding: '0.45rem 1.25rem', borderRadius: '7px', border: 'none', cursor: 'pointer',
             background: tab === t.key ? T.green : 'transparent',
             color: tab === t.key ? '#fff' : T.muted,
