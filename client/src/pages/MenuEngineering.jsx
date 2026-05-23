@@ -67,10 +67,20 @@ function computeQuadrant(rows) {
 function aggregerRapports(rapports, debut, fin, cartesIds) {
   const all = cartesIds.includes('__all');
   const filtered = rapports.filter(r => {
-    if (debut && r.dateFin && r.dateFin < debut) return false;
-    if (fin && r.dateDebut && r.dateDebut > fin) return false;
     if (!all && r.cartesIds && r.cartesIds.length > 0) {
       if (!r.cartesIds.some(id => cartesIds.includes(id))) return false;
+    }
+    if (r.hasLineDates) {
+      // Données journalières : inclusion par chevauchement
+      if (debut && r.dateFin && r.dateFin < debut) return false;
+      if (fin && r.dateDebut && r.dateDebut > fin) return false;
+    } else {
+      // Pas de détail journalier : le filtre doit couvrir entièrement la période du rapport
+      // Si le rapport a des dates, on l'exclut dès que le filtre est plus fin que sa période
+      if (r.dateDebut && r.dateFin) {
+        if (debut && debut > r.dateDebut) return false;
+        if (fin && fin < r.dateFin) return false;
+      }
     }
     return true;
   });
@@ -149,9 +159,6 @@ export default function MenuEngineering() {
   const [cartes, setCartes] = useState([]);
   const [rapportEnCours, setRapportEnCours] = useState(null);
   const [hasLineDates, setHasLineDates] = useState(null);
-  const [analyseDebut, setAnalyseDebut] = useState('');
-  const [analyseFin, setAnalyseFin] = useState('');
-  const [analyseCartes, setAnalyseCartes] = useState(['__all']);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const width = useWindowWidth();
@@ -370,12 +377,6 @@ export default function MenuEngineering() {
           historique={historique}
           loading={histLoading}
           cartes={cartes}
-          analyseDebut={analyseDebut}
-          setAnalyseDebut={setAnalyseDebut}
-          analyseFin={analyseFin}
-          setAnalyseFin={setAnalyseFin}
-          analyseCartes={analyseCartes}
-          setAnalyseCartes={setAnalyseCartes}
         />
       )}
 
@@ -863,29 +864,60 @@ function HistoriqueTab({ historique, loading, onRecharger, onModifier, onSupprim
 }
 
 /* ── Analyse Tab ── */
-function AnalyseTab({ historique, loading, cartes, analyseDebut, setAnalyseDebut, analyseFin, setAnalyseFin, analyseCartes, setAnalyseCartes }) {
-  const analyseResultats = useMemo(() => {
-    const rows = aggregerRapports(historique, analyseDebut, analyseFin, analyseCartes);
-    return computeQuadrant(rows.map(r => ({ ...r })));
-  }, [historique, analyseDebut, analyseFin, analyseCartes]);
+function AnalyseTab({ historique, loading, cartes }) {
+  const [pendingDebut, setPendingDebut] = useState('');
+  const [pendingFin, setPendingFin] = useState('');
+  const [pendingCartes, setPendingCartes] = useState(['__all']);
+  const [appliedDebut, setAppliedDebut] = useState('');
+  const [appliedFin, setAppliedFin] = useState('');
+  const [appliedCartes, setAppliedCartes] = useState(['__all']);
 
-  function rapportInclus(r) {
-    const all = analyseCartes.includes('__all');
-    if (analyseDebut && r.dateFin && r.dateFin < analyseDebut) return false;
-    if (analyseFin && r.dateDebut && r.dateDebut > analyseFin) return false;
-    if (!all && r.cartesIds && r.cartesIds.length > 0) {
-      if (!r.cartesIds.some(id => analyseCartes.includes(id))) return false;
-    }
-    return true;
+  function appliquer() {
+    setAppliedDebut(pendingDebut);
+    setAppliedFin(pendingFin);
+    setAppliedCartes(pendingCartes);
   }
 
-  const nbRapports = useMemo(() => historique.filter(rapportInclus).length,
-    [historique, analyseDebut, analyseFin, analyseCartes]);
+  function reinitialiser() {
+    setPendingDebut('');
+    setPendingFin('');
+    setPendingCartes(['__all']);
+    setAppliedDebut('');
+    setAppliedFin('');
+    setAppliedCartes(['__all']);
+  }
 
-  const rapportsSansDetails = useMemo(() => {
-    if (!analyseDebut && !analyseFin) return [];
-    return historique.filter(r => rapportInclus(r) && !r.hasLineDates);
-  }, [historique, analyseDebut, analyseFin, analyseCartes]);
+  const analyseResultats = useMemo(() => {
+    const rows = aggregerRapports(historique, appliedDebut, appliedFin, appliedCartes);
+    return computeQuadrant(rows.map(r => ({ ...r })));
+  }, [historique, appliedDebut, appliedFin, appliedCartes]);
+
+  const { nbRapports, rapportsSansDetails } = useMemo(() => {
+    const all = appliedCartes.includes('__all');
+    const inclus = historique.filter(r => {
+      if (!all && r.cartesIds && r.cartesIds.length > 0) {
+        if (!r.cartesIds.some(id => appliedCartes.includes(id))) return false;
+      }
+      if (r.hasLineDates) {
+        if (appliedDebut && r.dateFin && r.dateFin < appliedDebut) return false;
+        if (appliedFin && r.dateDebut && r.dateDebut > appliedFin) return false;
+      } else {
+        if (r.dateDebut && r.dateFin) {
+          if (appliedDebut && appliedDebut > r.dateDebut) return false;
+          if (appliedFin && appliedFin < r.dateFin) return false;
+        }
+      }
+      return true;
+    });
+    const sansDetails = (appliedDebut || appliedFin)
+      ? inclus.filter(r => !r.hasLineDates)
+      : [];
+    return { nbRapports: inclus.length, rapportsSansDetails: sansDetails };
+  }, [historique, appliedDebut, appliedFin, appliedCartes]);
+
+  const hasActiveFilter = !!(appliedDebut || appliedFin || !appliedCartes.includes('__all'));
+  const pendingChanged = pendingDebut !== appliedDebut || pendingFin !== appliedFin
+    || JSON.stringify(pendingCartes) !== JSON.stringify(appliedCartes);
 
   if (loading) {
     return (
@@ -907,25 +939,61 @@ function AnalyseTab({ historique, loading, cartes, analyseDebut, setAnalyseDebut
           <label>
             <span style={labelStyle}>Date de début</span>
             <input
-              type="date" value={analyseDebut}
-              onChange={e => setAnalyseDebut(e.target.value)}
+              type="date" value={pendingDebut}
+              onChange={e => setPendingDebut(e.target.value)}
               style={{ ...inputSm, width: '100%', boxSizing: 'border-box' }}
             />
           </label>
           <label>
             <span style={labelStyle}>Date de fin</span>
             <input
-              type="date" value={analyseFin}
-              onChange={e => setAnalyseFin(e.target.value)}
+              type="date" value={pendingFin}
+              onChange={e => setPendingFin(e.target.value)}
               style={{ ...inputSm, width: '100%', boxSizing: 'border-box' }}
             />
           </label>
         </div>
         <span style={labelStyle}>Carte(s)</span>
-        <CartesMultiSelect cartes={cartes} value={analyseCartes} onChange={setAnalyseCartes} />
-        <p style={{ fontSize: '0.78rem', color: T.muted, marginTop: '0.875rem', marginBottom: 0 }}>
-          Analyse basée sur <strong>{nbRapports}</strong> rapport{nbRapports !== 1 ? 's' : ''} · {analyseResultats.length} plat{analyseResultats.length !== 1 ? 's' : ''}
-        </p>
+        <CartesMultiSelect cartes={cartes} value={pendingCartes} onChange={setPendingCartes} />
+
+        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            onClick={appliquer}
+            style={{
+              padding: '0.55rem 1.25rem', background: T.green, color: '#fff',
+              border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '0.85rem',
+              cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = '#1e4d38'}
+            onMouseLeave={e => e.currentTarget.style.background = T.green}
+          >
+            Appliquer les filtres
+          </button>
+          {hasActiveFilter && (
+            <button
+              onClick={reinitialiser}
+              style={{
+                padding: '0.55rem 1rem', background: 'none',
+                border: '1px solid #E5E0D8', borderRadius: '8px',
+                fontSize: '0.85rem', cursor: 'pointer', color: T.muted,
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            >
+              Réinitialiser
+            </button>
+          )}
+          {hasActiveFilter && (
+            <span style={{ fontSize: '0.78rem', color: T.muted }}>
+              {nbRapports} rapport{nbRapports !== 1 ? 's' : ''} · {analyseResultats.length} plat{analyseResultats.length !== 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+
+        {pendingChanged && (
+          <p style={{ fontSize: '0.72rem', color: T.muted, marginTop: '0.625rem', marginBottom: 0 }}>
+            Filtres modifiés — cliquez « Appliquer » pour recalculer.
+          </p>
+        )}
       </div>
 
       {rapportsSansDetails.length > 0 && (
@@ -942,8 +1010,14 @@ function AnalyseTab({ historique, loading, cartes, analyseDebut, setAnalyseDebut
       {analyseResultats.length === 0 ? (
         <div style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', padding: '3rem 2rem', textAlign: 'center' }}>
           <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>📊</div>
-          <div style={{ fontWeight: 700, color: T.text, fontSize: '0.95rem' }}>Aucune donnée pour ces filtres</div>
-          <div style={{ color: T.muted, fontSize: '0.82rem', marginTop: '6px' }}>Modifiez la période ou la carte sélectionnée.</div>
+          <div style={{ fontWeight: 700, color: T.text, fontSize: '0.95rem' }}>
+            {hasActiveFilter ? 'Aucun rapport compatible avec ce filtre' : 'Aucun rapport disponible'}
+          </div>
+          <div style={{ color: T.muted, fontSize: '0.82rem', marginTop: '6px', maxWidth: '380px', margin: '6px auto 0', lineHeight: 1.65 }}>
+            {hasActiveFilter
+              ? 'Les rapports disponibles ne couvrent pas exactement cette période. Pour analyser une sous-période précise, importez un fichier avec une date par ligne (option "Oui" à l\'import).'
+              : 'Vos analyses apparaîtront ici après le premier import.'}
+          </div>
         </div>
       ) : (
         <ResultatsView resultats={analyseResultats} onBack={null} />
