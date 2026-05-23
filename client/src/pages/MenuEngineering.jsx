@@ -45,10 +45,7 @@ function findBestMatch(nomPOS, recettes) {
 }
 
 function computeQuadrant(rows) {
-  // Règle absolue : marge négative = poids mort, hors matrice 2x2.
   rows.forEach(row => { if (row.margeUnitaire < 0) row.quadrant = 'poids_mort'; });
-
-  // La matrice 2x2 ne s'applique qu'aux plats rentables (marge >= 0).
   const positifs = rows.filter(r => r.margeUnitaire >= 0);
   const categories = [...new Set(positifs.map(r => r.categorieMenu))];
   categories.forEach(cat => {
@@ -67,8 +64,72 @@ function computeQuadrant(rows) {
   return rows;
 }
 
+function aggregerRapports(rapports, debut, fin, cartesIds) {
+  const all = cartesIds.includes('__all');
+  const filtered = rapports.filter(r => {
+    if (debut && r.dateFin && r.dateFin < debut) return false;
+    if (fin && r.dateDebut && r.dateDebut > fin) return false;
+    if (!all && r.cartesIds && r.cartesIds.length > 0) {
+      if (!r.cartesIds.some(id => cartesIds.includes(id))) return false;
+    }
+    return true;
+  });
+  const byKey = {};
+  filtered.forEach(r => {
+    (r.lignes || []).forEach(l => {
+      const key = l.recetteId || l.nomFiche || l.nomPOS;
+      if (!byKey[key]) {
+        byKey[key] = { ...l, quantite: 0, margeTotal: 0, dates: [], services: [], quadrant: null };
+      }
+      byKey[key].quantite += l.quantite || 0;
+      byKey[key].margeTotal += l.margeTotal || 0;
+      if (l.dates) byKey[key].dates.push(...l.dates);
+      if (l.services) byKey[key].services.push(...l.services);
+    });
+  });
+  return Object.values(byKey).map(r => ({
+    ...r,
+    dates: [...new Set(r.dates)],
+    services: [...new Set(r.services)],
+    margeUnitaire: r.quantite > 0 ? r.margeTotal / r.quantite : 0,
+  }));
+}
+
 const card = { background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' };
 const inputSm = { padding: '0.35rem 0.6rem', border: '1px solid #E5E0D8', borderRadius: '6px', fontSize: '0.8rem', fontFamily: "'DM Sans', sans-serif", color: T.text, background: '#fff', outline: 'none' };
+const labelStyle = { display: 'block', fontSize: '0.72rem', fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '5px' };
+
+function CartesMultiSelect({ cartes, value, onChange }) {
+  const allSelected = value.includes('__all');
+  function toggle(id) {
+    if (id === '__all') { onChange(['__all']); return; }
+    const without = value.filter(v => v !== '__all');
+    if (without.includes(id)) {
+      const next = without.filter(v => v !== id);
+      onChange(next.length === 0 ? ['__all'] : next);
+    } else {
+      onChange([...without, id]);
+    }
+  }
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+      {[{ id: '__all', nom: 'Toutes les cartes' }, ...cartes].map(c => {
+        const active = c.id === '__all' ? allSelected : !allSelected && value.includes(c.id);
+        return (
+          <button key={c.id} type="button" onClick={() => toggle(c.id)} style={{
+            padding: '0.3rem 0.75rem', borderRadius: '99px',
+            border: `1px solid ${active ? T.green : '#D6D0C8'}`,
+            background: active ? T.green : '#fff',
+            color: active ? '#fff' : T.muted,
+            fontSize: '0.8rem', fontWeight: active ? 700 : 400,
+            cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+            transition: 'all 0.12s',
+          }}>{c.nom}</button>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function MenuEngineering() {
   const [tab, setTab] = useState('import');
@@ -82,6 +143,14 @@ export default function MenuEngineering() {
   const [resultats, setResultats] = useState([]);
   const [historique, setHistorique] = useState([]);
   const [histLoading, setHistLoading] = useState(false);
+  const [dateDebut, setDateDebut] = useState('');
+  const [dateFin, setDateFin] = useState('');
+  const [cartesSelectes, setCartesSelectes] = useState(['__all']);
+  const [cartes, setCartes] = useState([]);
+  const [rapportEnCours, setRapportEnCours] = useState(null);
+  const [analyseDebut, setAnalyseDebut] = useState('');
+  const [analyseFin, setAnalyseFin] = useState('');
+  const [analyseCartes, setAnalyseCartes] = useState(['__all']);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const width = useWindowWidth();
@@ -89,10 +158,11 @@ export default function MenuEngineering() {
 
   useEffect(() => {
     api.recettes.list().then(setRecettes).catch(() => {});
+    api.cartes.list().then(setCartes).catch(() => {});
   }, []);
 
   useEffect(() => {
-    if (tab === 'historique') {
+    if (tab === 'historique' || tab === 'analyse') {
       setHistLoading(true);
       api.ventes.list().then(setHistorique).catch(() => {}).finally(() => setHistLoading(false));
     }
@@ -140,11 +210,37 @@ export default function MenuEngineering() {
     }
   }
 
-  function validerEtCalculer() {
+  function handleModifier(rapport) {
+    if (!rapport.matchings || rapport.matchings.length === 0) {
+      alert("Ce rapport a été importé avant la mise à jour de l'outil. Il ne peut pas être modifié directement.\n\nVous pouvez le supprimer et le réimporter.");
+      return;
+    }
+    setRapportEnCours(rapport);
+    setMatchings(rapport.matchings);
+    setColonnes([]);
+    setFile(null);
+    setDateDebut(rapport.dateDebut || '');
+    setDateFin(rapport.dateFin || '');
+    setCartesSelectes(rapport.cartesIds?.length > 0 ? rapport.cartesIds : ['__all']);
+    setStep(2);
+    setTab('import');
+  }
+
+  async function handleSupprimer(id) {
+    if (!window.confirm('Supprimer ce rapport ? Cette action est irréversible.')) return;
+    try {
+      await api.ventes.delete(id);
+      setHistorique(prev => prev.filter(h => h.id !== id));
+    } catch (err) {
+      alert('Erreur : ' + err.message);
+    }
+  }
+
+  async function validerEtCalculer() {
     const actifs = matchings.filter(m => !m.ignore && m.recetteId);
     if (actifs.length === 0) return alert('Associez au moins un plat à une fiche technique pour calculer.');
+    if (!dateDebut || !dateFin) return alert('Veuillez renseigner les dates de début et de fin de la période.');
 
-    // Aggregate by recetteId
     const byRecette = {};
     actifs.forEach(m => {
       if (!byRecette[m.recetteId]) {
@@ -179,15 +275,34 @@ export default function MenuEngineering() {
     const withQuadrant = computeQuadrant(rows);
     setResultats(withQuadrant);
 
-    // Save to historique
     const periode = (() => {
       const allDates = actifs.filter(m => m.date).map(m => m.date).sort();
       if (allDates.length === 0) return 'Import du ' + new Date().toLocaleDateString('fr-FR');
       if (allDates.length === 1) return allDates[0];
       return `${allDates[0]} → ${allDates[allDates.length - 1]}`;
     })();
-    api.ventes.create({ periode, lignes: withQuadrant, nomFichier: file?.name || null }).catch(() => {});
 
+    const rapportData = {
+      periode,
+      lignes: withQuadrant,
+      dateDebut: dateDebut || null,
+      dateFin: dateFin || null,
+      cartesIds: cartesSelectes.includes('__all') ? [] : cartesSelectes,
+      matchings: actifs,
+      nomFichier: file?.name || rapportEnCours?.nomFichier || null,
+    };
+
+    try {
+      if (rapportEnCours?.id) {
+        await api.ventes.update(rapportEnCours.id, rapportData);
+      } else {
+        await api.ventes.create(rapportData);
+      }
+    } catch (err) {
+      console.error('Erreur sauvegarde:', err);
+    }
+
+    setRapportEnCours(null);
     setStep(3);
   }
 
@@ -219,7 +334,7 @@ export default function MenuEngineering() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '4px', marginBottom: '1.75rem', background: '#fff', border: '1px solid #E8E2D9', borderRadius: '10px', padding: '4px', width: 'fit-content' }}>
-        {[{ key: 'import', label: 'Nouvel import' }, { key: 'historique', label: 'Historique' }].map(t => (
+        {[{ key: 'import', label: 'Nouvel import' }, { key: 'historique', label: 'Historique' }, { key: 'analyse', label: 'Analyse' }].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)} style={{
             padding: '0.45rem 1.25rem', borderRadius: '7px', border: 'none', cursor: 'pointer',
             background: tab === t.key ? T.green : 'transparent',
@@ -238,12 +353,44 @@ export default function MenuEngineering() {
           historique={historique}
           loading={histLoading}
           onRecharger={rechargerImport}
+          onModifier={handleModifier}
+          onSupprimer={handleSupprimer}
+          cartes={cartes}
+        />
+      )}
+
+      {/* ── TAB ANALYSE ── */}
+      {tab === 'analyse' && (
+        <AnalyseTab
+          historique={historique}
+          loading={histLoading}
+          cartes={cartes}
+          analyseDebut={analyseDebut}
+          setAnalyseDebut={setAnalyseDebut}
+          analyseFin={analyseFin}
+          setAnalyseFin={setAnalyseFin}
+          analyseCartes={analyseCartes}
+          setAnalyseCartes={setAnalyseCartes}
         />
       )}
 
       {/* ── TAB IMPORT ── */}
       {tab === 'import' && (
         <>
+          {/* Editing banner */}
+          {rapportEnCours && (
+            <div style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.3)', borderRadius: '10px', padding: '0.75rem 1.25rem', marginBottom: '1.25rem', fontSize: '0.85rem', color: '#78350F', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '1rem' }}>✏️</span>
+              <span>Vous modifiez le rapport <strong>{rapportEnCours.periode || 'sans titre'}</strong>.</span>
+              <button
+                onClick={() => { setRapportEnCours(null); setStep(1); setColonnes([]); setMatchings([]); setFile(null); }}
+                style={{ marginLeft: 'auto', padding: '0.3rem 0.875rem', background: 'none', border: '1px solid rgba(201,168,76,0.4)', borderRadius: '6px', cursor: 'pointer', fontSize: '0.78rem', color: '#78350F', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}
+              >
+                Annuler
+              </button>
+            </div>
+          )}
+
           {/* Stepper */}
           <div style={{ display: 'flex', marginBottom: '2.5rem', background: '#fff', borderRadius: '10px', border: '1px solid #E8E2D9', overflow: 'hidden' }}>
             {STEPS.map(({ n, label }, i) => (
@@ -350,10 +497,41 @@ export default function MenuEngineering() {
                 </div>
               )}
 
+              {colonnes.length > 0 && (
+                <div style={{ ...card, padding: '1.25rem' }}>
+                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.95rem', fontWeight: 700, color: T.text, marginBottom: '1rem' }}>
+                    Période et carte concernée
+                  </h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                    <label>
+                      <span style={labelStyle}>Date de début *</span>
+                      <input
+                        type="date" value={dateDebut}
+                        onChange={e => setDateDebut(e.target.value)}
+                        style={{ ...inputSm, width: '100%', boxSizing: 'border-box' }}
+                      />
+                    </label>
+                    <label>
+                      <span style={labelStyle}>Date de fin *</span>
+                      <input
+                        type="date" value={dateFin}
+                        onChange={e => setDateFin(e.target.value)}
+                        style={{ ...inputSm, width: '100%', boxSizing: 'border-box' }}
+                      />
+                    </label>
+                  </div>
+                  <span style={labelStyle}>Carte(s) concernée(s)</span>
+                  <CartesMultiSelect cartes={cartes} value={cartesSelectes} onChange={setCartesSelectes} />
+                </div>
+              )}
+
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
                 {colonnes.length > 0 && (
                   <button
-                    onClick={() => setStep(2)}
+                    onClick={() => {
+                      if (!dateDebut || !dateFin) return alert('Veuillez renseigner les dates de début et de fin de la période.');
+                      setStep(2);
+                    }}
                     style={{ padding: '0.65rem 1.75rem', background: T.green, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
                     onMouseEnter={e => e.currentTarget.style.background = '#1e4d38'}
                     onMouseLeave={e => e.currentTarget.style.background = T.green}
@@ -498,7 +676,17 @@ export default function MenuEngineering() {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <button onClick={() => setStep(1)} style={{ padding: '0.6rem 1.25rem', background: 'none', border: '1px solid #E5E0D8', borderRadius: '8px', cursor: 'pointer', color: T.muted, fontFamily: "'DM Sans', sans-serif", fontSize: '0.875rem' }}>
+                <button
+                  onClick={() => {
+                    if (rapportEnCours?.id) {
+                      setRapportEnCours(null);
+                      setTab('historique');
+                    } else {
+                      setStep(1);
+                    }
+                  }}
+                  style={{ padding: '0.6rem 1.25rem', background: 'none', border: '1px solid #E5E0D8', borderRadius: '8px', cursor: 'pointer', color: T.muted, fontFamily: "'DM Sans', sans-serif", fontSize: '0.875rem' }}
+                >
                   ← Retour
                 </button>
                 <button
@@ -507,7 +695,7 @@ export default function MenuEngineering() {
                   onMouseEnter={e => e.currentTarget.style.background = '#1e4d38'}
                   onMouseLeave={e => e.currentTarget.style.background = T.green}
                 >
-                  Valider et calculer →
+                  {rapportEnCours?.id ? 'Mettre à jour →' : 'Valider et calculer →'}
                 </button>
               </div>
             </div>
@@ -524,7 +712,9 @@ export default function MenuEngineering() {
 }
 
 /* ── Historique Tab ── */
-function HistoriqueTab({ historique, loading, onRecharger }) {
+function HistoriqueTab({ historique, loading, onRecharger, onModifier, onSupprimer, cartes }) {
+  const [showAll, setShowAll] = useState(false);
+
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '3rem', color: T.muted }}>
@@ -536,7 +726,7 @@ function HistoriqueTab({ historique, loading, onRecharger }) {
 
   if (historique.length === 0) {
     return (
-      <div style={{ ...card, padding: '3rem 2rem', textAlign: 'center' }}>
+      <div style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', padding: '3rem 2rem', textAlign: 'center' }}>
         <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>📋</div>
         <div style={{ fontWeight: 700, color: T.text, fontSize: '0.95rem' }}>Aucun import enregistré</div>
         <div style={{ color: T.muted, fontSize: '0.82rem', marginTop: '6px' }}>Vos analyses apparaîtront ici après le premier import.</div>
@@ -544,43 +734,162 @@ function HistoriqueTab({ historique, loading, onRecharger }) {
     );
   }
 
+  const visible = showAll ? historique : historique.slice(0, 5);
+  const remaining = historique.length - 5;
+
+  function carteNoms(cartesIds) {
+    if (!cartesIds || cartesIds.length === 0) return null;
+    const noms = cartesIds.map(id => cartes.find(c => c.id === id)?.nom).filter(Boolean);
+    return noms.length > 0 ? noms.join(', ') : null;
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-      {historique.map((h, i) => {
+      {visible.map((h, i) => {
         const lignes = h.lignes || [];
         const totalVentes = lignes.reduce((s, r) => s + (r.quantite || 0), 0);
         const totalMarge = lignes.reduce((s, r) => s + (r.margeTotal || 0), 0);
         const etoiles = lignes.filter(r => r.quadrant === 'etoile').length;
         const date = h.createdAt ? new Date(h.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+        const periodeLabel = h.dateDebut && h.dateFin ? `${h.dateDebut} → ${h.dateFin}` : null;
+        const cartesLabel = carteNoms(h.cartesIds);
         return (
-          <div key={i} style={{ ...card, padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {h.periode || 'Import sans titre'}
+          <div key={i} style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', padding: '1rem 1.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {h.periode || 'Import sans titre'}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: T.muted, marginTop: '2px' }}>
+                  {date} · {lignes.length} plat{lignes.length !== 1 ? 's' : ''} · {totalVentes} portion{totalVentes !== 1 ? 's' : ''} · {etoiles} étoile{etoiles !== 1 ? 's' : ''}
+                </div>
+                {(periodeLabel || cartesLabel) && (
+                  <div style={{ fontSize: '0.72rem', color: T.muted, marginTop: '3px', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {periodeLabel && <span>📅 {periodeLabel}</span>}
+                    {cartesLabel && <span>🗂 {cartesLabel}</span>}
+                  </div>
+                )}
               </div>
-              <div style={{ fontSize: '0.75rem', color: T.muted, marginTop: '2px' }}>
-                {date} · {lignes.length} plat{lignes.length !== 1 ? 's' : ''} · {totalVentes} portion{totalVentes !== 1 ? 's' : ''} · {etoiles} étoile{etoiles !== 1 ? 's' : ''}
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '0.68rem', color: T.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Marge brute</div>
-                <div style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: '1rem', color: totalMarge >= 0 ? T.green : '#DC2626' }}>
-                  {totalMarge >= 0 ? '+' : ''}{totalMarge.toFixed(2)} €
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.68rem', color: T.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Marge brute</div>
+                  <div style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: '1rem', color: totalMarge >= 0 ? T.green : '#DC2626' }}>
+                    {totalMarge >= 0 ? '+' : ''}{totalMarge.toFixed(2)} €
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  <button
+                    onClick={() => onModifier(h)}
+                    style={{ padding: '0.4rem 0.875rem', background: 'none', border: '1px solid #E5E0D8', borderRadius: '7px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, color: T.text, fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = T.green; e.currentTarget.style.color = T.green; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#E5E0D8'; e.currentTarget.style.color = T.text; }}
+                  >
+                    ✏️ Modifier
+                  </button>
+                  <button
+                    onClick={() => onRecharger(lignes)}
+                    style={{ padding: '0.4rem 0.875rem', background: T.green, color: '#fff', border: 'none', borderRadius: '7px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#1e4d38'}
+                    onMouseLeave={e => e.currentTarget.style.background = T.green}
+                  >
+                    Revoir →
+                  </button>
+                  <button
+                    onClick={() => onSupprimer(h.id)}
+                    style={{ padding: '0.4rem 0.6rem', background: 'none', border: '1px solid #FCA5A5', borderRadius: '7px', cursor: 'pointer', fontSize: '0.78rem', color: '#DC2626', fontFamily: "'DM Sans', sans-serif" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#FEF2F2'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+                    title="Supprimer"
+                  >
+                    🗑
+                  </button>
                 </div>
               </div>
-              <button
-                onClick={() => onRecharger(lignes)}
-                style={{ padding: '0.45rem 1rem', background: T.green, color: '#fff', border: 'none', borderRadius: '7px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' }}
-                onMouseEnter={e => e.currentTarget.style.background = '#1e4d38'}
-                onMouseLeave={e => e.currentTarget.style.background = T.green}
-              >
-                Revoir →
-              </button>
             </div>
           </div>
         );
       })}
+      {!showAll && remaining > 0 && (
+        <button
+          onClick={() => setShowAll(true)}
+          style={{ alignSelf: 'center', padding: '0.5rem 1.5rem', background: 'none', border: '1px solid #E5E0D8', borderRadius: '8px', cursor: 'pointer', fontSize: '0.82rem', color: T.muted, fontFamily: "'DM Sans', sans-serif" }}
+        >
+          +{remaining} rapport{remaining !== 1 ? 's' : ''} plus ancien{remaining !== 1 ? 's' : ''}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ── Analyse Tab ── */
+function AnalyseTab({ historique, loading, cartes, analyseDebut, setAnalyseDebut, analyseFin, setAnalyseFin, analyseCartes, setAnalyseCartes }) {
+  const analyseResultats = useMemo(() => {
+    const rows = aggregerRapports(historique, analyseDebut, analyseFin, analyseCartes);
+    return computeQuadrant(rows.map(r => ({ ...r })));
+  }, [historique, analyseDebut, analyseFin, analyseCartes]);
+
+  const nbRapports = useMemo(() => {
+    const all = analyseCartes.includes('__all');
+    return historique.filter(r => {
+      if (analyseDebut && r.dateFin && r.dateFin < analyseDebut) return false;
+      if (analyseFin && r.dateDebut && r.dateDebut > analyseFin) return false;
+      if (!all && r.cartesIds && r.cartesIds.length > 0) {
+        if (!r.cartesIds.some(id => analyseCartes.includes(id))) return false;
+      }
+      return true;
+    }).length;
+  }, [historique, analyseDebut, analyseFin, analyseCartes]);
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '3rem', color: T.muted }}>
+        <span style={{ display: 'inline-block', width: '20px', height: '20px', border: '2px solid #E5E0D8', borderTopColor: T.green, borderRadius: '50%', animation: 'spin-me 0.7s linear infinite' }} />
+        <div style={{ marginTop: '0.75rem', fontSize: '0.85rem' }}>Chargement…</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      {/* Filtres */}
+      <div style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', padding: '1.25rem' }}>
+        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.95rem', fontWeight: 700, color: T.text, marginBottom: '1rem' }}>
+          Filtres de l'analyse
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+          <label>
+            <span style={labelStyle}>Date de début</span>
+            <input
+              type="date" value={analyseDebut}
+              onChange={e => setAnalyseDebut(e.target.value)}
+              style={{ ...inputSm, width: '100%', boxSizing: 'border-box' }}
+            />
+          </label>
+          <label>
+            <span style={labelStyle}>Date de fin</span>
+            <input
+              type="date" value={analyseFin}
+              onChange={e => setAnalyseFin(e.target.value)}
+              style={{ ...inputSm, width: '100%', boxSizing: 'border-box' }}
+            />
+          </label>
+        </div>
+        <span style={labelStyle}>Carte(s)</span>
+        <CartesMultiSelect cartes={cartes} value={analyseCartes} onChange={setAnalyseCartes} />
+        <p style={{ fontSize: '0.78rem', color: T.muted, marginTop: '0.875rem', marginBottom: 0 }}>
+          Analyse basée sur <strong>{nbRapports}</strong> rapport{nbRapports !== 1 ? 's' : ''} · {analyseResultats.length} plat{analyseResultats.length !== 1 ? 's' : ''}
+        </p>
+      </div>
+
+      {analyseResultats.length === 0 ? (
+        <div style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', padding: '3rem 2rem', textAlign: 'center' }}>
+          <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>📊</div>
+          <div style={{ fontWeight: 700, color: T.text, fontSize: '0.95rem' }}>Aucune donnée pour ces filtres</div>
+          <div style={{ color: T.muted, fontSize: '0.82rem', marginTop: '6px' }}>Modifiez la période ou la carte sélectionnée.</div>
+        </div>
+      ) : (
+        <ResultatsView resultats={analyseResultats} onBack={null} />
+      )}
     </div>
   );
 }
@@ -631,7 +940,6 @@ function ResultatsView({ resultats, onBack }) {
   const hasLineData = lineData.length > 1;
   const sortedRows = useMemo(() => [...filtered].sort((a, b) => b.margeTotal - a.margeTotal), [filtered]);
 
-  // Représentants pour le résumé exécutif
   const bestEtoile = useMemo(() => [...filtered.filter(r => r.quadrant === 'etoile')].sort((a, b) => b.margeUnitaire - a.margeUnitaire)[0] ?? null, [filtered]);
   const bestVache = useMemo(() => [...filtered.filter(r => r.quadrant === 'vache')].sort((a, b) => b.quantite - a.quantite)[0] ?? null, [filtered]);
   const bestEnigme = useMemo(() => [...filtered.filter(r => r.quadrant === 'enigme')].sort((a, b) => b.margeUnitaire - a.margeUnitaire)[0] ?? null, [filtered]);
@@ -901,12 +1209,14 @@ function ResultatsView({ resultats, onBack }) {
       </div>
 
       {/* ── Navigation ── */}
-      <div style={{ paddingBottom: '0.5rem' }}>
-        <button onClick={onBack}
-          style={{ padding: '0.6rem 1.25rem', background: 'none', border: '1px solid #E5E0D8', borderRadius: '8px', cursor: 'pointer', color: T.muted, fontFamily: "'DM Sans', sans-serif", fontSize: '0.875rem' }}>
-          ← Modifier le matching
-        </button>
-      </div>
+      {onBack !== null && (
+        <div style={{ paddingBottom: '0.5rem' }}>
+          <button onClick={onBack}
+            style={{ padding: '0.6rem 1.25rem', background: 'none', border: '1px solid #E5E0D8', borderRadius: '8px', cursor: 'pointer', color: T.muted, fontFamily: "'DM Sans', sans-serif", fontSize: '0.875rem' }}>
+            ← Modifier le matching
+          </button>
+        </div>
+      )}
     </div>
   );
 }
