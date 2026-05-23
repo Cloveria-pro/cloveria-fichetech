@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { periode, lignes, dateDebut, dateFin, cartesIds, matchings, typePeriode, service, nomFichier } = req.body;
+  const { periode, lignes, dateDebut, dateFin, cartesIds, matchings, typePeriode, service, nomFichier, hasLineDates } = req.body;
   if (!lignes || !Array.isArray(lignes)) return res.status(400).json({ error: 'lignes requis' });
   try {
     const db = await getDb();
@@ -33,6 +33,7 @@ router.post('/', async (req, res) => {
       dateFin: dateFin || null,
       cartesIds: Array.isArray(cartesIds) ? cartesIds : [],
       matchings: Array.isArray(matchings) ? matchings : [],
+      hasLineDates: hasLineDates === true,
       typePeriode: typePeriode || null,
       service: service || null,
       nomFichier: nomFichier || null,
@@ -50,7 +51,7 @@ router.post('/', async (req, res) => {
 
 router.put('/:rapportId', async (req, res) => {
   const { rapportId } = req.params;
-  const { periode, lignes, dateDebut, dateFin, cartesIds, matchings, nomFichier } = req.body;
+  const { periode, lignes, dateDebut, dateFin, cartesIds, matchings, nomFichier, hasLineDates } = req.body;
   if (!lignes || !Array.isArray(lignes)) return res.status(400).json({ error: 'lignes requis' });
   try {
     const db = await getDb();
@@ -64,6 +65,7 @@ router.put('/:rapportId', async (req, res) => {
           dateFin: dateFin || null,
           cartesIds: Array.isArray(cartesIds) ? cartesIds : [],
           matchings: Array.isArray(matchings) ? matchings : [],
+          hasLineDates: hasLineDates === true,
           nomFichier: nomFichier || null,
           updatedAt: new Date().toISOString(),
         },

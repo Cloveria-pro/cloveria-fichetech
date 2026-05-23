@@ -148,6 +148,7 @@ export default function MenuEngineering() {
   const [cartesSelectes, setCartesSelectes] = useState(['__all']);
   const [cartes, setCartes] = useState([]);
   const [rapportEnCours, setRapportEnCours] = useState(null);
+  const [hasLineDates, setHasLineDates] = useState(null);
   const [analyseDebut, setAnalyseDebut] = useState('');
   const [analyseFin, setAnalyseFin] = useState('');
   const [analyseCartes, setAnalyseCartes] = useState(['__all']);
@@ -186,6 +187,8 @@ export default function MenuEngineering() {
       const colonnesResult = result.colonnes || [];
       const lignesResult = result.lignes || [];
       setColonnes(colonnesResult);
+      const hasDate = colonnesResult.some(c => c.type === 'date') || lignesResult.some(l => l.date);
+      setHasLineDates(hasDate ? true : false);
       const m = lignesResult.map(l => {
         const match = findBestMatch(l.nomPOS, recettes);
         const prixVenteIA = l.prixVente > 0 ? l.prixVente : null;
@@ -222,6 +225,7 @@ export default function MenuEngineering() {
     setDateDebut(rapport.dateDebut || '');
     setDateFin(rapport.dateFin || '');
     setCartesSelectes(rapport.cartesIds?.length > 0 ? rapport.cartesIds : ['__all']);
+    setHasLineDates(rapport.hasLineDates ?? false);
     setStep(2);
     setTab('import');
   }
@@ -266,7 +270,7 @@ export default function MenuEngineering() {
         margeUnitaire: pv - coutMat,
         margeTotal: (pv - coutMat) * m.quantite,
         recetteId: m.recetteId,
-        dates: m.dates,
+        dates: hasLineDates === true ? m.dates : [],
         services,
         quadrant: null,
       };
@@ -289,6 +293,7 @@ export default function MenuEngineering() {
       dateFin: dateFin || null,
       cartesIds: cartesSelectes.includes('__all') ? [] : cartesSelectes,
       matchings: actifs,
+      hasLineDates: hasLineDates === true,
       nomFichier: file?.name || rapportEnCours?.nomFichier || null,
     };
 
@@ -499,6 +504,36 @@ export default function MenuEngineering() {
 
               {colonnes.length > 0 && (
                 <div style={{ ...card, padding: '1.25rem' }}>
+                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.95rem', fontWeight: 700, color: T.text, marginBottom: '0.5rem' }}>
+                    Ce fichier contient-il une date par ligne ?
+                  </h3>
+                  <p style={{ fontSize: '0.78rem', color: T.muted, marginBottom: '0.875rem', marginTop: 0 }}>
+                    Si oui, les ventes peuvent être analysées jour par jour. Sinon, elles sont rattachées à la période globale uniquement.
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    {[
+                      { val: true,  label: '📅 Oui, chaque ligne a sa date' },
+                      { val: false, label: '📋 Non, données globales sur la période' },
+                    ].map(({ val, label }) => {
+                      const active = hasLineDates === val;
+                      return (
+                        <button key={String(val)} type="button" onClick={() => setHasLineDates(val)} style={{
+                          padding: '0.55rem 1.1rem', borderRadius: '8px',
+                          border: `1.5px solid ${active ? T.green : '#D6D0C8'}`,
+                          background: active ? 'rgba(45,106,79,0.08)' : '#fff',
+                          color: active ? T.green : T.muted,
+                          fontSize: '0.82rem', fontWeight: active ? 700 : 400,
+                          cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+                          transition: 'all 0.12s',
+                        }}>{label}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {colonnes.length > 0 && (
+                <div style={{ ...card, padding: '1.25rem' }}>
                   <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.95rem', fontWeight: 700, color: T.text, marginBottom: '1rem' }}>
                     Période et carte concernée
                   </h3>
@@ -529,6 +564,7 @@ export default function MenuEngineering() {
                 {colonnes.length > 0 && (
                   <button
                     onClick={() => {
+                      if (hasLineDates === null) return alert('Veuillez indiquer si le fichier contient une date par ligne.');
                       if (!dateDebut || !dateFin) return alert('Veuillez renseigner les dates de début et de fin de la période.');
                       setStep(2);
                     }}
@@ -763,10 +799,15 @@ function HistoriqueTab({ historique, loading, onRecharger, onModifier, onSupprim
                 <div style={{ fontSize: '0.75rem', color: T.muted, marginTop: '2px' }}>
                   {date} · {lignes.length} plat{lignes.length !== 1 ? 's' : ''} · {totalVentes} portion{totalVentes !== 1 ? 's' : ''} · {etoiles} étoile{etoiles !== 1 ? 's' : ''}
                 </div>
-                {(periodeLabel || cartesLabel) && (
-                  <div style={{ fontSize: '0.72rem', color: T.muted, marginTop: '3px', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {(periodeLabel || cartesLabel || h.hasLineDates) && (
+                  <div style={{ fontSize: '0.72rem', color: T.muted, marginTop: '3px', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
                     {periodeLabel && <span>📅 {periodeLabel}</span>}
                     {cartesLabel && <span>🗂 {cartesLabel}</span>}
+                    {h.hasLineDates && (
+                      <span style={{ fontSize: '0.65rem', fontWeight: 700, color: T.green, background: 'rgba(45,106,79,0.08)', border: '1px solid rgba(45,106,79,0.2)', padding: '1px 6px', borderRadius: '99px' }}>
+                        📅 Détail/jour
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
@@ -828,16 +869,22 @@ function AnalyseTab({ historique, loading, cartes, analyseDebut, setAnalyseDebut
     return computeQuadrant(rows.map(r => ({ ...r })));
   }, [historique, analyseDebut, analyseFin, analyseCartes]);
 
-  const nbRapports = useMemo(() => {
+  function rapportInclus(r) {
     const all = analyseCartes.includes('__all');
-    return historique.filter(r => {
-      if (analyseDebut && r.dateFin && r.dateFin < analyseDebut) return false;
-      if (analyseFin && r.dateDebut && r.dateDebut > analyseFin) return false;
-      if (!all && r.cartesIds && r.cartesIds.length > 0) {
-        if (!r.cartesIds.some(id => analyseCartes.includes(id))) return false;
-      }
-      return true;
-    }).length;
+    if (analyseDebut && r.dateFin && r.dateFin < analyseDebut) return false;
+    if (analyseFin && r.dateDebut && r.dateDebut > analyseFin) return false;
+    if (!all && r.cartesIds && r.cartesIds.length > 0) {
+      if (!r.cartesIds.some(id => analyseCartes.includes(id))) return false;
+    }
+    return true;
+  }
+
+  const nbRapports = useMemo(() => historique.filter(rapportInclus).length,
+    [historique, analyseDebut, analyseFin, analyseCartes]);
+
+  const rapportsSansDetails = useMemo(() => {
+    if (!analyseDebut && !analyseFin) return [];
+    return historique.filter(r => rapportInclus(r) && !r.hasLineDates);
   }, [historique, analyseDebut, analyseFin, analyseCartes]);
 
   if (loading) {
@@ -880,6 +927,17 @@ function AnalyseTab({ historique, loading, cartes, analyseDebut, setAnalyseDebut
           Analyse basée sur <strong>{nbRapports}</strong> rapport{nbRapports !== 1 ? 's' : ''} · {analyseResultats.length} plat{analyseResultats.length !== 1 ? 's' : ''}
         </p>
       </div>
+
+      {rapportsSansDetails.length > 0 && (
+        <div style={{ background: 'rgba(217,119,6,0.06)', border: '1px solid rgba(217,119,6,0.3)', borderRadius: '10px', padding: '0.875rem 1.25rem', fontSize: '0.82rem', color: '#78350F', lineHeight: 1.55, display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+          <span style={{ fontSize: '1rem', flexShrink: 0 }}>⚠️</span>
+          <span>
+            <strong>{rapportsSansDetails.length} rapport{rapportsSansDetails.length !== 1 ? 's' : ''} sans détail journalier</strong> inclus dans cette analyse.
+            {' '}Données disponibles uniquement sur la période globale du rapport, pas par jour.
+            {' '}L'analyse reflète les ventes totales de {rapportsSansDetails.length !== 1 ? 'ces rapports' : 'ce rapport'}, indépendamment du filtre de date choisi.
+          </span>
+        </div>
+      )}
 
       {analyseResultats.length === 0 ? (
         <div style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', padding: '3rem 2rem', textAlign: 'center' }}>
