@@ -328,11 +328,16 @@ export default function Onboarding({ onComplete }) {
               onMouseEnter={e => { if (!injecting) e.currentTarget.style.background = 'rgba(45,106,79,0.12)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = injecting ? 'rgba(45,106,79,0.05)' : 'rgba(45,106,79,0.07)'; }}
             >
-              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: T.green, marginBottom: '3px' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: T.green, marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {injecting ? 'Chargement en cours…' : 'Commencer avec un exemple'}
+                {!injecting && (
+                  <span style={{ fontSize: '0.68rem', fontWeight: 700, color: T.green, background: 'rgba(45,106,79,0.12)', borderRadius: '20px', padding: '1px 7px', letterSpacing: '0.03em', textTransform: 'uppercase' }}>
+                    recommandé
+                  </span>
+                )}
               </div>
               <div style={{ fontSize: '0.8rem', color: T.muted, lineHeight: 1.5 }}>
-                15 ingrédients, 3 fiches techniques, 1 carte et quelques éléments d'organisation préconfigurés.
+                Pour découvrir CloverIA avec des données réalistes déjà prêtes.
               </div>
             </button>
 
