@@ -95,6 +95,8 @@ export default function Dashboard() {
     return `${fichesCritiques.length} fiches dépassent votre seuil cible de ${cible}%.`;
   })();
 
+  const ecartCible = fcMoyen !== null ? +(fcMoyen - cible).toFixed(1) : null;
+
   // ── Actions prioritaires ────────────────────────────────────────────────────
   const actionsJour = (() => {
     const actions = [];
@@ -105,7 +107,7 @@ export default function Dashboard() {
         const impactEuro = (r.fc - cible) / 100 * (r.prixVentePratiqueTTC || 0);
         return {
           nom: r.nom,
-          probleme: `food cost à ${r.fc.toFixed(1)}% — cible ${cible}%`,
+          probleme: `FC ${r.fc.toFixed(1)}% · cible ${cible}%`,
           impactLabel: `coûte ${impactEuro.toFixed(2)} € de trop/couvert`,
           link: `/fiches-techniques/${r.id}`,
           dotColor: r.fc > cible + 5 ? T.red : T.orange,
@@ -201,7 +203,7 @@ export default function Dashboard() {
       ) : (
         <div>
           {agendaJ0J2.map((it, i) => (
-            <div key={it.id} onClick={() => setDrawerItem(it)} style={{
+            <div key={it.id} title={it.titre} onClick={() => setDrawerItem(it)} style={{
               display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
               padding: '0.7rem 1.25rem',
               borderBottom: i < agendaJ0J2.length - 1 ? '1px solid #F9F7F4' : 'none',
@@ -244,7 +246,20 @@ export default function Dashboard() {
 
           {/* Colonne gauche */}
           <div style={{ flex: '2 1 0', paddingRight: isMobile ? 0 : '2rem', paddingBottom: isMobile ? '1.25rem' : 0 }}>
-            <div style={metaStyle}>Situation du jour</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              <div style={metaStyle}>Résumé du jour</div>
+              {fcMoyen !== null && (
+                <div style={{
+                  fontSize: '0.72rem', fontWeight: 700,
+                  color: fcColor(fcMoyen, cible),
+                  background: `${fcColor(fcMoyen, cible)}18`,
+                  border: `1px solid ${fcColor(fcMoyen, cible)}35`,
+                  borderRadius: '20px', padding: '2px 10px',
+                }}>
+                  {fcLabel(fcMoyen, cible)}
+                </div>
+              )}
+            </div>
 
             {fcMoyen !== null ? (
               <>
@@ -252,15 +267,16 @@ export default function Dashboard() {
                   fontFamily: "'Playfair Display', serif",
                   fontSize: '3rem', fontWeight: 700,
                   color: fcColor(fcMoyen, cible), lineHeight: 1.05,
-                  letterSpacing: '-0.02em', marginTop: '0.5rem',
+                  letterSpacing: '-0.02em',
                 }}>
                   {fcMoyen.toFixed(1)}%
                 </div>
-                <div style={{
-                  fontSize: '0.875rem', fontWeight: 700,
-                  color: fcColor(fcMoyen, cible), marginTop: '0.35rem', marginBottom: '0.75rem',
-                }}>
-                  {fcLabel(fcMoyen, cible)}
+                <div style={{ fontSize: '0.8rem', color: T.muted, marginTop: '0.3rem', marginBottom: '1rem' }}>
+                  Food cost moyen&nbsp;·&nbsp;
+                  <span style={{ fontWeight: 700, color: ecartCible > 0 ? T.red : T.green }}>
+                    {ecartCible > 0 ? '+' : ''}{ecartCible} pts
+                  </span>
+                  {' '}vs cible {cible}%
                 </div>
               </>
             ) : (
@@ -268,17 +284,35 @@ export default function Dashboard() {
                 <div style={{
                   fontFamily: "'Playfair Display', serif",
                   fontSize: '3rem', fontWeight: 700,
-                  color: '#D1C4B0', lineHeight: 1.05, marginTop: '0.5rem',
+                  color: '#D1C4B0', lineHeight: 1.05, marginTop: '0.25rem',
                 }}>—</div>
-                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: T.muted, marginTop: '0.35rem', marginBottom: '0.75rem' }}>
-                  Non calculable
+                <div style={{ fontSize: '0.8rem', color: T.muted, marginTop: '0.3rem', marginBottom: '1rem' }}>
+                  Ajoutez vos prix de vente pour calculer le food cost.
                 </div>
               </>
             )}
 
-            <div style={{ fontSize: '0.82rem', color: T.muted, lineHeight: 1.6 }}>
+            <div style={{ height: '1px', background: '#EDE8DF', marginBottom: '0.875rem' }} />
+
+            <div style={{ fontSize: '0.82rem', color: T.muted, lineHeight: 1.6, marginBottom: '0.875rem' }}>
               {synthesePhrase}
             </div>
+
+            {fcMoyen === null ? (
+              <Link to="/fiches-techniques" style={{ fontSize: '0.82rem', fontWeight: 700, color: T.green, textDecoration: 'none' }}
+                onMouseEnter={e => e.currentTarget.style.opacity = '0.65'}
+                onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+              >
+                Compléter les fiches →
+              </Link>
+            ) : fichesCritiques.length > 0 ? (
+              <Link to="/fiches-techniques" style={{ fontSize: '0.82rem', fontWeight: 700, color: T.red, textDecoration: 'none' }}
+                onMouseEnter={e => e.currentTarget.style.opacity = '0.65'}
+                onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+              >
+                Corriger les fiches →
+              </Link>
+            ) : null}
           </div>
 
           {/* Séparateur */}
@@ -288,19 +322,13 @@ export default function Dashboard() {
           {/* Colonne droite */}
           <div style={{ flex: '1 1 0', paddingLeft: isMobile ? 0 : '2rem', paddingTop: isMobile ? '1.25rem' : 0, display: 'flex', flexDirection: 'column', gap: '1rem', justifyContent: 'center' }}>
 
-            {varCouts7j !== null && (
-              <div>
-                <div style={metaStyle}>Coûts / 7 j</div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: varCouts7j > 2 ? T.red : varCouts7j < -2 ? T.green : T.text }}>
-                  {varCouts7j > 0 ? '↑ +' : '↓ '}{varCouts7j.toFixed(1)}%
-                </div>
-              </div>
-            )}
-
             <div>
               <div style={metaStyle}>Fiches critiques</div>
               <div style={{ fontSize: '0.9rem', fontWeight: 700, color: fichesCritiques.length > 0 ? T.red : T.green }}>
                 {fichesCritiques.length}
+              </div>
+              <div style={{ fontSize: '0.72rem', color: T.muted, marginTop: '2px' }}>
+                {fichesCritiques.length > 0 ? `dépassent le seuil de ${cible}%` : 'toutes sous contrôle'}
               </div>
             </div>
 
@@ -319,17 +347,11 @@ export default function Dashboard() {
               </div>
             )}
 
-            {fichePlusProblem && fichePlusProblem.fc > cible && (
+            {varCouts7j !== null && (
               <div>
-                <div style={metaStyle}>À surveiller</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: T.red, flexShrink: 0 }} />
-                  <span style={{ fontSize: '0.8rem', color: T.text, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {fichePlusProblem.nom}
-                  </span>
-                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: T.red, flexShrink: 0 }}>
-                    {fichePlusProblem.fc.toFixed(1)}%
-                  </span>
+                <div style={metaStyle}>Coûts / 7 j</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: varCouts7j > 2 ? T.red : varCouts7j < -2 ? T.green : T.text }}>
+                  {varCouts7j > 0 ? '↑ +' : '↓ '}{varCouts7j.toFixed(1)}%
                 </div>
               </div>
             )}
@@ -350,8 +372,17 @@ export default function Dashboard() {
         <div style={{
           padding: '1.1rem 1.75rem',
           borderBottom: '1px solid #F3EFE8',
+          display: 'flex', alignItems: 'center', gap: '0.6rem',
         }}>
           <div style={metaStyle}>Actions prioritaires</div>
+          {actionsJour.length > 0 && (
+            <div style={{
+              fontSize: '0.68rem', fontWeight: 700, color: '#fff',
+              background: T.red, borderRadius: '20px', padding: '1px 7px', lineHeight: 1.6,
+            }}>
+              {actionsJour.length}
+            </div>
+          )}
         </div>
 
         {actionsJour.length === 0 ? (
