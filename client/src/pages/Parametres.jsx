@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
 
 const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280', orange: '#D97706', red: '#DC2626' };
@@ -41,6 +41,7 @@ export default function Parametres() {
   const [profil, setProfil] = useState(null);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const skipSave = useRef(true);
 
   useEffect(() => {
     Promise.all([
@@ -53,14 +54,17 @@ export default function Parametres() {
     });
   }, []);
 
-  function sauvegarder(e) {
-    e.preventDefault();
-    fetch('/api/parametres', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    }).then(() => { setSaved(true); setTimeout(() => setSaved(false), 3000); });
-  }
+  useEffect(() => {
+    if (skipSave.current) { skipSave.current = false; return; }
+    const timer = setTimeout(() => {
+      fetch('/api/parametres', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      }).then(() => { setSaved(true); setTimeout(() => setSaved(false), 2000); });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [form]);
 
   const cible = form.foodCostCible;
   const indicator = getIndicator(cible, profil?.typeEtablissement);
@@ -74,7 +78,7 @@ export default function Parametres() {
         <p style={{ color: T.muted, fontSize: '0.875rem', marginTop: '2px' }}>Configuration de l'établissement et des calculs</p>
       </div>
 
-      <form onSubmit={sauvegarder} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
         {/* Etablissement */}
         <div style={{ ...card, padding: '1.5rem' }}>
@@ -164,20 +168,12 @@ export default function Parametres() {
           </div>
         </div>
 
-        {/* Bouton */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', justifyContent: 'flex-end' }}>
-          {saved && (
-            <span style={{ fontSize: '0.875rem', color: T.green, fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: T.green, display: 'inline-block' }} />
-              Paramètres sauvegardés
-            </span>
-          )}
-          <button type="submit" style={{ padding: '0.6rem 2rem', background: T.green, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
-            onMouseEnter={e => e.currentTarget.style.background = '#1e4d38'}
-            onMouseLeave={e => e.currentTarget.style.background = T.green}
-          >Sauvegarder</button>
-        </div>
-      </form>
+        {saved && (
+          <div style={{ textAlign: 'right', paddingRight: '0.25rem' }}>
+            <span style={{ fontSize: '0.82rem', color: T.green, fontWeight: 600 }}>Sauvegardé ✓</span>
+          </div>
+        )}
+      </div>
 
     </div>
   );
