@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { ItemModal } from './Organisation.jsx';
 import { coutPortionHT, foodCostPct } from '../utils.js';
+import { getAnecdoteDuJour } from '../data/anecdotes.js';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
 
 const T = { green: '#2D6A4F', orange: '#D97706', red: '#DC2626', text: '#1C2B1E', muted: '#6B7280' };
@@ -206,6 +207,16 @@ export default function Dashboard() {
       setAgendaItems(prev => prev.map(i => i.id === id ? updated : i));
     }
   }
+
+  const anecdote = getAnecdoteDuJour();
+  const anecdoteWidget = (
+    <div style={{ ...card, padding: '1.1rem 1.5rem' }}>
+      <div style={{ ...metaStyle, marginBottom: '0.75rem' }}>Anecdote du jour</div>
+      <p style={{ fontSize: '0.82rem', color: T.muted, lineHeight: 1.7, fontStyle: 'italic', margin: 0 }}>
+        {anecdote}
+      </p>
+    </div>
+  );
 
   const agendaWidget = (
     <div style={{ ...card, overflow: 'hidden' }}>
@@ -537,13 +548,19 @@ export default function Dashboard() {
 
       </div>
 
-          {isMobile && <div style={{ marginTop: '1rem' }}>{agendaWidget}</div>}
+          {isMobile && (
+            <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {agendaWidget}
+              {anecdoteWidget}
+            </div>
+          )}
 
         </div>
 
         {!isMobile && (
-          <div style={{ position: 'sticky', top: '2rem' }}>
+          <div style={{ position: 'sticky', top: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {agendaWidget}
+            {anecdoteWidget}
           </div>
         )}
 
