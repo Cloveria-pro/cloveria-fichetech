@@ -129,7 +129,8 @@ export default function Dashboard() {
         return {
           nom: r.nom,
           probleme: `FC ${r.fc.toFixed(1)}% · cible ${cible}%`,
-          impactLabel: `+${impactEuro.toFixed(2)} € matière / couvert`,
+          impactLabel: `Surcoût matière : +${impactEuro.toFixed(2)} € / couvert`,
+          impactTitle: `Écart entre le coût matière réel par couvert (${(r.fc / 100 * (r.prixVentePratiqueTTC || 0)).toFixed(2)} €) et le coût cible à ${cible}% (${(cible / 100 * (r.prixVentePratiqueTTC || 0)).toFixed(2)} €)`,
           link: `/fiches-techniques/${r.id}`,
           dotColor: r.fc > cible + 5 ? T.red : T.orange,
           impactSort: impactEuro,
@@ -477,7 +478,10 @@ export default function Dashboard() {
                   </div>
                 </div>
                 {!isMobile && (
-                  <div style={{ fontSize: '0.78rem', color: a.dotColor, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  <div
+                    title={a.impactTitle}
+                    style={{ fontSize: '0.78rem', color: a.dotColor, fontWeight: 600, whiteSpace: 'nowrap' }}
+                  >
                     {a.impactLabel}
                   </div>
                 )}
