@@ -40,6 +40,8 @@ export default function Dashboard() {
   const [params, setParams] = useState({ foodCostCible: 30, tva: 10 });
   const [historique, setHistorique] = useState([]);
   const [agendaItems, setAgendaItems] = useState([]);
+  const [cartes, setCartes] = useState([]);
+  const [selectedCarteId, setSelectedCarteId] = useState(null);
   const [drawerItem, setDrawerItem] = useState(undefined);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -48,11 +50,13 @@ export default function Dashboard() {
       api.parametres.get().catch(() => ({ foodCostCible: 30, tva: 10 })),
       api.historiquePrix.list().catch(() => []),
       api.agenda.list().catch(() => []),
-    ]).then(([recs, p, hist, agenda]) => {
+      api.cartes.list().catch(() => []),
+    ]).then(([recs, p, hist, agenda, crt]) => {
       setRecettes(recs);
       setParams(p);
       setHistorique(hist);
       setAgendaItems(agenda);
+      setCartes(crt);
     }).finally(() => setLoading(false));
   }, []);
 
@@ -66,18 +70,28 @@ export default function Dashboard() {
 
   const avecPrix = recettes.filter(r => (r.prixVentePratiqueTTC || 0) > 0);
   const withFC = avecPrix.map(r => ({ ...r, fc: foodCostPct(r) })).filter(r => r.fc !== null);
-  const fcMoyen = withFC.length > 0
-    ? withFC.reduce((s, r) => s + r.fc, 0) / withFC.length
+
+  const recetteIdsInScope = selectedCarteId
+    ? new Set(
+        (cartes.find(c => c.id === selectedCarteId)?.sections || [])
+          .flatMap(s => (s.plats || []).map(p => p.recetteId))
+          .filter(Boolean)
+      )
+    : null;
+  const withFCScope = recetteIdsInScope ? withFC.filter(r => recetteIdsInScope.has(r.id)) : withFC;
+  const selectedCarte = selectedCarteId ? cartes.find(c => c.id === selectedCarteId) : null;
+
+  const fcMoyen = withFCScope.length > 0
+    ? withFCScope.reduce((s, r) => s + r.fc, 0) / withFCScope.length
     : null;
 
   const coutMatMoyen = recettes.length > 0
     ? recettes.reduce((s, r) => s + coutPortionHT(r), 0) / recettes.length
     : 0;
 
-  const fichesCritiques = withFC.filter(r => r.fc > cible);
-  const withFCSorted = [...withFC].sort((a, b) => a.fc - b.fc);
-  const meilleureFiche = withFCSorted.length > 0 ? withFCSorted[0] : null;
-  const fichePlusProblem = withFCSorted.length > 0 ? withFCSorted[withFCSorted.length - 1] : null;
+  const fichesCritiques = withFCScope.filter(r => r.fc > cible);
+  const withFCScopeSorted = [...withFCScope].sort((a, b) => a.fc - b.fc);
+  const meilleureFiche = withFCScopeSorted.length > 0 ? withFCScopeSorted[0] : null;
 
   const prixVenteMoyenTTC = avecPrix.length > 0
     ? avecPrix.reduce((s, r) => s + (r.prixVentePratiqueTTC || 0), 0) / avecPrix.length
@@ -89,10 +103,17 @@ export default function Dashboard() {
   const sansPrixCount = recettes.filter(r => !(r.prixVentePratiqueTTC > 0)).length;
 
   const synthesePhrase = (() => {
-    if (fcMoyen === null) return 'Ajoutez vos prix de vente pour analyser votre situation.';
-    if (fichesCritiques.length === 0) return 'Toutes vos fiches sont sous contrôle — bien géré.';
-    if (fichesCritiques.length === 1) return `"${fichesCritiques[0].nom}" dépasse votre seuil cible de ${cible}%.`;
-    return `${fichesCritiques.length} fiches dépassent votre seuil cible de ${cible}%.`;
+    if (fcMoyen === null) {
+      return selectedCarte
+        ? `Aucune fiche avec prix dans "${selectedCarte.nom}".`
+        : 'Ajoutez des prix de vente pour analyser.';
+    }
+    if (fichesCritiques.length === 0) return 'Toutes les fiches sont sous contrôle.';
+    if (fichesCritiques.length === 1) {
+      const nom = fichesCritiques[0].nom;
+      return `"${nom.length > 22 ? nom.slice(0, 20) + '…' : nom}" dépasse ${cible}%.`;
+    }
+    return `${fichesCritiques.length} fiches au-dessus de ${cible}% — à corriger.`;
   })();
 
   const ecartCible = fcMoyen !== null ? +(fcMoyen - cible).toFixed(1) : null;
@@ -205,7 +226,7 @@ export default function Dashboard() {
           {agendaJ0J2.map((it, i) => (
             <div key={it.id} title={it.titre} onClick={() => setDrawerItem(it)} style={{
               display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
-              padding: '0.7rem 1.25rem',
+              padding: '0.8rem 1.5rem',
               borderBottom: i < agendaJ0J2.length - 1 ? '1px solid #F9F7F4' : 'none',
               cursor: 'pointer',
             }}
@@ -214,7 +235,7 @@ export default function Dashboard() {
             >
               <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: TYPE_COLORS_AG[it.type] || T.muted, flexShrink: 0, marginTop: '4px' }} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '0.82rem', fontWeight: 600, color: T.text, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 600, color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {it.titre}
                 </div>
                 <div style={{ fontSize: '0.72rem', color: T.muted, marginTop: '2px' }}>
@@ -237,57 +258,77 @@ export default function Dashboard() {
 
   return (
     <div style={{ maxWidth: '1040px', fontFamily: "'DM Sans', sans-serif" }}>
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 340px', gap: '1.5rem', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 360px', gap: '1.5rem', alignItems: 'start' }}>
         <div>
 
       {/* ── Bloc 1 — Hero card ─────────────────────────────────────────────── */}
-      <div style={{ ...card, padding: '2rem 2.5rem', marginBottom: '1.5rem' }}>
+      <div style={{ ...card, padding: '1.75rem 2.25rem', marginBottom: '1.5rem' }}>
+
+        {/* En-tête : label + sélecteur de périmètre carte */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div style={metaStyle}>Résumé du jour</div>
+          {cartes.length > 0 && (
+            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+              {[{ id: null, nom: 'Toutes' }, ...cartes].map(c => (
+                <button key={c.id ?? '__all'} onClick={() => setSelectedCarteId(c.id ?? null)} style={{
+                  fontSize: '0.68rem', fontWeight: 600, padding: '2px 9px', borderRadius: '20px',
+                  border: 'none', cursor: 'pointer', transition: 'all 0.12s',
+                  background: selectedCarteId === (c.id ?? null) ? T.green : '#F3EFE8',
+                  color: selectedCarteId === (c.id ?? null) ? '#fff' : T.muted,
+                }}>
+                  {c.nom}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div style={{ display: 'flex', alignItems: 'stretch', flexDirection: isMobile ? 'column' : 'row' }}>
 
           {/* Colonne gauche */}
           <div style={{ flex: '2 1 0', paddingRight: isMobile ? 0 : '2rem', paddingBottom: isMobile ? '1.25rem' : 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-              <div style={metaStyle}>Résumé du jour</div>
-              {fcMoyen !== null && (
-                <div style={{
-                  fontSize: '0.72rem', fontWeight: 700,
-                  color: fcColor(fcMoyen, cible),
-                  background: `${fcColor(fcMoyen, cible)}18`,
-                  border: `1px solid ${fcColor(fcMoyen, cible)}35`,
-                  borderRadius: '20px', padding: '2px 10px',
-                }}>
-                  {fcLabel(fcMoyen, cible)}
-                </div>
-              )}
-            </div>
 
             {fcMoyen !== null ? (
               <>
-                <div style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: '3rem', fontWeight: 700,
-                  color: fcColor(fcMoyen, cible), lineHeight: 1.05,
-                  letterSpacing: '-0.02em',
-                }}>
-                  {fcMoyen.toFixed(1)}%
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.3rem' }}>
+                  <div style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: '2.2rem', fontWeight: 700,
+                    color: fcColor(fcMoyen, cible), lineHeight: 1,
+                    letterSpacing: '-0.02em',
+                  }}>
+                    {fcMoyen.toFixed(1)}%
+                  </div>
+                  <div style={{
+                    fontSize: '0.72rem', fontWeight: 700,
+                    color: fcColor(fcMoyen, cible),
+                    background: `${fcColor(fcMoyen, cible)}18`,
+                    border: `1px solid ${fcColor(fcMoyen, cible)}35`,
+                    borderRadius: '20px', padding: '3px 10px',
+                  }}>
+                    {fcLabel(fcMoyen, cible)}
+                  </div>
                 </div>
-                <div style={{ fontSize: '0.8rem', color: T.muted, marginTop: '0.3rem', marginBottom: '1rem' }}>
+                <div style={{ fontSize: '0.78rem', color: T.muted, marginBottom: '1rem' }}>
                   Food cost moyen&nbsp;·&nbsp;
                   <span style={{ fontWeight: 700, color: ecartCible > 0 ? T.red : T.green }}>
                     {ecartCible > 0 ? '+' : ''}{ecartCible} pts
                   </span>
                   {' '}vs cible {cible}%
+                  {selectedCarte && <span>&nbsp;· {selectedCarte.nom}</span>}
                 </div>
               </>
             ) : (
               <>
                 <div style={{
                   fontFamily: "'Playfair Display', serif",
-                  fontSize: '3rem', fontWeight: 700,
-                  color: '#D1C4B0', lineHeight: 1.05, marginTop: '0.25rem',
+                  fontSize: '2.2rem', fontWeight: 700,
+                  color: '#D1C4B0', lineHeight: 1, marginBottom: '0.3rem',
                 }}>—</div>
-                <div style={{ fontSize: '0.8rem', color: T.muted, marginTop: '0.3rem', marginBottom: '1rem' }}>
-                  Ajoutez vos prix de vente pour calculer le food cost.
+                <div style={{ fontSize: '0.78rem', color: T.muted, marginBottom: '1rem' }}>
+                  {selectedCarte
+                    ? `Aucune fiche avec prix dans "${selectedCarte.nom}".`
+                    : 'Ajoutez des prix de vente pour analyser.'}
                 </div>
               </>
             )}
@@ -299,14 +340,14 @@ export default function Dashboard() {
             </div>
 
             {fcMoyen === null ? (
-              <Link to="/fiches-techniques" style={{ fontSize: '0.82rem', fontWeight: 700, color: T.green, textDecoration: 'none' }}
+              <Link to="/fiches-techniques" style={{ fontSize: '0.8rem', fontWeight: 700, color: T.green, textDecoration: 'none' }}
                 onMouseEnter={e => e.currentTarget.style.opacity = '0.65'}
                 onMouseLeave={e => e.currentTarget.style.opacity = '1'}
               >
                 Compléter les fiches →
               </Link>
             ) : fichesCritiques.length > 0 ? (
-              <Link to="/fiches-techniques" style={{ fontSize: '0.82rem', fontWeight: 700, color: T.red, textDecoration: 'none' }}
+              <Link to="/fiches-techniques" style={{ fontSize: '0.8rem', fontWeight: 700, color: T.red, textDecoration: 'none' }}
                 onMouseEnter={e => e.currentTarget.style.opacity = '0.65'}
                 onMouseLeave={e => e.currentTarget.style.opacity = '1'}
               >
@@ -317,30 +358,38 @@ export default function Dashboard() {
 
           {/* Séparateur */}
           {!isMobile && <div style={{ width: '1px', background: '#EDE8DF', flexShrink: 0 }} />}
-          {isMobile && <div style={{ height: '1px', background: '#EDE8DF' }} />}
+          {isMobile && <div style={{ height: '1px', background: '#EDE8DF', margin: '0 0 1.25rem' }} />}
 
-          {/* Colonne droite */}
-          <div style={{ flex: '1 1 0', paddingLeft: isMobile ? 0 : '2rem', paddingTop: isMobile ? '1.25rem' : 0, display: 'flex', flexDirection: 'column', gap: '1rem', justifyContent: 'center' }}>
+          {/* Colonne droite — stat tiles */}
+          <div style={{ flex: '1 1 0', paddingLeft: isMobile ? 0 : '2rem', display: 'flex', flexDirection: 'column', gap: '0.6rem', justifyContent: 'center' }}>
 
-            <div>
-              <div style={metaStyle}>Fiches critiques</div>
-              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: fichesCritiques.length > 0 ? T.red : T.green }}>
-                {fichesCritiques.length}
-              </div>
-              <div style={{ fontSize: '0.72rem', color: T.muted, marginTop: '2px' }}>
-                {fichesCritiques.length > 0 ? `dépassent le seuil de ${cible}%` : 'toutes sous contrôle'}
+            <div style={{
+              padding: '0.6rem 0.875rem', borderRadius: '8px',
+              background: fichesCritiques.length > 0 ? 'rgba(220,38,38,0.05)' : 'rgba(45,106,79,0.05)',
+              borderLeft: `3px solid ${fichesCritiques.length > 0 ? T.red : T.green}`,
+            }}>
+              <div style={{ ...metaStyle, marginBottom: '3px' }}>Fiches critiques</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                <span style={{ fontSize: '1.2rem', fontWeight: 700, color: fichesCritiques.length > 0 ? T.red : T.green, lineHeight: 1 }}>
+                  {fichesCritiques.length}
+                </span>
+                <span style={{ fontSize: '0.72rem', color: T.muted }}>
+                  {fichesCritiques.length > 0 ? `> ${cible}%` : 'sous contrôle'}
+                </span>
               </div>
             </div>
 
             {meilleureFiche && (
-              <div>
-                <div style={metaStyle}>Plus rentable</div>
+              <div style={{
+                padding: '0.6rem 0.875rem', borderRadius: '8px',
+                background: 'rgba(45,106,79,0.05)', borderLeft: `3px solid ${T.green}`,
+              }}>
+                <div style={{ ...metaStyle, marginBottom: '3px' }}>Plus rentable</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: T.green, flexShrink: 0 }} />
-                  <span style={{ fontSize: '0.8rem', color: T.text, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
                     {meilleureFiche.nom}
                   </span>
-                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: T.green, flexShrink: 0 }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: T.green, flexShrink: 0 }}>
                     {meilleureFiche.fc.toFixed(1)}%
                   </span>
                 </div>
@@ -348,9 +397,13 @@ export default function Dashboard() {
             )}
 
             {varCouts7j !== null && (
-              <div>
-                <div style={metaStyle}>Coûts / 7 j</div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: varCouts7j > 2 ? T.red : varCouts7j < -2 ? T.green : T.text }}>
+              <div style={{
+                padding: '0.6rem 0.875rem', borderRadius: '8px',
+                background: varCouts7j > 2 ? 'rgba(220,38,38,0.05)' : varCouts7j < -2 ? 'rgba(45,106,79,0.05)' : '#FAFAF8',
+                borderLeft: `3px solid ${varCouts7j > 2 ? T.red : varCouts7j < -2 ? T.green : '#E5E0D8'}`,
+              }}>
+                <div style={{ ...metaStyle, marginBottom: '3px' }}>Coûts / 7 j</div>
+                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: varCouts7j > 2 ? T.red : varCouts7j < -2 ? T.green : T.text, lineHeight: 1 }}>
                   {varCouts7j > 0 ? '↑ +' : '↓ '}{varCouts7j.toFixed(1)}%
                 </div>
               </div>
