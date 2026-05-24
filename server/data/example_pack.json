@@ -1,0 +1,205 @@
+{
+  "_meta": {
+    "description": "Pack de données d'exemple — brasserie / restaurant traditionnel",
+    "version": "1.0.0",
+    "user_id_placeholder": "__example__",
+    "covers": ["Terrine de campagne (entrée)", "Magret sauce vin rouge (plat)", "Tarte aux pommes (dessert)"]
+  },
+  "ingredients": [
+    {
+      "id": "ex-ing-01",
+      "user_id": "__example__",
+      "nom": "Magret de canard",
+      "categorie": "viande",
+      "unite": "kg",
+      "prixUnitaire": 18.50,
+      "fournisseur": "Rungis Direct",
+      "createdAt": "2026-05-24T00:00:00.000Z"
+    },
+    {
+      "id": "ex-ing-02",
+      "user_id": "__example__",
+      "nom": "Poitrine de porc",
+      "categorie": "viande",
+      "unite": "kg",
+      "prixUnitaire": 6.80,
+      "fournisseur": "Métro",
+      "createdAt": "2026-05-24T00:00:00.000Z"
+    },
+    {
+      "id": "ex-ing-03",
+      "user_id": "__example__",
+      "nom": "Foies de volaille",
+      "categorie": "viande",
+      "unite": "kg",
+      "prixUnitaire": 5.40,
+      "fournisseur": "Métro",
+      "createdAt": "2026-05-24T00:00:00.000Z"
+    },
+    {
+      "id": "ex-ing-04",
+      "user_id": "__example__",
+      "nom": "Beurre doux",
+      "categorie": "produit laitier",
+      "unite": "kg",
+      "prixUnitaire": 8.20,
+      "fournisseur": "Transgourmet",
+      "createdAt": "2026-05-24T00:00:00.000Z"
+    },
+    {
+      "id": "ex-ing-05",
+      "user_id": "__example__",
+      "nom": "Farine T55",
+      "categorie": "épicerie",
+      "unite": "kg",
+      "prixUnitaire": 1.10,
+      "fournisseur": "Transgourmet",
+      "createdAt": "2026-05-24T00:00:00.000Z"
+    },
+    {
+      "id": "ex-ing-06",
+      "user_id": "__example__",
+      "nom": "Crème liquide 35%",
+      "categorie": "produit laitier",
+      "unite": "L",
+      "prixUnitaire": 4.80,
+      "fournisseur": "Pomona",
+      "createdAt": "2026-05-24T00:00:00.000Z"
+    },
+    {
+      "id": "ex-ing-07",
+      "user_id": "__example__",
+      "nom": "Oeufs frais",
+      "categorie": "produit laitier",
+      "unite": "piece",
+      "prixUnitaire": 0.28,
+      "fournisseur": "Marché local",
+      "createdAt": "2026-05-24T00:00:00.000Z"
+    },
+    {
+      "id": "ex-ing-08",
+      "user_id": "__example__",
+      "nom": "Échalotes",
+      "categorie": "légume",
+      "unite": "kg",
+      "prixUnitaire": 3.40,
+      "fournisseur": "Métro",
+      "createdAt": "2026-05-24T00:00:00.000Z"
+    },
+    {
+      "id": "ex-ing-09",
+      "user_id": "__example__",
+      "nom": "Vin rouge",
+      "categorie": "boisson",
+      "unite": "L",
+      "prixUnitaire": 6.00,
+      "fournisseur": "Cave Nicolas Pro",
+      "createdAt": "2026-05-24T00:00:00.000Z"
+    },
+    {
+      "id": "ex-ing-10",
+      "user_id": "__example__",
+      "nom": "Fond de veau",
+      "categorie": "épicerie",
+      "unite": "L",
+      "prixUnitaire": 9.50,
+      "fournisseur": "Transgourmet",
+      "createdAt": "2026-05-24T00:00:00.000Z"
+    },
+    {
+      "id": "ex-ing-11",
+      "user_id": "__example__",
+      "nom": "Sucre",
+      "categorie": "épicerie",
+      "unite": "kg",
+      "prixUnitaire": 1.05,
+      "fournisseur": "Métro",
+      "createdAt": "2026-05-24T00:00:00.000Z"
+    },
+    {
+      "id": "ex-ing-12",
+      "user_id": "__example__",
+      "nom": "Pommes Golden",
+      "categorie": "fruit",
+      "unite": "kg",
+      "prixUnitaire": 2.10,
+      "fournisseur": "Marché local",
+      "createdAt": "2026-05-24T00:00:00.000Z"
+    },
+    {
+      "id": "ex-ing-13",
+      "user_id": "__example__",
+      "nom": "Thym frais",
+      "categorie": "herbe",
+      "unite": "kg",
+      "prixUnitaire": 12.00,
+      "fournisseur": "Marché local",
+      "createdAt": "2026-05-24T00:00:00.000Z"
+    },
+    {
+      "id": "ex-ing-14",
+      "user_id": "__example__",
+      "nom": "Huile d'olive",
+      "categorie": "condiment",
+      "unite": "L",
+      "prixUnitaire": 9.80,
+      "fournisseur": "Transgourmet",
+      "createdAt": "2026-05-24T00:00:00.000Z"
+    },
+    {
+      "id": "ex-ing-15",
+      "user_id": "__example__",
+      "nom": "Fleur de sel",
+      "categorie": "épice",
+      "unite": "kg",
+      "prixUnitaire": 14.00,
+      "fournisseur": "Métro",
+      "createdAt": "2026-05-24T00:00:00.000Z"
+    }
+  ],
+  "sousRecettes": [
+    {
+      "id": "ex-sr-01",
+      "user_id": "__example__",
+      "nom": "Sauce au vin rouge",
+      "portions": 4,
+      "ingredients": [
+        { "nom": "Vin rouge",    "quantite": 0.5,   "unite": "L"     },
+        { "nom": "Fond de veau", "quantite": 0.25,  "unite": "L"     },
+        { "nom": "Échalotes",   "quantite": 0.06,  "unite": "kg"    },
+        { "nom": "Beurre doux", "quantite": 0.04,  "unite": "kg"    },
+        { "nom": "Thym frais",  "quantite": 0.005, "unite": "kg"    }
+      ],
+      "etapes": [
+        "Ciseler finement les échalotes.",
+        "Dans une sauteuse, faire revenir les échalotes dans la moitié du beurre à feu doux jusqu'à transparence (3 min).",
+        "Déglacer avec le vin rouge, ajouter le thym, réduire de 2/3 à feu moyen.",
+        "Ajouter le fond de veau, réduire jusqu'à consistance nappante (8-10 min).",
+        "Hors du feu, monter au beurre restant en fouettant. Rectifier l'assaisonnement. Passer au chinois fin."
+      ],
+      "createdAt": "2026-05-24T00:00:00.000Z",
+      "updatedAt": "2026-05-24T00:00:00.000Z"
+    },
+    {
+      "id": "ex-sr-02",
+      "user_id": "__example__",
+      "nom": "Pâte sablée",
+      "portions": 6,
+      "ingredients": [
+        { "nom": "Farine T55",  "quantite": 0.25,  "unite": "kg"    },
+        { "nom": "Beurre doux", "quantite": 0.125, "unite": "kg"    },
+        { "nom": "Sucre",       "quantite": 0.08,  "unite": "kg"    },
+        { "nom": "Oeufs frais", "quantite": 1,     "unite": "piece" }
+      ],
+      "etapes": [
+        "Sortir le beurre 30 min à l'avance pour le ramollir à température ambiante.",
+        "Mélanger beurre pommade et sucre jusqu'à obtenir une texture crémeuse.",
+        "Incorporer l'œuf entier, mélanger brièvement.",
+        "Ajouter la farine d'un coup, sabler du bout des doigts sans trop travailler la pâte.",
+        "Former une boule, filmer et réfrigérer 1 h minimum avant utilisation."
+      ],
+      "createdAt": "2026-05-24T00:00:00.000Z",
+      "updatedAt": "2026-05-24T00:00:00.000Z"
+    }
+  ]
+}
