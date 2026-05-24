@@ -129,7 +129,7 @@ export default function Dashboard() {
         return {
           nom: r.nom,
           probleme: `FC ${r.fc.toFixed(1)}% · cible ${cible}%`,
-          impactLabel: `coûte ${impactEuro.toFixed(2)} € de trop/couvert`,
+          impactLabel: `+${impactEuro.toFixed(2)} € matière / couvert`,
           link: `/fiches-techniques/${r.id}`,
           dotColor: r.fc > cible + 5 ? T.red : T.orange,
           impactSort: impactEuro,
@@ -299,7 +299,7 @@ export default function Dashboard() {
                   <div style={{
                     fontFamily: "'Playfair Display', serif",
                     fontSize: '1.7rem', fontWeight: 700,
-                    color: T.text, lineHeight: 1,
+                    color: fcColor(fcMoyen, cible), lineHeight: 1,
                     letterSpacing: '-0.02em',
                   }}>
                     {fcMoyen.toFixed(1)}%
