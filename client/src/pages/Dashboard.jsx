@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
+import { ItemModal } from './Organisation.jsx';
 import { coutPortionHT, foodCostPct } from '../utils.js';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
 
@@ -39,6 +40,7 @@ export default function Dashboard() {
   const [params, setParams] = useState({ foodCostCible: 30, tva: 10 });
   const [historique, setHistorique] = useState([]);
   const [agendaItems, setAgendaItems] = useState([]);
+  const [drawerItem, setDrawerItem] = useState(undefined);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     Promise.all([
@@ -173,6 +175,13 @@ export default function Dashboard() {
     if (diff === 1) return 'Demain';
     return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
   };
+
+  async function handleAgendaSave(id, payload) {
+    if (id) {
+      const updated = await api.agenda.update(id, payload);
+      setAgendaItems(prev => prev.map(i => i.id === id ? updated : i));
+    }
+  }
 
   return (
     <div style={{ maxWidth: '760px', fontFamily: "'DM Sans', sans-serif" }}>
@@ -398,38 +407,44 @@ export default function Dashboard() {
         ) : (
           <div>
             {agendaJ0J2.map((it, i) => (
-              <Link key={it.id} to="/organisation" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: '0.85rem',
-                  padding: isMobile ? '0.65rem 1.25rem' : '0.75rem 1.75rem',
-                  borderBottom: i < agendaJ0J2.length - 1 ? '1px solid #F9F7F4' : 'none',
-                  cursor: 'pointer',
-                }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#FAFAF8'}
-                  onMouseLeave={e => e.currentTarget.style.background = ''}
-                >
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: TYPE_COLORS_AG[it.type] || T.muted, flexShrink: 0 }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {it.titre}
-                    </div>
-                    <div style={{ fontSize: '0.73rem', color: T.muted, marginTop: '1px' }}>
-                      {formatAgendaDate(it.date)}{it.heure ? ` · ${it.heure}` : ''}
-                    </div>
+              <div key={it.id} onClick={() => setDrawerItem(it)} style={{
+                display: 'flex', alignItems: 'center', gap: '0.85rem',
+                padding: isMobile ? '0.65rem 1.25rem' : '0.75rem 1.75rem',
+                borderBottom: i < agendaJ0J2.length - 1 ? '1px solid #F9F7F4' : 'none',
+                cursor: 'pointer',
+              }}
+                onMouseEnter={e => e.currentTarget.style.background = '#FAFAF8'}
+                onMouseLeave={e => e.currentTarget.style.background = ''}
+              >
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: TYPE_COLORS_AG[it.type] || T.muted, flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {it.titre}
                   </div>
-                  <div style={{
-                    fontSize: '0.68rem', fontWeight: 700, color: TYPE_COLORS_AG[it.type] || T.muted,
-                    background: `${TYPE_COLORS_AG[it.type]}18`, borderRadius: '4px',
-                    padding: '2px 7px', flexShrink: 0,
-                  }}>
-                    {TYPE_LABELS_AG[it.type]}
+                  <div style={{ fontSize: '0.73rem', color: T.muted, marginTop: '1px' }}>
+                    {formatAgendaDate(it.date)}{it.heure ? ` · ${it.heure}` : ''}
                   </div>
                 </div>
-              </Link>
+                <div style={{
+                  fontSize: '0.68rem', fontWeight: 700, color: TYPE_COLORS_AG[it.type] || T.muted,
+                  background: `${TYPE_COLORS_AG[it.type]}18`, borderRadius: '4px',
+                  padding: '2px 7px', flexShrink: 0,
+                }}>
+                  {TYPE_LABELS_AG[it.type]}
+                </div>
+              </div>
             ))}
           </div>
         )}
       </div>
+
+      {drawerItem !== undefined && (
+        <ItemModal
+          item={drawerItem}
+          onSave={handleAgendaSave}
+          onClose={() => setDrawerItem(undefined)}
+        />
+      )}
 
     </div>
   );

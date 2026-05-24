@@ -107,7 +107,7 @@ function MiniCalendar({ items, selectedDay, onDayClick }) {
 }
 
 /* ── Modal create/edit ── */
-function ItemModal({ item, onSave, onClose }) {
+export function ItemModal({ item, onSave, onClose }) {
   const isNew = !item?.id;
   const [form, setForm] = useState({
     type: item?.type || 'rappel',
