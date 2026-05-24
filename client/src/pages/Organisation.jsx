@@ -44,7 +44,20 @@ function MiniCalendar({ items, selectedDay, onDayClick }) {
   const firstDayOfWeek = (new Date(year, month, 1).getDay() + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const todayStr = today();
-  const datesWithItems = new Set(items.filter(i => i.date).map(i => i.date.slice(0, 10)));
+  const datesWithItems = new Set(items.flatMap(i => {
+    if (!i.date) return [];
+    if (i.type === 'evenement' && i.dateFin && i.dateFin > i.date) {
+      const days = [];
+      const cur = new Date(i.date + 'T00:00:00');
+      const end = new Date(i.dateFin + 'T00:00:00');
+      while (cur <= end) {
+        days.push(cur.toISOString().slice(0, 10));
+        cur.setDate(cur.getDate() + 1);
+      }
+      return days;
+    }
+    return [i.date.slice(0, 10)];
+  }));
   const monthLabel = new Date(year, month, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
 
   const btnNav = { background: 'none', border: 'none', cursor: 'pointer', color: T.muted, fontSize: '1.1rem', padding: '2px 8px', borderRadius: '4px', lineHeight: 1 };
@@ -367,7 +380,12 @@ export default function Organisation() {
   // Filter
   const filtered = items.filter(i => {
     if (filterType && i.type !== filterType) return false;
-    if (selectedDay && i.date?.slice(0, 10) !== selectedDay) return false;
+    if (selectedDay) {
+      const start = i.date?.slice(0, 10);
+      if (!start) return false;
+      const end = (i.type === 'evenement' && i.dateFin && i.dateFin > i.date) ? i.dateFin.slice(0, 10) : start;
+      if (selectedDay < start || selectedDay > end) return false;
+    }
     return true;
   });
 
