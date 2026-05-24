@@ -50,21 +50,41 @@ function FacturesTab({ docs, onDelete }) {
   const [filtFournisseur, setFiltFournisseur] = useState('');
   const [filtMois, setFiltMois] = useState('');
   const [filtCategorie, setFiltCategorie] = useState('');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [periodeDebut, setPeriodeDebut] = useState('');
+  const [periodeFin, setPeriodeFin] = useState('');
+  const [appliedDebut, setAppliedDebut] = useState('');
+  const [appliedFin, setAppliedFin] = useState('');
 
   const fournisseurs = [...new Set(docs.map(d => d.fournisseur).filter(Boolean))].sort();
   const mois = [...new Set(docs.map(d => d.moisFacture ? `${d.moisFacture}/${d.anneeFacture}` : null).filter(Boolean))].sort();
   const categories = [...new Set(docs.map(d => d.categorieAchat).filter(Boolean))].sort();
+  const hasActivePeriod = !!(appliedDebut || appliedFin);
 
   const filtered = docs.filter(d => {
     if (filtFournisseur && d.fournisseur !== filtFournisseur) return false;
     if (filtMois && `${d.moisFacture}/${d.anneeFacture}` !== filtMois) return false;
     if (filtCategorie && d.categorieAchat !== filtCategorie) return false;
+    if (appliedDebut || appliedFin) {
+      const docDate = d.dateImport ? d.dateImport.slice(0, 10) : null;
+      if (appliedDebut && (!docDate || docDate < appliedDebut)) return false;
+      if (appliedFin && (!docDate || docDate > appliedFin)) return false;
+    }
     return true;
   });
 
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortOrder === 'fournisseur') return (a.fournisseur || '').localeCompare(b.fournisseur || '', 'fr');
+    if (sortOrder === 'asc') return (a.dateImport || '').localeCompare(b.dateImport || '');
+    return (b.dateImport || '').localeCompare(a.dateImport || '');
+  });
+
+  function appliquer() { setAppliedDebut(periodeDebut); setAppliedFin(periodeFin); }
+  function reinitialiser() { setPeriodeDebut(''); setPeriodeFin(''); setAppliedDebut(''); setAppliedFin(''); }
+
   return (
     <>
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
         <select style={selectStyle} value={filtFournisseur} onChange={e => setFiltFournisseur(e.target.value)}>
           <option value="">Tous les fournisseurs</option>
           {fournisseurs.map(f => <option key={f} value={f}>{f}</option>)}
@@ -77,10 +97,23 @@ function FacturesTab({ docs, onDelete }) {
           <option value="">Toutes catégories</option>
           {categories.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
+        <select style={selectStyle} value={sortOrder} onChange={e => setSortOrder(e.target.value)}>
+          <option value="desc">Plus récent d'abord</option>
+          <option value="asc">Plus ancien d'abord</option>
+          <option value="fournisseur">Fournisseur A→Z</option>
+        </select>
       </div>
-      {filtered.length === 0 ? <EmptyState tab="factures" /> : (
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1rem' }}>
+        <span style={{ fontSize: '0.78rem', color: T.muted, fontWeight: 600 }}>Période :</span>
+        <input type="date" value={periodeDebut} onChange={e => setPeriodeDebut(e.target.value)} style={selectStyle} />
+        <span style={{ fontSize: '0.78rem', color: T.muted }}>au</span>
+        <input type="date" value={periodeFin} onChange={e => setPeriodeFin(e.target.value)} style={selectStyle} />
+        <button onClick={appliquer} style={{ padding: '0.4rem 0.875rem', background: T.green, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>Appliquer</button>
+        {hasActivePeriod && <button onClick={reinitialiser} style={{ padding: '0.4rem 0.75rem', background: 'none', border: '1px solid #E5E0D8', borderRadius: '6px', fontSize: '0.8rem', color: T.muted, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>Réinitialiser</button>}
+      </div>
+      {sorted.length === 0 ? <EmptyState tab="factures" /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          {filtered.map(doc => (
+          {sorted.map(doc => (
             <div key={doc.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.875rem 1rem', background: '#FAFAF8', borderRadius: '8px', border: '1px solid #F3EFE8', flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: '0.875rem', color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.nomFichier}</div>
@@ -107,31 +140,57 @@ function FacturesTab({ docs, onDelete }) {
 
 function FichesTab({ docs, onDelete }) {
   const [filtCategorie, setFiltCategorie] = useState('');
-  const [filtStatut, setFiltStatut] = useState('');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [periodeDebut, setPeriodeDebut] = useState('');
+  const [periodeFin, setPeriodeFin] = useState('');
+  const [appliedDebut, setAppliedDebut] = useState('');
+  const [appliedFin, setAppliedFin] = useState('');
 
   const categories = [...new Set(docs.map(d => d.categoriePlat).filter(Boolean))].sort();
+  const hasActivePeriod = !!(appliedDebut || appliedFin);
 
   const filtered = docs.filter(d => {
     if (filtCategorie && d.categoriePlat !== filtCategorie) return false;
-    if (filtStatut && d.statut !== filtStatut) return false;
+    if (appliedDebut || appliedFin) {
+      const docDate = d.dateImport ? d.dateImport.slice(0, 10) : null;
+      if (appliedDebut && (!docDate || docDate < appliedDebut)) return false;
+      if (appliedFin && (!docDate || docDate > appliedFin)) return false;
+    }
     return true;
   });
 
+  const sorted = [...filtered].sort((a, b) =>
+    sortOrder === 'asc'
+      ? (a.dateImport || '').localeCompare(b.dateImport || '')
+      : (b.dateImport || '').localeCompare(a.dateImport || '')
+  );
+
+  function appliquer() { setAppliedDebut(periodeDebut); setAppliedFin(periodeFin); }
+  function reinitialiser() { setPeriodeDebut(''); setPeriodeFin(''); setAppliedDebut(''); setAppliedFin(''); }
+
   return (
     <>
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
         <select style={selectStyle} value={filtCategorie} onChange={e => setFiltCategorie(e.target.value)}>
           <option value="">Toutes catégories</option>
           {categories.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
-        <select style={selectStyle} value={filtStatut} onChange={e => setFiltStatut(e.target.value)}>
-          <option value="">Tous statuts</option>
-          <option value="validé">Validé</option>
+        <select style={selectStyle} value={sortOrder} onChange={e => setSortOrder(e.target.value)}>
+          <option value="desc">Plus récent d'abord</option>
+          <option value="asc">Plus ancien d'abord</option>
         </select>
       </div>
-      {filtered.length === 0 ? <EmptyState tab="fiches" /> : (
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1rem' }}>
+        <span style={{ fontSize: '0.78rem', color: T.muted, fontWeight: 600 }}>Période :</span>
+        <input type="date" value={periodeDebut} onChange={e => setPeriodeDebut(e.target.value)} style={selectStyle} />
+        <span style={{ fontSize: '0.78rem', color: T.muted }}>au</span>
+        <input type="date" value={periodeFin} onChange={e => setPeriodeFin(e.target.value)} style={selectStyle} />
+        <button onClick={appliquer} style={{ padding: '0.4rem 0.875rem', background: T.green, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>Appliquer</button>
+        {hasActivePeriod && <button onClick={reinitialiser} style={{ padding: '0.4rem 0.75rem', background: 'none', border: '1px solid #E5E0D8', borderRadius: '6px', fontSize: '0.8rem', color: T.muted, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>Réinitialiser</button>}
+      </div>
+      {sorted.length === 0 ? <EmptyState tab="fiches" /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          {filtered.map(doc => (
+          {sorted.map(doc => (
             <div key={doc.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.875rem 1rem', background: '#FAFAF8', borderRadius: '8px', border: '1px solid #F3EFE8', flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: '0.875rem', color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.nomFichier}</div>
@@ -155,24 +214,51 @@ function FichesTab({ docs, onDelete }) {
 }
 
 function VentesTab({ docs, onDelete }) {
-  const [filtStatut, setFiltStatut] = useState('');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [periodeDebut, setPeriodeDebut] = useState('');
+  const [periodeFin, setPeriodeFin] = useState('');
+  const [appliedDebut, setAppliedDebut] = useState('');
+  const [appliedFin, setAppliedFin] = useState('');
+
+  const hasActivePeriod = !!(appliedDebut || appliedFin);
 
   const filtered = docs.filter(d => {
-    if (filtStatut && d.statut !== filtStatut) return false;
+    if (appliedDebut || appliedFin) {
+      const docDate = d.dateImport ? d.dateImport.slice(0, 10) : null;
+      if (appliedDebut && (!docDate || docDate < appliedDebut)) return false;
+      if (appliedFin && (!docDate || docDate > appliedFin)) return false;
+    }
     return true;
   });
 
+  const sorted = [...filtered].sort((a, b) =>
+    sortOrder === 'asc'
+      ? (a.dateImport || '').localeCompare(b.dateImport || '')
+      : (b.dateImport || '').localeCompare(a.dateImport || '')
+  );
+
+  function appliquer() { setAppliedDebut(periodeDebut); setAppliedFin(periodeFin); }
+  function reinitialiser() { setPeriodeDebut(''); setPeriodeFin(''); setAppliedDebut(''); setAppliedFin(''); }
+
   return (
     <>
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-        <select style={selectStyle} value={filtStatut} onChange={e => setFiltStatut(e.target.value)}>
-          <option value="">Tous statuts</option>
-          <option value="validé">Validé</option>
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+        <select style={selectStyle} value={sortOrder} onChange={e => setSortOrder(e.target.value)}>
+          <option value="desc">Plus récent d'abord</option>
+          <option value="asc">Plus ancien d'abord</option>
         </select>
       </div>
-      {filtered.length === 0 ? <EmptyState tab="ventes" /> : (
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1rem' }}>
+        <span style={{ fontSize: '0.78rem', color: T.muted, fontWeight: 600 }}>Période :</span>
+        <input type="date" value={periodeDebut} onChange={e => setPeriodeDebut(e.target.value)} style={selectStyle} />
+        <span style={{ fontSize: '0.78rem', color: T.muted }}>au</span>
+        <input type="date" value={periodeFin} onChange={e => setPeriodeFin(e.target.value)} style={selectStyle} />
+        <button onClick={appliquer} style={{ padding: '0.4rem 0.875rem', background: T.green, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>Appliquer</button>
+        {hasActivePeriod && <button onClick={reinitialiser} style={{ padding: '0.4rem 0.75rem', background: 'none', border: '1px solid #E5E0D8', borderRadius: '6px', fontSize: '0.8rem', color: T.muted, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>Réinitialiser</button>}
+      </div>
+      {sorted.length === 0 ? <EmptyState tab="ventes" /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          {filtered.map(doc => (
+          {sorted.map(doc => (
             <div key={doc.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.875rem 1rem', background: '#FAFAF8', borderRadius: '8px', border: '1px solid #F3EFE8', flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: '0.875rem', color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.nomFichier}</div>
