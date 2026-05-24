@@ -159,6 +159,7 @@ export default function MenuEngineering() {
   const [cartes, setCartes] = useState([]);
   const [rapportEnCours, setRapportEnCours] = useState(null);
   const [hasLineDates, setHasLineDates] = useState(null);
+  const [manualDates, setManualDates] = useState(false);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const width = useWindowWidth();
@@ -233,6 +234,7 @@ export default function MenuEngineering() {
     setDateFin(rapport.dateFin || '');
     setCartesSelectes(rapport.cartesIds?.length > 0 ? rapport.cartesIds : ['__all']);
     setHasLineDates(rapport.hasLineDates ?? false);
+    setManualDates(false);
     setStep(2);
     setTab('import');
   }
@@ -277,7 +279,7 @@ export default function MenuEngineering() {
         margeUnitaire: pv - coutMat,
         margeTotal: (pv - coutMat) * m.quantite,
         recetteId: m.recetteId,
-        dates: hasLineDates === true ? m.dates : [],
+        dates: (hasLineDates === true || manualDates) ? m.dates : [],
         services,
         quadrant: null,
       };
@@ -300,7 +302,7 @@ export default function MenuEngineering() {
       dateFin: dateFin || null,
       cartesIds: cartesSelectes.includes('__all') ? [] : cartesSelectes,
       matchings: actifs,
-      hasLineDates: hasLineDates === true,
+      hasLineDates: hasLineDates === true || manualDates,
       nomFichier: file?.name || rapportEnCours?.nomFichier || null,
     };
 
@@ -351,7 +353,7 @@ export default function MenuEngineering() {
             if (t.key === 'import') {
               setStep(1); setFile(null); setColonnes([]); setMatchings([]);
               setResultats([]); setRapportEnCours(null); setHasLineDates(null);
-              setDateDebut(''); setDateFin(''); setCartesSelectes(['__all']);
+              setDateDebut(''); setDateFin(''); setCartesSelectes(['__all']); setManualDates(false);
             }
             setTab(t.key);
           }} style={{
@@ -541,8 +543,59 @@ export default function MenuEngineering() {
                     })}
                   </div>
                   {hasLineDates === false && (
-                    <div style={{ background: 'rgba(217,119,6,0.06)', border: '1px solid rgba(217,119,6,0.25)', borderRadius: '8px', padding: '0.65rem 0.9rem', fontSize: '0.8rem', color: '#92400E', lineHeight: 1.55 }}>
-                      ⚠️ Ce rapport ne contient aucune date par ligne exploitable. L'analyse fine par sous-période n'est pas possible — les données seront rattachées à la période globale.
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <div style={{ background: 'rgba(217,119,6,0.06)', border: '1px solid rgba(217,119,6,0.25)', borderRadius: '8px', padding: '0.65rem 0.9rem', fontSize: '0.8rem', color: '#92400E', lineHeight: 1.55 }}>
+                        ⚠️ Ce rapport ne contient aucune date par ligne. Vous pouvez continuer en mode global, ou ajouter manuellement une date à chaque ligne pour activer l'analyse fine par sous-période.
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (manualDates) {
+                            setManualDates(false);
+                            setMatchings(prev => prev.map(m => ({ ...m, date: null })));
+                          } else {
+                            setManualDates(true);
+                            if (dateDebut) setMatchings(prev => prev.map(m => ({ ...m, date: m.date || dateDebut })));
+                          }
+                        }}
+                        style={{
+                          alignSelf: 'flex-start', padding: '0.45rem 1rem',
+                          background: manualDates ? 'rgba(45,106,79,0.08)' : '#fff',
+                          border: `1.5px solid ${manualDates ? T.green : '#D6D0C8'}`,
+                          borderRadius: '8px', color: manualDates ? T.green : T.muted,
+                          fontSize: '0.82rem', fontWeight: manualDates ? 700 : 400,
+                          cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", transition: 'all 0.12s',
+                        }}
+                      >
+                        {manualDates ? '✓ Saisie manuelle activée — cliquer pour annuler' : '✏️ Ajouter manuellement une date à chaque ligne'}
+                      </button>
+                      {manualDates && matchings.length > 0 && (
+                        <div style={{ border: '1px solid #E8E2D9', borderRadius: '10px', overflow: 'hidden' }}>
+                          <div style={{ background: '#F8F6F1', padding: '0.5rem 0.875rem', fontSize: '0.72rem', fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #E8E2D9' }}>
+                            Date par plat — {matchings.filter(m => m.date).length}/{matchings.length} renseigné{matchings.filter(m => m.date).length !== 1 ? 's' : ''}
+                          </div>
+                          <div style={{ maxHeight: '260px', overflowY: 'auto' }}>
+                            {matchings.map((m, i) => (
+                              <div key={i} style={{
+                                display: 'flex', alignItems: 'center', gap: '0.75rem',
+                                padding: '0.5rem 0.875rem',
+                                borderBottom: i < matchings.length - 1 ? '1px solid #F3EFE8' : 'none',
+                                background: !m.date ? 'rgba(220,38,38,0.03)' : '#fff',
+                              }}>
+                                <span style={{ flex: 1, fontSize: '0.82rem', color: T.text, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {m.nomPOS}
+                                </span>
+                                <input
+                                  type="date"
+                                  value={m.date || ''}
+                                  onChange={e => setMatchings(prev => prev.map((x, j) => j === i ? { ...x, date: e.target.value || null } : x))}
+                                  style={{ ...inputSm, flexShrink: 0, borderColor: !m.date ? '#FCA5A5' : '#E5E0D8' }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -582,6 +635,7 @@ export default function MenuEngineering() {
                     onClick={() => {
                       if (hasLineDates === null) return alert('Veuillez indiquer si le fichier contient une date par ligne.');
                       if (!dateDebut || !dateFin) return alert('Veuillez renseigner les dates de début et de fin de la période.');
+                      if (manualDates && matchings.some(m => !m.date)) return alert('Veuillez renseigner une date pour chaque ligne de vente avant de continuer.');
                       setStep(2);
                     }}
                     style={{ padding: '0.65rem 1.75rem', background: T.green, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
