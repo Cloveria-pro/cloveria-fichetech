@@ -1,7 +1,7 @@
 {
   "_meta": {
     "description": "Pack de données d'exemple — brasserie / restaurant traditionnel",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "user_id_placeholder": "__example__",
     "covers": ["Terrine de campagne (entrée)", "Magret sauce vin rouge (plat)", "Tarte aux pommes (dessert)"]
   },
@@ -293,6 +293,56 @@
       "prixVentePratiqueTTC": 7.00,
       "createdAt": "2026-05-24T00:00:00.000Z",
       "updatedAt": "2026-05-24T00:00:00.000Z"
+    }
+  ],
+  "carte": {
+    "id": "ex-carte-01",
+    "user_id": "__example__",
+    "nom": "Carte du moment",
+    "sections": [
+      {
+        "titre": "Entrées",
+        "plats": [
+          { "recetteId": "ex-rec-01", "nom": "Terrine de campagne maison", "prixVente": 10.50 }
+        ]
+      },
+      {
+        "titre": "Plats",
+        "plats": [
+          { "recetteId": "ex-rec-02", "nom": "Magret de canard, sauce au vin rouge", "prixVente": 21.00 }
+        ]
+      },
+      {
+        "titre": "Desserts",
+        "plats": [
+          { "recetteId": "ex-rec-03", "nom": "Tarte aux pommes, crème légère", "prixVente": 7.00 }
+        ]
+      }
+    ]
+  },
+  "agendaItems": [
+    {
+      "type": "evenement",
+      "categorie": "service",
+      "titre": "Groupe privatif 12 personnes",
+      "description": "Réservation privatisation salle — 12 couverts",
+      "heure": "19:30",
+      "_daysOffset": 3
+    },
+    {
+      "type": "note",
+      "categorie": "production",
+      "titre": "Tester une nouvelle recette de saison",
+      "description": null,
+      "_daysOffset": null
+    },
+    {
+      "type": "rappel",
+      "categorie": "fournisseur",
+      "titre": "Commander légumes semaine prochaine",
+      "description": "Carottes, poireaux, courgettes",
+      "statut": "a_faire",
+      "_daysOffset": 5
     }
   ]
 }

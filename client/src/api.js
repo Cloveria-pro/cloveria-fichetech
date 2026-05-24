@@ -120,6 +120,10 @@ export const api = {
   stripe: {
     createCheckoutSession: () => request('/stripe/create-checkout-session', { method: 'POST' }),
   },
+  onboarding: {
+    injectExample: () => request('/onboarding/inject-example', { method: 'POST' }),
+    skipExample: () => request('/onboarding/skip-example', { method: 'POST' }),
+  },
 };
 
 export function saveToken(token) {

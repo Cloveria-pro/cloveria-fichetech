@@ -56,7 +56,7 @@ function CardSelect({ options, value, onChange, multi = false }) {
 function ProgressBar({ step }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginBottom: '1.75rem' }}>
-      {[1, 2, 3, 4].map(i => (
+      {[1, 2, 3, 4, 5].map(i => (
         <div key={i} style={{
           width: i === step ? '28px' : '8px',
           height: '8px',
@@ -86,6 +86,8 @@ export default function Onboarding({ onComplete }) {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [injecting, setInjecting] = useState(false);
+  const [injectError, setInjectError] = useState(null);
   const [autreObjectif, setAutreObjectif] = useState('');
   const [data, setData] = useState({
     prenom: '',
@@ -109,6 +111,28 @@ export default function Onboarding({ onComplete }) {
         ? d.objectifs.filter(o => o !== obj)
         : [...d.objectifs, obj],
     }));
+  }
+
+  async function chooseExample() {
+    setInjecting(true);
+    setInjectError(null);
+    try {
+      await api.onboarding.injectExample();
+      setStep(5);
+    } catch (err) {
+      if (err.message === 'Pack déjà appliqué') {
+        setStep(5);
+      } else {
+        setInjectError('Une erreur est survenue. Vous pouvez continuer sans exemple.');
+      }
+    } finally {
+      setInjecting(false);
+    }
+  }
+
+  async function chooseBlank() {
+    try { await api.onboarding.skipExample(); } catch { /* non-bloquant */ }
+    setStep(5);
   }
 
   async function finish() {
@@ -278,8 +302,81 @@ export default function Onboarding({ onComplete }) {
           </>
         )}
 
-        {/* ── Écran 4 : Confirmation ── */}
+        {/* ── Écran 4 : Choix du mode de démarrage ── */}
         {step === 4 && (
+          <>
+            <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', fontWeight: 700, color: T.text, marginBottom: '0.5rem', lineHeight: 1.25 }}>
+              Comment souhaitez-vous démarrer ?
+            </h1>
+            <p style={{ color: T.muted, fontSize: '0.875rem', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+              Vous pourrez modifier ou supprimer ces données à tout moment.
+            </p>
+
+            {/* Option A — Exemple */}
+            <button
+              type="button"
+              disabled={injecting}
+              onClick={chooseExample}
+              style={{
+                width: '100%', padding: '1.1rem 1.25rem', marginBottom: '0.75rem',
+                borderRadius: '12px', border: `2px solid ${T.green}`,
+                background: injecting ? 'rgba(45,106,79,0.05)' : 'rgba(45,106,79,0.07)',
+                cursor: injecting ? 'default' : 'pointer',
+                textAlign: 'left', fontFamily: "'DM Sans', sans-serif",
+                transition: 'all 0.15s', opacity: injecting ? 0.8 : 1,
+              }}
+              onMouseEnter={e => { if (!injecting) e.currentTarget.style.background = 'rgba(45,106,79,0.12)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = injecting ? 'rgba(45,106,79,0.05)' : 'rgba(45,106,79,0.07)'; }}
+            >
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: T.green, marginBottom: '3px' }}>
+                {injecting ? 'Chargement en cours…' : 'Commencer avec un exemple'}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: T.muted, lineHeight: 1.5 }}>
+                15 ingrédients, 3 fiches techniques, 1 carte et quelques éléments d'organisation préconfigurés.
+              </div>
+            </button>
+
+            {/* Option B — Vide */}
+            <button
+              type="button"
+              disabled={injecting}
+              onClick={chooseBlank}
+              style={{
+                width: '100%', padding: '1.1rem 1.25rem',
+                borderRadius: '12px', border: `1.5px solid ${T.border}`,
+                background: '#FAFAF8', cursor: injecting ? 'default' : 'pointer',
+                textAlign: 'left', fontFamily: "'DM Sans', sans-serif",
+                transition: 'all 0.15s', opacity: injecting ? 0.5 : 1,
+              }}
+              onMouseEnter={e => { if (!injecting) e.currentTarget.style.background = '#F3EFE8'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#FAFAF8'; }}
+            >
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: T.text, marginBottom: '3px' }}>
+                Créer avec mes propres données
+              </div>
+              <div style={{ fontSize: '0.8rem', color: T.muted, lineHeight: 1.5 }}>
+                Partir d'un espace vide et construire vos fiches de zéro.
+              </div>
+            </button>
+
+            {injectError && (
+              <div style={{ marginTop: '0.75rem', padding: '0.65rem 0.875rem', borderRadius: '8px', background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.2)' }}>
+                <span style={{ fontSize: '0.8rem', color: '#DC2626' }}>{injectError}</span>
+                {' '}
+                <button
+                  type="button"
+                  onClick={chooseBlank}
+                  style={{ fontSize: '0.8rem', color: '#DC2626', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                >
+                  Continuer sans exemple →
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Écran 5 : Confirmation ── */}
+        {step === 5 && (
           <>
             <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.75rem', fontWeight: 700, color: T.text, textAlign: 'center', marginBottom: '1rem', lineHeight: 1.2 }}>
               Votre espace est prêt.
