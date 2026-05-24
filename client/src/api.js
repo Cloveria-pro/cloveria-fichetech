@@ -107,6 +107,12 @@ export const api = {
     getFile: (type, id) => request(`/documents/${type}/${id}/file`),
     delete: (type, id) => request(`/documents/${type}/${id}`, { method: 'DELETE' }),
   },
+  agenda: {
+    list: () => request('/agenda'),
+    create: (data) => request('/agenda', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => request(`/agenda/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id) => request(`/agenda/${id}`, { method: 'DELETE' }),
+  },
   profil: {
     get: () => request('/auth/profil'),
     update: (data) => request('/auth/profil', { method: 'PUT', body: JSON.stringify(data) }),

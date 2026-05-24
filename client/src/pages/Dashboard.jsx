@@ -38,16 +38,19 @@ export default function Dashboard() {
   const [recettes, setRecettes] = useState([]);
   const [params, setParams] = useState({ foodCostCible: 30, tva: 10 });
   const [historique, setHistorique] = useState([]);
+  const [agendaItems, setAgendaItems] = useState([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     Promise.all([
       api.recettes.list(),
       api.parametres.get().catch(() => ({ foodCostCible: 30, tva: 10 })),
       api.historiquePrix.list().catch(() => []),
-    ]).then(([recs, p, hist]) => {
+      api.agenda.list().catch(() => []),
+    ]).then(([recs, p, hist, agenda]) => {
       setRecettes(recs);
       setParams(p);
       setHistorique(hist);
+      setAgendaItems(agenda);
     }).finally(() => setLoading(false));
   }, []);
 
@@ -149,6 +152,27 @@ export default function Dashboard() {
   })();
 
   const metaStyle = { fontSize: '0.65rem', fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '3px' };
+
+  const TYPE_COLORS_AG = { rappel: '#3B82F6', evenement: '#2D6A4F', note: '#C9A84C' };
+  const TYPE_LABELS_AG = { rappel: 'Rappel', evenement: 'Événement', note: 'Note' };
+
+  const agendaJ0J2 = (() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const j2 = new Date(today); j2.setDate(j2.getDate() + 2);
+    return agendaItems
+      .filter(it => it.type !== 'note' && it.date)
+      .filter(it => { const d = new Date(it.date); d.setHours(0, 0, 0, 0); return d >= today && d <= j2; })
+      .sort((a, b) => a.date.localeCompare(b.date) || (a.heure || '').localeCompare(b.heure || ''));
+  })();
+
+  const formatAgendaDate = (dateStr) => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const d = new Date(dateStr); d.setHours(0, 0, 0, 0);
+    const diff = Math.round((d - today) / 86400000);
+    if (diff === 0) return "Aujourd'hui";
+    if (diff === 1) return 'Demain';
+    return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+  };
 
   return (
     <div style={{ maxWidth: '760px', fontFamily: "'DM Sans', sans-serif" }}>
@@ -353,6 +377,58 @@ export default function Dashboard() {
           )}
         </div>
 
+      </div>
+
+      {/* ── Bloc 4 — Agenda J0–J+2 ────────────────────────────────────────── */}
+      <div style={{ ...card, marginTop: '1rem', overflow: 'hidden' }}>
+        <div style={{ padding: '1.1rem 1.75rem', borderBottom: '1px solid #F3EFE8', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={metaStyle}>À venir · 3 prochains jours</div>
+          <Link to="/organisation" style={{ fontSize: '0.78rem', fontWeight: 600, color: T.green, textDecoration: 'none' }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.65'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+          >
+            Voir tout →
+          </Link>
+        </div>
+
+        {agendaJ0J2.length === 0 ? (
+          <div style={{ padding: '1.1rem 1.75rem', fontSize: '0.875rem', color: T.muted }}>
+            Rien dans les 3 prochains jours
+          </div>
+        ) : (
+          <div>
+            {agendaJ0J2.map((it, i) => (
+              <Link key={it.id} to="/organisation" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '0.85rem',
+                  padding: isMobile ? '0.65rem 1.25rem' : '0.75rem 1.75rem',
+                  borderBottom: i < agendaJ0J2.length - 1 ? '1px solid #F9F7F4' : 'none',
+                  cursor: 'pointer',
+                }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#FAFAF8'}
+                  onMouseLeave={e => e.currentTarget.style.background = ''}
+                >
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: TYPE_COLORS_AG[it.type] || T.muted, flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {it.titre}
+                    </div>
+                    <div style={{ fontSize: '0.73rem', color: T.muted, marginTop: '1px' }}>
+                      {formatAgendaDate(it.date)}{it.heure ? ` · ${it.heure}` : ''}
+                    </div>
+                  </div>
+                  <div style={{
+                    fontSize: '0.68rem', fontWeight: 700, color: TYPE_COLORS_AG[it.type] || T.muted,
+                    background: `${TYPE_COLORS_AG[it.type]}18`, borderRadius: '4px',
+                    padding: '2px 7px', flexShrink: 0,
+                  }}>
+                    {TYPE_LABELS_AG[it.type]}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
     </div>

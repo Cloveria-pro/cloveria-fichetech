@@ -16,6 +16,7 @@ import historiquePrixRouter from './routes/historique_prix.js';
 import sousRecettesRouter from './routes/sous_recettes.js';
 import ventesRouter from './routes/ventes.js';
 import documentsRouter from './routes/documents.js';
+import agendaRouter from './routes/agenda.js';
 import stripeRouter, { stripeWebhook } from './routes/stripe.js';
 import { authMiddleware } from './middleware/auth.js';
 import { checkAccess } from './middleware/checkAccess.js';
@@ -49,6 +50,7 @@ app.use('/api/historique-prix', historiquePrixRouter);
 app.use('/api/sous-recettes', sousRecettesRouter);
 app.use('/api/ventes', ventesRouter);
 app.use('/api/documents', documentsRouter);
+app.use('/api/agenda', agendaRouter);
 
 // ── Emails de relance essai ─────────────────────────────────────────────────
 async function sendTrialEmails() {
