@@ -16,6 +16,7 @@ import Aide from './pages/Aide.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import Onboarding from './pages/Onboarding.jsx';
+import VerifyEmail from './pages/VerifyEmail.jsx';
 import Abonnement from './pages/Abonnement.jsx';
 import AbonnementConfirme from './pages/AbonnementConfirme.jsx';
 import CGU from './pages/CGU.jsx';
@@ -113,16 +114,36 @@ export default function App() {
     setUser(null);
   }
 
+  function handleVerified() {
+    const newUser = { ...user, emailVerified: true };
+    localStorage.setItem('user', JSON.stringify(newUser));
+    setUser(newUser);
+  }
+
   // Auth pages (no sidebar)
   if (!token) {
     return (
       <Routes>
         <Route path="/login" element={<Login onLogin={handleLogin} />} />
         <Route path="/register" element={<Register onLogin={handleLogin} />} />
+        <Route path="/verify-email" element={<VerifyEmail userEmail={null} onVerified={() => navigate('/login')} />} />
         <Route path="/cgu" element={<CGU />} />
         <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
         <Route path="/mentions-legales" element={<MentionsLegales />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+
+  // Email verification gate
+  if (user?.emailVerified === false) {
+    return (
+      <Routes>
+        <Route path="/verify-email" element={<VerifyEmail userEmail={user?.email} onVerified={handleVerified} />} />
+        <Route path="/cgu" element={<CGU />} />
+        <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
+        <Route path="/mentions-legales" element={<MentionsLegales />} />
+        <Route path="*" element={<Navigate to="/verify-email" replace />} />
       </Routes>
     );
   }

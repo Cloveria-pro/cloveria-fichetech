@@ -2,8 +2,10 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
+import { randomBytes } from 'crypto';
 import { getDb } from '../db.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { envoyerConfirmationEmail } from '../emails/verification.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'cloveria-fichetech-secret-2026';
@@ -31,6 +33,7 @@ async function ensureDemoUser() {
     onboardingComplete: true,
     betaAccess: true,
     subscriptionStatus: 'active',
+    emailVerified: true,
     created_at: new Date().toISOString(),
   });
   console.log('Compte demo cree : demo@cloveria.fr / Demo1234!');
@@ -75,13 +78,18 @@ router.post('/register', async (req, res) => {
     stripeSubscriptionId: null,
     betaAccess: false,
     emailsEnvoyes: [],
+    emailVerified: false,
+    emailVerificationToken: randomBytes(32).toString('hex'),
+    emailVerificationExpiry: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+    emailVerificationSentAt: now.toISOString(),
   };
   await col.insertOne(user);
   delete user._id;
+  envoyerConfirmationEmail(user.email, user.emailVerificationToken).catch(console.error);
   const token = makeToken(user);
   res.status(201).json({
     token,
-    user: { id: user.id, email: user.email, etablissement: user.etablissement, onboardingComplete: false },
+    user: { id: user.id, email: user.email, etablissement: user.etablissement, onboardingComplete: false, emailVerified: false },
   });
 });
 
@@ -100,8 +108,68 @@ router.post('/login', async (req, res) => {
   const token = makeToken(user);
   res.json({
     token,
-    user: { id: user.id, email: user.email, etablissement: user.etablissement, onboardingComplete: user.onboardingComplete ?? true },
+    user: { id: user.id, email: user.email, etablissement: user.etablissement, onboardingComplete: user.onboardingComplete ?? true, emailVerified: user.emailVerified !== false },
   });
+});
+
+router.delete('/delete-test-account', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email requis' });
+  const lower = email.toLowerCase();
+  if (!lower.includes('test') && !lower.includes('beuce') && !lower.includes('chez')) {
+    return res.status(403).json({ error: 'Suppression non autorisée pour cet email' });
+  }
+  const db = await getDb();
+  const result = await db.collection('users').deleteOne({ email: lower.trim() });
+  if (result.deletedCount === 0) return res.status(404).json({ error: 'Compte introuvable' });
+  res.json({ success: true, deleted: lower.trim() });
+});
+
+router.get('/verify-email', async (req, res) => {
+  const { token } = req.query;
+  if (!token) return res.status(400).json({ error: 'Token manquant' });
+
+  const db = await getDb();
+  const col = db.collection('users');
+  const user = await col.findOne({ emailVerificationToken: token }, PROJ);
+  if (!user) return res.status(400).json({ error: 'Lien invalide ou déjà utilisé' });
+  if (new Date(user.emailVerificationExpiry) < new Date()) {
+    return res.status(400).json({ error: 'Lien expiré. Demandez un nouveau lien depuis l\'application.' });
+  }
+
+  await col.updateOne({ id: user.id }, {
+    $set: { emailVerified: true },
+    $unset: { emailVerificationToken: '', emailVerificationExpiry: '', emailVerificationSentAt: '' },
+  });
+  res.json({ success: true });
+});
+
+router.post('/resend-verification', authMiddleware, async (req, res) => {
+  const db = await getDb();
+  const col = db.collection('users');
+  const user = await col.findOne({ id: req.userId }, PROJ);
+  if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+  if (user.emailVerified) return res.status(400).json({ error: 'Email déjà vérifié' });
+
+  const now = new Date();
+  if (user.emailVerificationSentAt) {
+    const elapsed = now.getTime() - new Date(user.emailVerificationSentAt).getTime();
+    if (elapsed < 60 * 1000) {
+      const wait = Math.ceil((60 * 1000 - elapsed) / 1000);
+      return res.status(429).json({ error: `Veuillez patienter ${wait} secondes avant de renvoyer l'email.` });
+    }
+  }
+
+  const newToken = randomBytes(32).toString('hex');
+  await col.updateOne({ id: req.userId }, {
+    $set: {
+      emailVerificationToken: newToken,
+      emailVerificationExpiry: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+      emailVerificationSentAt: now.toISOString(),
+    },
+  });
+  envoyerConfirmationEmail(user.email, newToken).catch(console.error);
+  res.json({ success: true });
 });
 
 router.get('/profil', authMiddleware, async (req, res) => {

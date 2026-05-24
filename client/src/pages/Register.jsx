@@ -29,8 +29,12 @@ export default function Register({ onLogin }) {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Erreur lors de l\'inscription'); return; }
-      onLogin(data.token, data.user);
-      navigate('/onboarding');
+      if (data.user?.emailVerified === false) {
+        sessionStorage.setItem('pendingVerificationEmail', data.user.email);
+        navigate('/verify-email');
+      } else {
+        onLogin(data.token, data.user);
+      }
     } catch {
       setError('Erreur réseau. Vérifiez que le serveur est démarré.');
     } finally {
