@@ -218,8 +218,8 @@ export default function Dashboard() {
         </Link>
       </div>
       {agendaJ0J2.length === 0 ? (
-        <div style={{ padding: '1rem 1.5rem', fontSize: '0.82rem', color: T.muted }}>
-          Rien dans les 3 prochains jours
+        <div style={{ padding: '1.75rem 1.5rem', fontSize: '0.82rem', color: T.muted, textAlign: 'center', lineHeight: 1.6 }}>
+          Rien de prévu<br />dans les 3 prochains jours
         </div>
       ) : (
         <div>
@@ -258,7 +258,7 @@ export default function Dashboard() {
 
   return (
     <div style={{ maxWidth: '1040px', fontFamily: "'DM Sans', sans-serif" }}>
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 360px', gap: '1.5rem', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? '1fr 260px' : '1fr 380px', gap: '1.5rem', alignItems: 'start' }}>
         <div>
 
       {/* ── Bloc 1 — Hero card ─────────────────────────────────────────────── */}
@@ -269,16 +269,21 @@ export default function Dashboard() {
           <div style={metaStyle}>Résumé du jour</div>
           {cartes.length > 0 && (
             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-              {[{ id: null, nom: 'Toutes' }, ...cartes].map(c => (
-                <button key={c.id ?? '__all'} onClick={() => setSelectedCarteId(c.id ?? null)} style={{
-                  fontSize: '0.68rem', fontWeight: 600, padding: '2px 9px', borderRadius: '20px',
-                  border: 'none', cursor: 'pointer', transition: 'all 0.12s',
-                  background: selectedCarteId === (c.id ?? null) ? T.green : '#F3EFE8',
-                  color: selectedCarteId === (c.id ?? null) ? '#fff' : T.muted,
-                }}>
-                  {c.nom}
-                </button>
-              ))}
+              {[{ id: null, nom: 'Toutes' }, ...cartes].map(c => {
+                const isActive = selectedCarteId === (c.id ?? null);
+                const label = c.id === null ? 'Toutes' : (c.nom.length > 14 ? c.nom.slice(0, 12) + '…' : c.nom);
+                return (
+                  <button key={c.id ?? '__all'} title={c.nom} onClick={() => setSelectedCarteId(c.id ?? null)} style={{
+                    fontSize: '0.68rem', fontWeight: 600, padding: '2px 9px', borderRadius: '20px',
+                    border: `1px solid ${isActive ? T.green : 'transparent'}`,
+                    cursor: 'pointer', transition: 'all 0.12s',
+                    background: isActive ? T.green : '#F3EFE8',
+                    color: isActive ? '#fff' : T.muted,
+                  }}>
+                    {label}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -286,15 +291,15 @@ export default function Dashboard() {
         <div style={{ display: 'flex', alignItems: 'stretch', flexDirection: isMobile ? 'column' : 'row' }}>
 
           {/* Colonne gauche */}
-          <div style={{ flex: '2 1 0', paddingRight: isMobile ? 0 : '2rem', paddingBottom: isMobile ? '1.25rem' : 0 }}>
+          <div style={{ flex: '3 1 0', paddingRight: isMobile ? 0 : '2rem', paddingBottom: isMobile ? '1.25rem' : 0 }}>
 
             {fcMoyen !== null ? (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.3rem' }}>
                   <div style={{
                     fontFamily: "'Playfair Display', serif",
-                    fontSize: '2.2rem', fontWeight: 700,
-                    color: fcColor(fcMoyen, cible), lineHeight: 1,
+                    fontSize: '1.7rem', fontWeight: 700,
+                    color: T.text, lineHeight: 1,
                     letterSpacing: '-0.02em',
                   }}>
                     {fcMoyen.toFixed(1)}%
@@ -322,7 +327,7 @@ export default function Dashboard() {
               <>
                 <div style={{
                   fontFamily: "'Playfair Display', serif",
-                  fontSize: '2.2rem', fontWeight: 700,
+                  fontSize: '1.7rem', fontWeight: 700,
                   color: '#D1C4B0', lineHeight: 1, marginBottom: '0.3rem',
                 }}>—</div>
                 <div style={{ fontSize: '0.78rem', color: T.muted, marginBottom: '1rem' }}>
@@ -335,7 +340,7 @@ export default function Dashboard() {
 
             <div style={{ height: '1px', background: '#EDE8DF', marginBottom: '0.875rem' }} />
 
-            <div style={{ fontSize: '0.82rem', color: T.muted, lineHeight: 1.6, marginBottom: '0.875rem' }}>
+            <div style={{ fontSize: '0.82rem', color: T.text, lineHeight: 1.6, marginBottom: '0.875rem', fontWeight: 500 }}>
               {synthesePhrase}
             </div>
 
@@ -361,7 +366,11 @@ export default function Dashboard() {
           {isMobile && <div style={{ height: '1px', background: '#EDE8DF', margin: '0 0 1.25rem' }} />}
 
           {/* Colonne droite — stat tiles */}
-          <div style={{ flex: '1 1 0', paddingLeft: isMobile ? 0 : '2rem', display: 'flex', flexDirection: 'column', gap: '0.6rem', justifyContent: 'center' }}>
+          <div style={isMobile ? {
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(85px, 1fr))', gap: '0.5rem',
+          } : {
+            flex: '2 1 0', paddingLeft: '2rem', display: 'flex', flexDirection: 'column', gap: '0.6rem', justifyContent: 'center',
+          }}>
 
             <div style={{
               padding: '0.6rem 0.875rem', borderRadius: '8px',
@@ -479,7 +488,7 @@ export default function Dashboard() {
                   onMouseEnter={e => e.currentTarget.style.opacity = '0.65'}
                   onMouseLeave={e => e.currentTarget.style.opacity = '1'}
                 >
-                  Ouvrir →
+                  Voir →
                 </Link>
               </div>
             ))}
