@@ -266,8 +266,8 @@ function ItemCard({ item, onEdit, onDelete, onToggleStatut }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'flex-start', gap: '0.875rem', padding: '0.875rem 1rem',
-      background: isPast ? 'rgba(220,38,38,0.03)' : '#FAFAF8',
-      borderRadius: '8px', border: `1px solid ${isPast ? 'rgba(220,38,38,0.15)' : '#F3EFE8'}`,
+      background: isPast ? 'rgba(220,38,38,0.04)' : `${typeColor}09`,
+      borderRadius: '8px', border: `1px solid ${isPast ? 'rgba(220,38,38,0.18)' : `${typeColor}20`}`,
       transition: 'border-color 0.12s',
     }}>
       {/* Dot / checkbox for rappel */}
@@ -377,8 +377,14 @@ export default function Organisation() {
     }
   }
 
-  // Filter
-  const filtered = items.filter(i => {
+  // Notes sans date → colonne droite (respecte filterType, pas selectedDay)
+  const undatedNotes = items.filter(i =>
+    i.type === 'note' && !i.date && (!filterType || filterType === 'note')
+  );
+
+  // Colonne principale : tout sauf notes sans date
+  const filteredMain = items.filter(i => {
+    if (i.type === 'note' && !i.date) return false;
     if (filterType && i.type !== filterType) return false;
     if (selectedDay) {
       const start = i.date?.slice(0, 10);
@@ -389,14 +395,12 @@ export default function Organisation() {
     return true;
   });
 
-  // Sort: dated ASC, undated at end
-  const sorted = [
-    ...filtered.filter(i => i.date).sort((a, b) => a.date.localeCompare(b.date)),
-    ...filtered.filter(i => !i.date),
+  const sortedMain = [
+    ...filteredMain.filter(i => i.date).sort((a, b) => a.date.localeCompare(b.date)),
+    ...filteredMain.filter(i => !i.date),
   ];
 
-  // Group by date
-  const groups = sorted.reduce((acc, item) => {
+  const groups = sortedMain.reduce((acc, item) => {
     const key = item.date ? item.date.slice(0, 10) : '__nodate';
     if (!acc.length || acc[acc.length - 1].key !== key) {
       acc.push({ key, items: [item] });
@@ -458,7 +462,11 @@ export default function Organisation() {
                 {filterType || selectedDay ? 'Aucun élément pour ce filtre' : 'Aucun élément pour l\'instant'}
               </div>
               <div style={{ color: T.muted, fontSize: '0.82rem' }}>
-                {filterType || selectedDay ? 'Modifiez les filtres ou ajoutez un nouvel élément.' : 'Cliquez sur « + Ajouter » pour créer votre premier rappel, événement ou note.'}
+                {filterType || selectedDay
+                  ? 'Modifiez les filtres ou ajoutez un nouvel élément.'
+                  : undatedNotes.length > 0
+                    ? 'Vos notes libres sont affichées dans la colonne de droite.'
+                    : 'Cliquez sur « + Ajouter » pour créer votre premier rappel, événement ou note.'}
               </div>
             </div>
           ) : (
@@ -479,19 +487,43 @@ export default function Organisation() {
           )}
         </div>
 
-        {/* Mini-calendrier */}
+        {/* Colonne droite desktop */}
         {!isMobile && (
-          <div style={{ ...card, padding: '1.25rem', position: 'sticky', top: '2rem' }}>
-            <div style={{ ...metaStyle, marginBottom: '0.875rem' }}>Calendrier</div>
-            <MiniCalendar items={items} selectedDay={selectedDay} onDayClick={setSelectedDay} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', position: 'sticky', top: '2rem' }}>
+            <div style={{ ...card, padding: '1.25rem' }}>
+              <div style={{ ...metaStyle, marginBottom: '0.875rem' }}>Calendrier</div>
+              <MiniCalendar items={items} selectedDay={selectedDay} onDayClick={setSelectedDay} />
+            </div>
+            {undatedNotes.length > 0 && (
+              <div style={{ ...card, padding: '1.25rem' }}>
+                <div style={{ ...metaStyle, marginBottom: '0.875rem' }}>Notes libres</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  {undatedNotes.map(item => (
+                    <ItemCard key={item.id} item={item} onEdit={setEditingItem} onDelete={handleDelete} onToggleStatut={handleToggleStatut} />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Mobile: calendrier sous la liste */}
+        {/* Colonne droite mobile */}
         {isMobile && (
-          <div style={{ ...card, padding: '1.25rem' }}>
-            <div style={{ ...metaStyle, marginBottom: '0.875rem' }}>Calendrier</div>
-            <MiniCalendar items={items} selectedDay={selectedDay} onDayClick={setSelectedDay} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ ...card, padding: '1.25rem' }}>
+              <div style={{ ...metaStyle, marginBottom: '0.875rem' }}>Calendrier</div>
+              <MiniCalendar items={items} selectedDay={selectedDay} onDayClick={setSelectedDay} />
+            </div>
+            {undatedNotes.length > 0 && (
+              <div style={{ ...card, padding: '1.25rem' }}>
+                <div style={{ ...metaStyle, marginBottom: '0.875rem' }}>Notes libres</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  {undatedNotes.map(item => (
+                    <ItemCard key={item.id} item={item} onEdit={setEditingItem} onDelete={handleDelete} onToggleStatut={handleToggleStatut} />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

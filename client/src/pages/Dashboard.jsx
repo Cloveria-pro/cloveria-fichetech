@@ -183,8 +183,60 @@ export default function Dashboard() {
     }
   }
 
+  const agendaWidget = (
+    <div style={{ ...card, overflow: 'hidden' }}>
+      <div style={{ padding: '1.1rem 1.5rem', borderBottom: '1px solid #F3EFE8', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={metaStyle}>À venir · 3 jours</div>
+        <Link to="/organisation" style={{ fontSize: '0.78rem', fontWeight: 600, color: T.green, textDecoration: 'none' }}
+          onMouseEnter={e => e.currentTarget.style.opacity = '0.65'}
+          onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+        >
+          Voir tout →
+        </Link>
+      </div>
+      {agendaJ0J2.length === 0 ? (
+        <div style={{ padding: '1rem 1.5rem', fontSize: '0.82rem', color: T.muted }}>
+          Rien dans les 3 prochains jours
+        </div>
+      ) : (
+        <div>
+          {agendaJ0J2.map((it, i) => (
+            <div key={it.id} onClick={() => setDrawerItem(it)} style={{
+              display: 'flex', alignItems: 'center', gap: '0.75rem',
+              padding: '0.7rem 1.25rem',
+              borderBottom: i < agendaJ0J2.length - 1 ? '1px solid #F9F7F4' : 'none',
+              cursor: 'pointer',
+            }}
+              onMouseEnter={e => e.currentTarget.style.background = '#FAFAF8'}
+              onMouseLeave={e => e.currentTarget.style.background = ''}
+            >
+              <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: TYPE_COLORS_AG[it.type] || T.muted, flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {it.titre}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: T.muted, marginTop: '1px' }}>
+                  {formatAgendaDate(it.date)}{it.heure ? ` · ${it.heure}` : ''}
+                </div>
+              </div>
+              <div style={{
+                fontSize: '0.65rem', fontWeight: 700, color: TYPE_COLORS_AG[it.type] || T.muted,
+                background: `${TYPE_COLORS_AG[it.type]}18`, borderRadius: '4px',
+                padding: '1px 6px', flexShrink: 0,
+              }}>
+                {TYPE_LABELS_AG[it.type]}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <div style={{ maxWidth: '760px', fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ maxWidth: '1040px', fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 300px', gap: '1.5rem', alignItems: 'start' }}>
+        <div>
 
       {/* ── Bloc 1 — Hero card ─────────────────────────────────────────────── */}
       <div style={{ ...card, padding: '2rem 2.5rem', marginBottom: '1.5rem' }}>
@@ -388,54 +440,16 @@ export default function Dashboard() {
 
       </div>
 
-      {/* ── Bloc 4 — Agenda J0–J+2 ────────────────────────────────────────── */}
-      <div style={{ ...card, marginTop: '1rem', overflow: 'hidden' }}>
-        <div style={{ padding: '1.1rem 1.75rem', borderBottom: '1px solid #F3EFE8', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={metaStyle}>À venir · 3 prochains jours</div>
-          <Link to="/organisation" style={{ fontSize: '0.78rem', fontWeight: 600, color: T.green, textDecoration: 'none' }}
-            onMouseEnter={e => e.currentTarget.style.opacity = '0.65'}
-            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-          >
-            Voir tout →
-          </Link>
+          {isMobile && <div style={{ marginTop: '1rem' }}>{agendaWidget}</div>}
+
         </div>
 
-        {agendaJ0J2.length === 0 ? (
-          <div style={{ padding: '1.1rem 1.75rem', fontSize: '0.875rem', color: T.muted }}>
-            Rien dans les 3 prochains jours
-          </div>
-        ) : (
-          <div>
-            {agendaJ0J2.map((it, i) => (
-              <div key={it.id} onClick={() => setDrawerItem(it)} style={{
-                display: 'flex', alignItems: 'center', gap: '0.85rem',
-                padding: isMobile ? '0.65rem 1.25rem' : '0.75rem 1.75rem',
-                borderBottom: i < agendaJ0J2.length - 1 ? '1px solid #F9F7F4' : 'none',
-                cursor: 'pointer',
-              }}
-                onMouseEnter={e => e.currentTarget.style.background = '#FAFAF8'}
-                onMouseLeave={e => e.currentTarget.style.background = ''}
-              >
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: TYPE_COLORS_AG[it.type] || T.muted, flexShrink: 0 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {it.titre}
-                  </div>
-                  <div style={{ fontSize: '0.73rem', color: T.muted, marginTop: '1px' }}>
-                    {formatAgendaDate(it.date)}{it.heure ? ` · ${it.heure}` : ''}
-                  </div>
-                </div>
-                <div style={{
-                  fontSize: '0.68rem', fontWeight: 700, color: TYPE_COLORS_AG[it.type] || T.muted,
-                  background: `${TYPE_COLORS_AG[it.type]}18`, borderRadius: '4px',
-                  padding: '2px 7px', flexShrink: 0,
-                }}>
-                  {TYPE_LABELS_AG[it.type]}
-                </div>
-              </div>
-            ))}
+        {!isMobile && (
+          <div style={{ position: 'sticky', top: '2rem' }}>
+            {agendaWidget}
           </div>
         )}
+
       </div>
 
       {drawerItem !== undefined && (
