@@ -1,7 +1,7 @@
 {
   "_meta": {
     "description": "Pack de données d'exemple — brasserie / restaurant traditionnel",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "user_id_placeholder": "__example__",
     "covers": ["Terrine de campagne (entrée)", "Magret sauce vin rouge (plat)", "Tarte aux pommes (dessert)"]
   },
@@ -198,6 +198,99 @@
         "Ajouter la farine d'un coup, sabler du bout des doigts sans trop travailler la pâte.",
         "Former une boule, filmer et réfrigérer 1 h minimum avant utilisation."
       ],
+      "createdAt": "2026-05-24T00:00:00.000Z",
+      "updatedAt": "2026-05-24T00:00:00.000Z"
+    }
+  ],
+  "recettes": [
+    {
+      "id": "ex-rec-01",
+      "user_id": "__example__",
+      "nom": "Terrine de campagne maison",
+      "categorie": "Entrée",
+      "portions": 8,
+      "tempsPreparation": 40,
+      "tempsCuisson": 90,
+      "allergenes": ["oeufs", "lait"],
+      "description": "Terrine rustique de poitrine de porc et foies de volaille, parfumée au thym, cuite au bain-marie. Servie froide en tranches avec cornichons et pain de campagne.",
+      "ingredients": [
+        { "nom": "Poitrine de porc",   "quantite": 2,    "unite": "kg",    "prixUnitaire": 6.80  },
+        { "nom": "Foies de volaille",  "quantite": 0.8,  "unite": "kg",    "prixUnitaire": 5.40  },
+        { "nom": "Échalotes",         "quantite": 0.15, "unite": "kg",    "prixUnitaire": 3.40  },
+        { "nom": "Oeufs frais",        "quantite": 3,    "unite": "piece", "prixUnitaire": 0.28  },
+        { "nom": "Beurre doux",        "quantite": 0.08, "unite": "kg",    "prixUnitaire": 8.20  },
+        { "nom": "Crème liquide 35%",  "quantite": 0.2,  "unite": "L",     "prixUnitaire": 4.80  },
+        { "nom": "Thym frais",         "quantite": 0.01, "unite": "kg",    "prixUnitaire": 12.00 },
+        { "nom": "Huile d'olive",      "quantite": 0.04, "unite": "L",     "prixUnitaire": 9.80  },
+        { "nom": "Fleur de sel",       "quantite": 0.012,"unite": "kg",    "prixUnitaire": 14.00 }
+      ],
+      "etapes": [
+        "Faire revenir les échalotes ciselées dans le beurre jusqu'à transparence. Laisser refroidir. Préchauffer le four à 160°C.",
+        "Passer la poitrine de porc au hachoir (grille moyenne). Nettoyer et parer les foies de volaille, les couper en dés.",
+        "Mélanger viandes hachées, foies, échalotes, crème, œufs battus, thym effeuillé, huile d'olive et fleur de sel. Travailler jusqu'à texture homogène.",
+        "Tasser le mélange dans une terrine, couvrir et cuire au bain-marie 90 min à 160°C — la lame d'un couteau doit ressortir propre. Laisser refroidir, puis réserver au réfrigérateur 12 h avant de démouler.",
+        "Trancher et dresser avec cornichons et fleur de sel."
+      ],
+      "prixVentePratiqueTTC": 10.50,
+      "createdAt": "2026-05-24T00:00:00.000Z",
+      "updatedAt": "2026-05-24T00:00:00.000Z"
+    },
+    {
+      "id": "ex-rec-02",
+      "user_id": "__example__",
+      "nom": "Magret de canard, sauce au vin rouge",
+      "categorie": "Plat viande",
+      "portions": 4,
+      "tempsPreparation": 20,
+      "tempsCuisson": 25,
+      "allergenes": ["lait"],
+      "description": "Magret de canard poêlé peau croustillante, nappé d'une sauce au vin rouge montée au beurre. Finition thym et fleur de sel.",
+      "ingredients": [
+        { "nom": "Magret de canard",    "quantite": 0.9, "unite": "kg",    "prixUnitaire": 18.50 },
+        { "nom": "Échalotes",          "quantite": 0.08,"unite": "kg",    "prixUnitaire": 3.40  },
+        { "nom": "Huile d'olive",       "quantite": 0.02,"unite": "L",     "prixUnitaire": 9.80  },
+        { "nom": "Thym frais",          "quantite": 0.005,"unite": "kg",   "prixUnitaire": 12.00 },
+        { "nom": "Fleur de sel",        "quantite": 0.008,"unite": "kg",   "prixUnitaire": 14.00 },
+        { "nom": "Sauce au vin rouge",  "quantite": 1,   "unite": "unite", "prixUnitaire": 5.967 }
+      ],
+      "etapes": [
+        "Quadriller la peau des magrets au couteau en croisillons sans atteindre la chair. Assaisonner côté chair.",
+        "Poser les magrets côté peau dans une poêle froide. Monter à feu moyen et cuire 8 min en évacuant la graisse régulièrement. Retourner et cuire côté chair 4 min pour une cuisson rosée.",
+        "Retirer les magrets, couvrir de papier aluminium et laisser reposer 5 min.",
+        "Préparer la sauce au vin rouge selon la recette dédiée — réduire vin, fond de veau et échalotes, monter au beurre hors du feu.",
+        "Trancher les magrets en biais, dresser et napper de sauce. Finir avec un brin de thym frais et fleur de sel."
+      ],
+      "prixVentePratiqueTTC": 21.00,
+      "createdAt": "2026-05-24T00:00:00.000Z",
+      "updatedAt": "2026-05-24T00:00:00.000Z"
+    },
+    {
+      "id": "ex-rec-03",
+      "user_id": "__example__",
+      "nom": "Tarte aux pommes, crème légère",
+      "categorie": "Dessert",
+      "portions": 6,
+      "tempsPreparation": 35,
+      "tempsCuisson": 35,
+      "allergenes": ["gluten", "oeufs", "lait"],
+      "description": "Tarte fine sur pâte sablée maison, garniture pommes Golden, appareil crème légère aux œufs. Servie tiède.",
+      "ingredients": [
+        { "nom": "Pâte sablée",       "quantite": 1,    "unite": "unite", "prixUnitaire": 1.664 },
+        { "nom": "Pommes Golden",     "quantite": 2,    "unite": "kg",    "prixUnitaire": 2.10  },
+        { "nom": "Sucre",             "quantite": 0.18, "unite": "kg",    "prixUnitaire": 1.05  },
+        { "nom": "Crème liquide 35%", "quantite": 0.5,  "unite": "L",     "prixUnitaire": 4.80  },
+        { "nom": "Oeufs frais",       "quantite": 3,    "unite": "piece", "prixUnitaire": 0.28  },
+        { "nom": "Beurre doux",       "quantite": 0.10, "unite": "kg",    "prixUnitaire": 8.20  },
+        { "nom": "Fleur de sel",      "quantite": 0.004,"unite": "kg",    "prixUnitaire": 14.00 }
+      ],
+      "etapes": [
+        "Sortir la pâte sablée du réfrigérateur, étaler sur un plan fariné et foncer un moule à tarte de 28 cm. Réfrigérer 15 min. Préchauffer le four à 180°C.",
+        "Éplucher, évider et trancher les pommes en fines lamelles régulières. Faire revenir rapidement dans le beurre avec 60 g de sucre jusqu'à légère caramélisation. Réserver.",
+        "Battre les œufs avec le reste du sucre, incorporer la crème liquide. Assaisonner d'une pincée de fleur de sel.",
+        "Précuire le fond de tarte à blanc 10 min. Disposer les lamelles de pommes en rosace, verser l'appareil crème-œufs.",
+        "Cuire 35 min à 180°C jusqu'à coloration dorée et prise de l'appareil. Laisser tiédir avant de servir."
+      ],
+      "prixVentePratiqueTTC": 7.00,
       "createdAt": "2026-05-24T00:00:00.000Z",
       "updatedAt": "2026-05-24T00:00:00.000Z"
     }
