@@ -138,7 +138,7 @@ export function ItemModal({ item, onSave, onClose }) {
         date: form.date || null,
         dateFin: form.type === 'evenement' ? (form.dateFin || null) : null,
         heure: form.heure || null,
-        statut: form.type === 'rappel' ? (form.statut || 'a_faire') : null,
+        statut: (form.type === 'rappel' || form.type === 'note') ? (form.statut || 'a_faire') : null,
       };
       await onSave(item?.id || null, payload);
       onClose();
@@ -203,8 +203,8 @@ export function ItemModal({ item, onSave, onClose }) {
             </div>
           </div>
 
-          {/* Statut (rappel uniquement) */}
-          {form.type === 'rappel' && (
+          {/* Statut (rappel et note) */}
+          {(form.type === 'rappel' || form.type === 'note') && (
             <div style={sectionStyle}>
               <label style={labelStyle}>Statut</label>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -270,8 +270,8 @@ function ItemCard({ item, onEdit, onDelete, onToggleStatut }) {
       borderRadius: '8px', border: `1px solid ${isPast ? 'rgba(220,38,38,0.18)' : `${typeColor}20`}`,
       transition: 'border-color 0.12s',
     }}>
-      {/* Dot / checkbox for rappel */}
-      {item.type === 'rappel' ? (
+      {/* Dot / checkbox for rappel and note */}
+      {(item.type === 'rappel' || item.type === 'note') ? (
         <button onClick={() => onToggleStatut(item)} title={item.statut === 'fait' ? 'Marquer À faire' : 'Marquer Fait'} style={{
           width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0, marginTop: '2px',
           border: `2px solid ${item.statut === 'fait' ? T.green : '#D6D0C8'}`,
@@ -302,7 +302,7 @@ function ItemCard({ item, onEdit, onDelete, onToggleStatut }) {
               {CAT_LABELS[item.categorie] || item.categorie}
             </span>
           )}
-          {item.type === 'rappel' && item.statut !== 'fait' && (
+          {(item.type === 'rappel' || item.type === 'note') && item.statut && item.statut !== 'fait' && (
             <span style={{ fontSize: '0.68rem', fontWeight: 700, color: STATUT_COLORS[item.statut] || T.muted }}>
               {STATUT_LABELS[item.statut] || item.statut}
             </span>
@@ -324,6 +324,55 @@ function ItemCard({ item, onEdit, onDelete, onToggleStatut }) {
           ✕
         </button>
       </div>
+    </div>
+  );
+}
+
+/* ── Sidebar card (colonne droite, description non tronquée) ── */
+function SidebarCard({ item, onEdit, onDelete, onToggleStatut }) {
+  const typeColor = TYPE_COLORS[item.type] || T.muted;
+  const effectiveStatut = item.statut || 'a_faire';
+  const isDone = effectiveStatut === 'fait';
+  return (
+    <div style={{
+      padding: '0.7rem 0.875rem',
+      background: isDone ? '#FAFAF8' : `${typeColor}07`,
+      borderRadius: '8px',
+      border: `1px solid ${typeColor}1A`,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+        {(item.type === 'rappel' || item.type === 'note') ? (
+          <button onClick={() => onToggleStatut(item)} title={isDone ? 'Marquer À faire' : 'Marquer Fait'} style={{
+            width: '15px', height: '15px', borderRadius: '50%', flexShrink: 0, marginTop: '2px',
+            border: `2px solid ${isDone ? T.green : typeColor}`,
+            background: isDone ? T.green : 'transparent',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            {isDone && <svg width="8" height="8" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+          </button>
+        ) : (
+          <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: typeColor, flexShrink: 0, marginTop: '4px' }} />
+        )}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '0.82rem', fontWeight: 600, color: isDone ? T.muted : T.text, textDecoration: isDone ? 'line-through' : 'none', lineHeight: 1.4 }}>
+            {item.titre}
+          </div>
+          {item.categorie && (
+            <span style={{ fontSize: '0.63rem', color: T.muted, background: '#F3EFE8', padding: '1px 6px', borderRadius: '99px', display: 'inline-block', marginTop: '3px' }}>
+              {CAT_LABELS[item.categorie] || item.categorie}
+            </span>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: '0.2rem', flexShrink: 0 }}>
+          <button onClick={() => onEdit(item)} style={{ padding: '0.2rem 0.45rem', background: 'none', border: '1px solid #E5E0D8', borderRadius: '5px', cursor: 'pointer', fontSize: '0.62rem', color: T.muted, fontFamily: "'DM Sans', sans-serif" }}>✏️</button>
+          <button onClick={() => onDelete(item.id)} style={{ padding: '0.2rem 0.45rem', background: 'none', border: '1px solid rgba(220,38,38,0.2)', borderRadius: '5px', cursor: 'pointer', fontSize: '0.62rem', color: T.red, fontFamily: "'DM Sans', sans-serif" }}>✕</button>
+        </div>
+      </div>
+      {item.description && !isDone && (
+        <div style={{ fontSize: '0.77rem', color: T.muted, lineHeight: 1.55, paddingLeft: '1.4rem', marginTop: '5px' }}>
+          {item.description}
+        </div>
+      )}
     </div>
   );
 }
@@ -377,14 +426,14 @@ export default function Organisation() {
     }
   }
 
-  // Notes sans date → colonne droite (respecte filterType, pas selectedDay)
-  const undatedNotes = items.filter(i =>
-    i.type === 'note' && !i.date && (!filterType || filterType === 'note')
+  // Tous les éléments sans date → colonne droite (respecte filterType, pas selectedDay)
+  const undated = items.filter(i =>
+    !i.date && (!filterType || i.type === filterType)
   );
 
-  // Colonne principale : tout sauf notes sans date
+  // Colonne principale : tout sauf éléments sans date
   const filteredMain = items.filter(i => {
-    if (i.type === 'note' && !i.date) return false;
+    if (!i.date) return false;
     if (filterType && i.type !== filterType) return false;
     if (selectedDay) {
       const start = i.date?.slice(0, 10);
@@ -411,6 +460,49 @@ export default function Organisation() {
   }, []);
 
   const metaStyle = { fontSize: '0.65rem', fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.1em' };
+
+  const STATUT_SECTIONS_UD = [
+    { key: 'a_faire', label: 'À faire' },
+    { key: 'reporte', label: 'Reporté' },
+    { key: 'fait', label: 'Fait' },
+  ];
+
+  const sidebarRight = (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{ ...card, padding: '1.25rem' }}>
+        <div style={{ ...metaStyle, marginBottom: '0.875rem' }}>Calendrier</div>
+        <MiniCalendar items={items} selectedDay={selectedDay} onDayClick={setSelectedDay} />
+      </div>
+      {undated.length > 0 && (
+        <div style={{ ...card, padding: '1.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '1rem' }}>
+            <div style={metaStyle}>À organiser</div>
+            {undated.filter(i => (i.statut || 'a_faire') !== 'fait').length > 0 && (
+              <span style={{ fontSize: '0.7rem', color: T.muted }}>
+                {undated.filter(i => (i.statut || 'a_faire') !== 'fait').length} en cours
+              </span>
+            )}
+          </div>
+          {STATUT_SECTIONS_UD.map(({ key, label }) => {
+            const secItems = undated.filter(i => (i.statut || 'a_faire') === key);
+            if (secItems.length === 0) return null;
+            return (
+              <div key={key} style={{ marginBottom: '0.875rem' }}>
+                <div style={{ fontSize: '0.63rem', fontWeight: 700, color: STATUT_COLORS[key], textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.375rem' }}>
+                  {label}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  {secItems.map(item => (
+                    <SidebarCard key={item.id} item={item} onEdit={setEditingItem} onDelete={handleDelete} onToggleStatut={handleToggleStatut} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div style={{ maxWidth: '900px', fontFamily: "'DM Sans', sans-serif" }}>
@@ -445,7 +537,7 @@ export default function Organisation() {
       </div>
 
       {/* Layout */}
-      <div style={{ display: isMobile ? 'flex' : 'grid', flexDirection: 'column', gridTemplateColumns: '1fr 280px', gap: '1.25rem', alignItems: 'start' }}>
+      <div style={{ display: isMobile ? 'flex' : 'grid', flexDirection: 'column', gridTemplateColumns: '1fr 320px', gap: '1.25rem', alignItems: 'start' }}>
 
         {/* Liste */}
         <div>
@@ -464,8 +556,8 @@ export default function Organisation() {
               <div style={{ color: T.muted, fontSize: '0.82rem' }}>
                 {filterType || selectedDay
                   ? 'Modifiez les filtres ou ajoutez un nouvel élément.'
-                  : undatedNotes.length > 0
-                    ? 'Vos notes libres sont affichées dans la colonne de droite.'
+                  : undated.length > 0
+                    ? 'Les éléments sans date sont affichés dans la colonne de droite.'
                     : 'Cliquez sur « + Ajouter » pour créer votre premier rappel, événement ou note.'}
               </div>
             </div>
@@ -489,43 +581,13 @@ export default function Organisation() {
 
         {/* Colonne droite desktop */}
         {!isMobile && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', position: 'sticky', top: '2rem' }}>
-            <div style={{ ...card, padding: '1.25rem' }}>
-              <div style={{ ...metaStyle, marginBottom: '0.875rem' }}>Calendrier</div>
-              <MiniCalendar items={items} selectedDay={selectedDay} onDayClick={setSelectedDay} />
-            </div>
-            {undatedNotes.length > 0 && (
-              <div style={{ ...card, padding: '1.25rem' }}>
-                <div style={{ ...metaStyle, marginBottom: '0.875rem' }}>Notes libres</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                  {undatedNotes.map(item => (
-                    <ItemCard key={item.id} item={item} onEdit={setEditingItem} onDelete={handleDelete} onToggleStatut={handleToggleStatut} />
-                  ))}
-                </div>
-              </div>
-            )}
+          <div style={{ position: 'sticky', top: '2rem' }}>
+            {sidebarRight}
           </div>
         )}
 
         {/* Colonne droite mobile */}
-        {isMobile && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ ...card, padding: '1.25rem' }}>
-              <div style={{ ...metaStyle, marginBottom: '0.875rem' }}>Calendrier</div>
-              <MiniCalendar items={items} selectedDay={selectedDay} onDayClick={setSelectedDay} />
-            </div>
-            {undatedNotes.length > 0 && (
-              <div style={{ ...card, padding: '1.25rem' }}>
-                <div style={{ ...metaStyle, marginBottom: '0.875rem' }}>Notes libres</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                  {undatedNotes.map(item => (
-                    <ItemCard key={item.id} item={item} onEdit={setEditingItem} onDelete={handleDelete} onToggleStatut={handleToggleStatut} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        {isMobile && sidebarRight}
       </div>
 
       {/* Modal */}

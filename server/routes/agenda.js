@@ -34,7 +34,7 @@ router.post('/', async (req, res) => {
       date: date || null,
       dateFin: type === 'evenement' ? (dateFin || null) : null,
       heure: heure || null,
-      statut: type === 'rappel' ? (statut || 'a_faire') : null,
+      statut: (type === 'rappel' || type === 'note') ? (statut || 'a_faire') : null,
       createdAt: now,
       updatedAt: now,
     };
@@ -63,7 +63,7 @@ router.put('/:id', async (req, res) => {
           date: date || null,
           dateFin: type === 'evenement' ? (dateFin || null) : null,
           heure: heure || null,
-          statut: type === 'rappel' ? (statut || 'a_faire') : null,
+          statut: (type === 'rappel' || type === 'note') ? (statut || 'a_faire') : null,
           updatedAt: new Date().toISOString(),
         },
       },

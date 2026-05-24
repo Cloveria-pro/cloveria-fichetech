@@ -202,7 +202,7 @@ export default function Dashboard() {
         <div>
           {agendaJ0J2.map((it, i) => (
             <div key={it.id} onClick={() => setDrawerItem(it)} style={{
-              display: 'flex', alignItems: 'center', gap: '0.75rem',
+              display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
               padding: '0.7rem 1.25rem',
               borderBottom: i < agendaJ0J2.length - 1 ? '1px solid #F9F7F4' : 'none',
               cursor: 'pointer',
@@ -210,12 +210,12 @@ export default function Dashboard() {
               onMouseEnter={e => e.currentTarget.style.background = '#FAFAF8'}
               onMouseLeave={e => e.currentTarget.style.background = ''}
             >
-              <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: TYPE_COLORS_AG[it.type] || T.muted, flexShrink: 0 }} />
+              <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: TYPE_COLORS_AG[it.type] || T.muted, flexShrink: 0, marginTop: '4px' }} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '0.82rem', fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 600, color: T.text, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                   {it.titre}
                 </div>
-                <div style={{ fontSize: '0.72rem', color: T.muted, marginTop: '1px' }}>
+                <div style={{ fontSize: '0.72rem', color: T.muted, marginTop: '2px' }}>
                   {formatAgendaDate(it.date)}{it.heure ? ` · ${it.heure}` : ''}
                 </div>
               </div>
@@ -235,7 +235,7 @@ export default function Dashboard() {
 
   return (
     <div style={{ maxWidth: '1040px', fontFamily: "'DM Sans', sans-serif" }}>
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 300px', gap: '1.5rem', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 340px', gap: '1.5rem', alignItems: 'start' }}>
         <div>
 
       {/* ── Bloc 1 — Hero card ─────────────────────────────────────────────── */}
