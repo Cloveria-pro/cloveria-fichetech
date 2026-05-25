@@ -37,6 +37,7 @@ export default function Admin() {
   const [filterVerified, setFilterVerified] = useState('all');
   const [filterSub, setFilterSub] = useState('all');
   const [search, setSearch] = useState('');
+  const [deleteMsg, setDeleteMsg] = useState('');
 
   useEffect(() => {
     if (key) fetchUsers(key);
@@ -70,6 +71,51 @@ export default function Admin() {
     if (!keyInput.trim()) return;
     sessionStorage.setItem('adminKey', keyInput.trim());
     setKey(keyInput.trim());
+  }
+
+  function isTestAccount(email) {
+    const lower = (email || '').toLowerCase();
+    return ['test', 'beuce', 'chez'].some(m => lower.includes(m));
+  }
+
+  async function handleDeleteOne(u) {
+    if (!window.confirm(`⚠️ Action irréversible\n\nSupprimer définitivement le compte :\n${u.email}\n\nCette action ne peut pas être annulée.`)) return;
+    setDeleteMsg('');
+    try {
+      const res = await fetch(`${API_URL}/admin/test-accounts/${u.id}`, {
+        method: 'DELETE',
+        headers: { 'X-Admin-Key': key },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+      setDeleteMsg(`✓ Compte supprimé : ${data.deleted}`);
+      setUsers(prev => prev.filter(x => x.id !== u.id));
+    } catch (e) {
+      setDeleteMsg(`✗ Erreur : ${e.message}`);
+    }
+  }
+
+  async function handleDeleteAll() {
+    const testAccounts = users.filter(u => isTestAccount(u.email));
+    if (testAccounts.length === 0) { setDeleteMsg('Aucun compte test à supprimer.'); return; }
+    const confirmation = window.prompt(
+      `⚠️ SUPPRESSION IRRÉVERSIBLE DE TOUS LES COMPTES TEST\n\n${testAccounts.length} compte(s) seront supprimés définitivement :\n${testAccounts.map(u => u.email).join('\n')}\n\nTapez SUPPRIMER pour confirmer :`
+    );
+    if (confirmation !== 'SUPPRIMER') { setDeleteMsg('Suppression annulée.'); return; }
+    setDeleteMsg('');
+    try {
+      const res = await fetch(`${API_URL}/admin/test-accounts`, {
+        method: 'DELETE',
+        headers: { 'X-Admin-Key': key },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+      setDeleteMsg(`✓ ${data.deleted} compte(s) supprimé(s) : ${data.emails.join(', ')}`);
+      const deletedEmails = new Set(data.emails);
+      setUsers(prev => prev.filter(x => !deletedEmails.has(x.email)));
+    } catch (e) {
+      setDeleteMsg(`✗ Erreur : ${e.message}`);
+    }
   }
 
   function handleLogout() {
@@ -174,6 +220,26 @@ export default function Admin() {
           </select>
         </div>
 
+        {users.some(u => isTestAccount(u.email)) && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '8px', padding: '0.65rem 1rem' }}>
+            <span style={{ fontSize: '0.82rem', color: '#991B1B', flex: 1 }}>
+              {users.filter(u => isTestAccount(u.email)).length} compte(s) test détecté(s)
+            </span>
+            <button
+              onClick={handleDeleteAll}
+              style={{ padding: '0.4rem 0.9rem', background: '#DC2626', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
+            >
+              🗑 Supprimer tous les comptes test
+            </button>
+          </div>
+        )}
+
+        {deleteMsg && (
+          <p style={{ fontSize: '0.82rem', marginBottom: '0.75rem', color: deleteMsg.startsWith('✓') ? '#065F46' : '#991B1B', background: deleteMsg.startsWith('✓') ? '#D1FAE5' : '#FEE2E2', border: `1px solid ${deleteMsg.startsWith('✓') ? '#6EE7B7' : '#FCA5A5'}`, borderRadius: '7px', padding: '0.5rem 0.85rem' }}>
+            {deleteMsg}
+          </p>
+        )}
+
         {error && <p style={{ color: '#DC2626', fontSize: '0.85rem', marginBottom: '1rem' }}>{error}</p>}
 
         {/* Tableau */}
@@ -181,7 +247,7 @@ export default function Admin() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
             <thead>
               <tr style={{ borderBottom: `2px solid ${T.border}`, background: '#FAFAF9' }}>
-                {['Email', 'Établissement', 'Inscription', 'Email vérifié', 'Onboarding', 'Fiches / Cartes*', 'Abonnement', 'Statut commercial', 'Essai'].map(h => (
+                {['Email', 'Établissement', 'Inscription', 'Email vérifié', 'Onboarding', 'Fiches / Cartes*', 'Abonnement', 'Statut commercial', 'Essai', ''].map(h => (
                   <th key={h} style={{ padding: '0.7rem 1rem', textAlign: 'left', fontWeight: 700, color: T.muted, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
                     {h}
                   </th>
@@ -232,19 +298,30 @@ export default function Admin() {
                         ? daysLeft > 0 ? `${daysLeft}j restants` : 'Expiré'
                         : '—'}
                     </td>
+                    <td style={{ padding: '0.6rem 0.75rem', whiteSpace: 'nowrap' }}>
+                      {isTestAccount(u.email) && (
+                        <button
+                          onClick={() => handleDeleteOne(u)}
+                          title="Supprimer ce compte test"
+                          style={{ padding: '0.28rem 0.65rem', background: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5', borderRadius: '5px', fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'inherit' }}
+                        >
+                          🗑 Suppr.
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} style={{ padding: '2.5rem', textAlign: 'center', color: T.muted }}>
+                  <td colSpan={10} style={{ padding: '2.5rem', textAlign: 'center', color: T.muted }}>
                     Aucun utilisateur correspondant aux filtres.
                   </td>
                 </tr>
               )}
               {loading && (
                 <tr>
-                  <td colSpan={9} style={{ padding: '2.5rem', textAlign: 'center', color: T.muted }}>
+                  <td colSpan={10} style={{ padding: '2.5rem', textAlign: 'center', color: T.muted }}>
                     Chargement…
                   </td>
                 </tr>

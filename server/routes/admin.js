@@ -24,6 +24,11 @@ const SAFE_PROJECTION = {
   },
 };
 
+function isTestAccount(email) {
+  const lower = (email || '').toLowerCase();
+  return ['test', 'beuce', 'chez'].some(marker => lower.includes(marker));
+}
+
 function computeStatut(u, nbFiches) {
   if (u.subscriptionStatus === 'active') return 'client engagé';
   if (!u.emailVerified) return 'lead';
@@ -85,6 +90,33 @@ router.post('/reset-user-password', adminAuth, async (req, res) => {
     );
     if (result.matchedCount === 0) return res.status(404).json({ error: 'Utilisateur introuvable' });
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/test-accounts/:id', adminAuth, async (req, res) => {
+  try {
+    const db = await getDb();
+    const user = await db.collection('users').findOne({ id: req.params.id }, { projection: { _id: 0, id: 1, email: 1 } });
+    if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+    if (!isTestAccount(user.email)) return res.status(403).json({ error: 'Compte non autorisé à la suppression — email ne correspond pas à un compte test' });
+    await db.collection('users').deleteOne({ id: user.id });
+    res.json({ success: true, deleted: user.email });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/test-accounts', adminAuth, async (req, res) => {
+  try {
+    const db = await getDb();
+    const all = await db.collection('users').find({}, { projection: { _id: 0, id: 1, email: 1 } }).toArray();
+    const targets = all.filter(u => isTestAccount(u.email));
+    if (targets.length === 0) return res.json({ success: true, deleted: 0, emails: [] });
+    const ids = targets.map(u => u.id);
+    const result = await db.collection('users').deleteMany({ id: { $in: ids } });
+    res.json({ success: true, deleted: result.deletedCount, emails: targets.map(u => u.email) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
