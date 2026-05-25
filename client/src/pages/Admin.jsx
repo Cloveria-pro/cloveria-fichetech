@@ -36,6 +36,7 @@ export default function Admin() {
   const [filterStatut, setFilterStatut] = useState('all');
   const [filterVerified, setFilterVerified] = useState('all');
   const [filterSub, setFilterSub] = useState('all');
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     if (key) fetchUsers(key);
@@ -85,6 +86,12 @@ export default function Admin() {
     if (filterVerified === 'no' && u.emailVerified) return false;
     if (filterSub === 'active' && u.subscriptionStatus !== 'active') return false;
     if (filterSub === 'trial' && u.subscriptionStatus !== 'trial') return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      const emailMatch = (u.email || '').toLowerCase().includes(q);
+      const etabMatch = (u.etablissement || '').toLowerCase().includes(q);
+      if (!emailMatch && !etabMatch) return false;
+    }
     return true;
   });
 
@@ -136,6 +143,15 @@ export default function Admin() {
             <button onClick={handleLogout} style={{ ...inputBase, background: T.white }}>Déconnexion</button>
           </div>
         </div>
+
+        {/* Recherche */}
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Rechercher par email ou établissement"
+          style={{ ...inputBase, width: '100%', maxWidth: '420px', marginBottom: '0.75rem', padding: '0.6rem 0.9rem', fontSize: '0.84rem', cursor: 'text' }}
+        />
 
         {/* Filtres */}
         <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
