@@ -275,6 +275,7 @@ router.delete('/account', authMiddleware, async (req, res) => {
   const match = await bcrypt.compare(password, user.password_hash);
   if (!match) return res.status(401).json({ error: 'Mot de passe incorrect' });
 
+  if (user.deleted) return res.json({ success: true });
   await col.updateOne(
     { id: user.id },
     { $set: { deleted: true, deletedAt: new Date().toISOString(), disabled: true, updated_at: new Date().toISOString() } }
