@@ -172,16 +172,15 @@ export default function Register({ onLogin }) {
               </label>
 
               {archivedEmail && (
-                <div style={{ background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1.25rem', fontSize: '0.845rem', color: '#7C2D12', lineHeight: 1.55 }}>
-                  <div style={{ fontWeight: 700, marginBottom: '4px' }}>Un compte existe déjà avec cette adresse.</div>
-                  <div>S'il a été archivé, vous pouvez retrouver l'accès via{' '}
-                    <Link to="/forgot-password" style={{ color: '#C2410C', fontWeight: 600, textDecoration: 'underline' }}>Mot de passe oublié ?</Link>
-                  </div>
-                  <div style={{ marginTop: '4px' }}>
-                    Besoin d'aide ?{' '}
-                    <a href="mailto:contact@cloveria.fr" style={{ color: '#C2410C', fontWeight: 600, textDecoration: 'underline' }}>contact@cloveria.fr</a>
-                    {' '}🍀
-                  </div>
+                <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1.25rem', fontSize: '0.855rem', color: '#1E3A5F', lineHeight: 1.6 }}>
+                  Un compte existe déjà avec cette adresse email.{' '}
+                  Essayez de{' '}
+                  <Link to="/login" style={{ color: '#1D4ED8', fontWeight: 600, textDecoration: 'underline' }}>vous connecter</Link>
+                  , utilisez{' '}
+                  <Link to="/forgot-password" style={{ color: '#1D4ED8', fontWeight: 600, textDecoration: 'underline' }}>« Mot de passe oublié ? »</Link>
+                  , ou contactez-nous à{' '}
+                  <a href="mailto:contact@cloveria.fr" style={{ color: '#1D4ED8', fontWeight: 600, textDecoration: 'underline' }}>contact@cloveria.fr</a>
+                  {' '}si besoin.
                 </div>
               )}
 
