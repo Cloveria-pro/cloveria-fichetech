@@ -2,7 +2,11 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-import { randomBytes } from 'crypto';
+import { randomBytes, createHash } from 'crypto';
+
+function hashResetToken(raw) {
+  return createHash('sha256').update(raw).digest('hex');
+}
 import { getDb } from '../db.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { envoyerConfirmationEmail, envoyerResetEmail } from '../emails/verification.js';
@@ -111,13 +115,14 @@ router.post('/forgot-password', async (req, res) => {
     const db = await getDb();
     const user = await db.collection('users').findOne({ email: email.toLowerCase().trim() }, PROJ);
     if (user) {
-      const token = uuidv4();
+      const rawToken = uuidv4();
+      const tokenHash = hashResetToken(rawToken);
       const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
       await db.collection('users').updateOne(
         { id: user.id },
-        { $set: { passwordResetToken: token, passwordResetExpiry: expiry } }
+        { $set: { passwordResetToken: tokenHash, passwordResetExpiry: expiry } }
       );
-      envoyerResetEmail(user.email, token).catch(console.error);
+      envoyerResetEmail(user.email, rawToken).catch(console.error);
     }
   } catch (err) {
     console.error('[ForgotPassword]', err.message);
@@ -132,7 +137,8 @@ router.post('/reset-password', async (req, res) => {
 
   const db = await getDb();
   const col = db.collection('users');
-  const user = await col.findOne({ passwordResetToken: token }, PROJ);
+  const tokenHash = hashResetToken(token);
+  const user = await col.findOne({ passwordResetToken: tokenHash }, PROJ);
   if (!user) return res.status(400).json({ error: 'Lien invalide ou déjà utilisé' });
   if (new Date(user.passwordResetExpiry) < new Date()) {
     return res.status(400).json({ error: 'Lien expiré. Demandez un nouveau lien depuis la page de connexion.' });
