@@ -6,6 +6,7 @@ import { randomBytes, createHash } from 'crypto';
 import { getDb } from '../db.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { envoyerConfirmationEmail, envoyerResetEmail } from '../emails/verification.js';
+import { notifierNouveauClient, notifierSuppressionCompte } from '../emails/notifications.js';
 
 const router = express.Router();
 
@@ -196,6 +197,7 @@ router.get('/verify-email', async (req, res) => {
     $set: { emailVerified: true },
     $unset: { emailVerificationToken: '', emailVerificationExpiry: '', emailVerificationSentAt: '' },
   });
+  notifierNouveauClient({ email: user.email, etablissement: user.etablissement, id: user.id });
   res.json({ success: true });
 });
 
@@ -277,6 +279,7 @@ router.delete('/account', authMiddleware, async (req, res) => {
     { id: user.id },
     { $set: { deleted: true, deletedAt: new Date().toISOString(), disabled: true, updated_at: new Date().toISOString() } }
   );
+  notifierSuppressionCompte({ email: user.email, etablissement: user.etablissement, id: user.id });
   res.json({ success: true });
 });
 

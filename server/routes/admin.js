@@ -1,6 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import { getDb } from '../db.js';
+import { notifierSuppressionCompte } from '../emails/notifications.js';
 
 const router = express.Router();
 
@@ -123,6 +124,7 @@ router.delete('/users/:id', adminAuth, async (req, res) => {
       { id: user.id },
       { $set: { deleted: true, deletedAt: new Date().toISOString(), disabled: true, updated_at: new Date().toISOString() } }
     );
+    notifierSuppressionCompte({ email: user.email, etablissement: user.etablissement, id: user.id });
     res.json({ success: true, archived: user.email });
   } catch (err) {
     res.status(500).json({ error: err.message });
