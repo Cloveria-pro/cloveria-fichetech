@@ -105,7 +105,8 @@ router.post('/login', async (req, res) => {
   const user = await col.findOne({ email: email.toLowerCase().trim() }, PROJ);
   if (!user) return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
 
-  if (user.disabled || user.deleted) return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
+  if (user.deleted)  return res.status(401).json({ error: 'account_archived' });
+  if (user.disabled) return res.status(401).json({ error: 'account_disabled' });
 
   const match = await bcrypt.compare(password, user.password_hash);
   if (!match) return res.status(401).json({ error: 'Email ou mot de passe incorrect' });

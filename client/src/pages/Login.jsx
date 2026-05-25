@@ -26,7 +26,12 @@ export default function Login({ onLogin }) {
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || 'Erreur de connexion'); return; }
+      if (!res.ok) {
+        if (data.error === 'account_disabled' || data.error === 'account_archived')
+          setError('Ce compte a été désactivé. Merci de contacter CloverIA à contact@cloveria.fr.');
+        else setError(data.error || 'Erreur de connexion');
+        return;
+      }
       onLogin(data.token, data.user);
     } catch {
       setError('Erreur réseau. Vérifiez que le serveur est démarré.');
