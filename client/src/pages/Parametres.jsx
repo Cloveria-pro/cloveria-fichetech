@@ -51,7 +51,7 @@ export default function Parametres() {
       fetch('/api/parametres').then(r => r.json()),
       api.profil.get().catch(() => null),
     ]).then(([params, p]) => {
-      setForm(params);
+      setForm({ ...params, etablissement: p?.etablissement || params.etablissement || '' });
       setProfil(p);
       setLoading(false);
     });
@@ -60,11 +60,15 @@ export default function Parametres() {
   useEffect(() => {
     if (skipSave.current) { skipSave.current = false; return; }
     const timer = setTimeout(() => {
-      fetch('/api/parametres', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      }).then(() => { setSaved(true); setTimeout(() => setSaved(false), 2000); });
+      const { etablissement, ...paramFields } = form;
+      Promise.all([
+        fetch('/api/parametres', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(paramFields),
+        }),
+        api.profil.update({ etablissement }),
+      ]).then(() => { setSaved(true); setTimeout(() => setSaved(false), 2000); });
     }, 500);
     return () => clearTimeout(timer);
   }, [form]);

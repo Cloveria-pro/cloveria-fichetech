@@ -26,6 +26,7 @@ import CGU from './pages/CGU.jsx';
 import PolitiqueConfidentialite from './pages/PolitiqueConfidentialite.jsx';
 import MentionsLegales from './pages/MentionsLegales.jsx';
 import { useWindowWidth } from './hooks/useWindowWidth.js';
+import { api } from './api.js';
 
 const SIDEBAR_W = '224px';
 
@@ -159,8 +160,9 @@ export default function App() {
     return (
       <Routes>
         <Route path="/onboarding" element={
-          <Onboarding onComplete={() => {
-            const newUser = { ...user, onboardingComplete: true };
+          <Onboarding onComplete={async () => {
+            const fresh = await api.profil.get().catch(() => null);
+            const newUser = { ...user, onboardingComplete: true, etablissement: fresh?.etablissement || user.etablissement || '' };
             localStorage.setItem('user', JSON.stringify(newUser));
             setUser(newUser);
           }} />
