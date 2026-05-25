@@ -103,7 +103,7 @@ router.post('/login', async (req, res) => {
   const user = await col.findOne({ email: email.toLowerCase().trim() }, PROJ);
   if (!user) return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
 
-  if (user.disabled) return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
+  if (user.disabled || user.deleted) return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
 
   const match = await bcrypt.compare(password, user.password_hash);
   if (!match) return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
@@ -270,7 +270,10 @@ router.delete('/account', authMiddleware, async (req, res) => {
   const match = await bcrypt.compare(password, user.password_hash);
   if (!match) return res.status(401).json({ error: 'Mot de passe incorrect' });
 
-  await col.deleteOne({ id: user.id });
+  await col.updateOne(
+    { id: user.id },
+    { $set: { deleted: true, deletedAt: new Date().toISOString(), disabled: true, updated_at: new Date().toISOString() } }
+  );
   res.json({ success: true });
 });
 

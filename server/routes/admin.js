@@ -67,6 +67,8 @@ router.get('/users', adminAuth, async (req, res) => {
         nbCartes,
         examplePackChoice: u.examplePackChoice || null,
         disabled: u.disabled === true,
+        deleted: u.deleted === true,
+        deletedAt: u.deletedAt || null,
         statutCommercial: computeStatut(u, nbFiches),
       };
     }));
@@ -117,8 +119,29 @@ router.delete('/users/:id', adminAuth, async (req, res) => {
     const db = await getDb();
     const user = await db.collection('users').findOne({ id: req.params.id }, { projection: { _id: 0, id: 1, email: 1 } });
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
-    await db.collection('users').deleteOne({ id: user.id });
-    res.json({ success: true, deleted: user.email });
+    await db.collection('users').updateOne(
+      { id: user.id },
+      { $set: { deleted: true, deletedAt: new Date().toISOString(), disabled: true, updated_at: new Date().toISOString() } }
+    );
+    res.json({ success: true, archived: user.email });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.patch('/users/:id/restore', adminAuth, async (req, res) => {
+  try {
+    const db = await getDb();
+    const user = await db.collection('users').findOne({ id: req.params.id }, { projection: { _id: 0, id: 1, email: 1 } });
+    if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+    await db.collection('users').updateOne(
+      { id: user.id },
+      {
+        $unset: { deleted: '', deletedAt: '' },
+        $set: { disabled: false, updated_at: new Date().toISOString() },
+      }
+    );
+    res.json({ success: true, restored: user.email });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

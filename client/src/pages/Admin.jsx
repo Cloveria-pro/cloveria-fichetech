@@ -37,6 +37,7 @@ export default function Admin() {
   const [filterVerified, setFilterVerified] = useState('all');
   const [filterSub, setFilterSub] = useState('all');
   const [search, setSearch] = useState('');
+  const [filterAccountStatus, setFilterAccountStatus] = useState('active');
   const [deleteMsg, setDeleteMsg] = useState('');
 
   useEffect(() => {
@@ -107,8 +108,25 @@ export default function Admin() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erreur serveur');
-      setDeleteMsg(`✓ Compte supprimé définitivement : ${data.deleted}`);
-      setUsers(prev => prev.filter(x => x.id !== u.id));
+      setDeleteMsg(`✓ Compte archivé : ${data.archived}`);
+      setUsers(prev => prev.map(x => x.id === u.id ? { ...x, deleted: true, deletedAt: new Date().toISOString(), disabled: true } : x));
+    } catch (e) {
+      setDeleteMsg(`✗ Erreur : ${e.message}`);
+    }
+  }
+
+  async function handleRestoreUser(u) {
+    if (!window.confirm(`↩ Restaurer le compte :\n${u.email}\n\nLe compte retrouvera un accès normal à l'application.`)) return;
+    setDeleteMsg('');
+    try {
+      const res = await fetch(`${API_URL}/admin/users/${u.id}/restore`, {
+        method: 'PATCH',
+        headers: { 'X-Admin-Key': key },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+      setDeleteMsg(`✓ Compte restauré : ${data.restored}`);
+      setUsers(prev => prev.map(x => x.id === u.id ? { ...x, deleted: false, deletedAt: null, disabled: false } : x));
     } catch (e) {
       setDeleteMsg(`✗ Erreur : ${e.message}`);
     }
@@ -163,6 +181,8 @@ export default function Admin() {
   }
 
   const filtered = users.filter(u => {
+    if (filterAccountStatus === 'active' && u.deleted) return false;
+    if (filterAccountStatus === 'archived' && !u.deleted) return false;
     if (filterStatut !== 'all' && u.statutCommercial !== filterStatut) return false;
     if (filterVerified === 'yes' && !u.emailVerified) return false;
     if (filterVerified === 'no' && u.emailVerified) return false;
@@ -237,6 +257,11 @@ export default function Admin() {
 
         {/* Filtres */}
         <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+          <select value={filterAccountStatus} onChange={e => setFilterAccountStatus(e.target.value)} style={{ ...inputBase, fontWeight: 600 }}>
+            <option value="active">Comptes actifs</option>
+            <option value="archived">Archivés</option>
+            <option value="all">Tous</option>
+          </select>
           <select value={filterStatut} onChange={e => setFilterStatut(e.target.value)} style={inputBase}>
             <option value="all">Tous statuts</option>
             <option value="lead">Lead</option>
@@ -294,11 +319,14 @@ export default function Admin() {
               {filtered.map((u, i) => {
                 const daysLeft = trialDaysLeft(u.trialEndDate);
                 const sStyle = STATUT_STYLE[u.statutCommercial] || STATUT_STYLE['lead'];
+                const isArchived = u.deleted === true;
+                const rowBg = isArchived ? '#F9F9F9' : i % 2 === 0 ? T.white : '#FAFAF9';
                 return (
-                  <tr key={u.id} style={{ borderBottom: `1px solid ${T.border}`, background: i % 2 === 0 ? T.white : '#FAFAF9' }}>
-                    <td style={{ padding: '0.6rem 1rem', color: u.disabled ? T.muted : T.text, fontWeight: 500, maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <tr key={u.id} style={{ borderBottom: `1px solid ${T.border}`, background: rowBg, opacity: isArchived ? 0.65 : 1 }}>
+                    <td style={{ padding: '0.6rem 1rem', color: T.muted, fontWeight: 500, maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {u.email}
-                      {u.disabled && <span style={{ marginLeft: '6px', fontSize: '0.65rem', background: '#F3F4F6', color: '#6B7280', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>désactivé</span>}
+                      {isArchived && <span style={{ marginLeft: '6px', fontSize: '0.65rem', background: '#E5E7EB', color: '#6B7280', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>archivé</span>}
+                      {!isArchived && u.disabled && <span style={{ marginLeft: '6px', fontSize: '0.65rem', background: '#F3F4F6', color: '#6B7280', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>désactivé</span>}
                     </td>
                     <td style={{ padding: '0.6rem 1rem', color: T.text, maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {u.etablissement || '—'}
@@ -337,29 +365,41 @@ export default function Admin() {
                     </td>
                     <td style={{ padding: '0.6rem 0.75rem', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                        <button
-                          onClick={() => handleDisableToggle(u)}
-                          title={u.disabled ? 'Réactiver ce compte' : 'Désactiver ce compte'}
-                          style={{ padding: '0.28rem 0.6rem', background: u.disabled ? '#D1FAE5' : '#FEF3C7', color: u.disabled ? '#065F46' : '#92400E', border: `1px solid ${u.disabled ? '#6EE7B7' : '#FCD34D'}`, borderRadius: '5px', fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'inherit' }}
-                        >
-                          {u.disabled ? '↩ Réactiver' : '⊘ Désactiver'}
-                        </button>
-                        {isTestAccount(u.email) ? (
+                        {isArchived ? (
                           <button
-                            onClick={() => handleDeleteOne(u)}
-                            title="Supprimer ce compte test"
-                            style={{ padding: '0.28rem 0.55rem', background: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5', borderRadius: '5px', fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'inherit' }}
+                            onClick={() => handleRestoreUser(u)}
+                            title="Restaurer ce compte"
+                            style={{ padding: '0.28rem 0.6rem', background: '#D1FAE5', color: '#065F46', border: '1px solid #6EE7B7', borderRadius: '5px', fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'inherit' }}
                           >
-                            🗑
+                            ↩ Restaurer
                           </button>
                         ) : (
-                          <button
-                            onClick={() => handleDeleteUser(u)}
-                            title="Supprimer définitivement ce compte"
-                            style={{ padding: '0.28rem 0.55rem', background: '#F9FAFB', color: '#6B7280', border: '1px solid #E5E7EB', borderRadius: '5px', fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'inherit' }}
-                          >
-                            🗑
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handleDisableToggle(u)}
+                              title={u.disabled ? 'Réactiver ce compte' : 'Désactiver ce compte'}
+                              style={{ padding: '0.28rem 0.6rem', background: u.disabled ? '#D1FAE5' : '#FEF3C7', color: u.disabled ? '#065F46' : '#92400E', border: `1px solid ${u.disabled ? '#6EE7B7' : '#FCD34D'}`, borderRadius: '5px', fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'inherit' }}
+                            >
+                              {u.disabled ? '↩ Réactiver' : '⊘ Désactiver'}
+                            </button>
+                            {isTestAccount(u.email) ? (
+                              <button
+                                onClick={() => handleDeleteOne(u)}
+                                title="Supprimer ce compte test"
+                                style={{ padding: '0.28rem 0.55rem', background: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5', borderRadius: '5px', fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'inherit' }}
+                              >
+                                🗑
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleDeleteUser(u)}
+                                title="Archiver ce compte"
+                                style={{ padding: '0.28rem 0.55rem', background: '#F9FAFB', color: '#6B7280', border: '1px solid #E5E7EB', borderRadius: '5px', fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'inherit' }}
+                              >
+                                🗑
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </td>
