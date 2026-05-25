@@ -49,7 +49,9 @@ router.post('/register', async (req, res) => {
 
   const db = await getDb();
   const col = db.collection('users');
-  if (await col.findOne({ email: email.toLowerCase().trim() })) {
+  const existing = await col.findOne({ email: email.toLowerCase().trim() }, { projection: { _id: 0, deleted: 1 } });
+  if (existing) {
+    if (existing.deleted) return res.status(409).json({ error: 'account_archived' });
     return res.status(409).json({ error: 'Un compte existe déjà avec cet email' });
   }
 

@@ -11,6 +11,7 @@ export default function Register({ onLogin }) {
   const [form, setForm] = useState({ email: '', password: '', confirm: '', etablissement: '' });
   const [cguAccepted, setCguAccepted] = useState(false);
   const [error, setError] = useState('');
+  const [archivedEmail, setArchivedEmail] = useState(false);
   const [loading, setLoading] = useState(false);
 
   function set(field) { return e => setForm(f => ({ ...f, [field]: e.target.value })); }
@@ -18,6 +19,7 @@ export default function Register({ onLogin }) {
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
+    setArchivedEmail(false);
     if (form.password !== form.confirm) { setError('Les mots de passe ne correspondent pas'); return; }
     if (form.password.length < 6) { setError('Mot de passe trop court (6 caractères minimum)'); return; }
     setLoading(true);
@@ -28,7 +30,11 @@ export default function Register({ onLogin }) {
         body: JSON.stringify({ email: form.email, password: form.password, etablissement: form.etablissement }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || 'Erreur lors de l\'inscription'); return; }
+      if (!res.ok) {
+        if (data.error === 'account_archived') { setArchivedEmail(true); return; }
+        setError(data.error || 'Erreur lors de l\'inscription');
+        return;
+      }
       if (data.user?.emailVerified === false) {
         sessionStorage.setItem('pendingVerificationEmail', data.user.email);
         navigate('/verify-email');
@@ -164,6 +170,20 @@ export default function Register({ onLogin }) {
                   <a href="/mentions-legales" target="_blank" rel="noopener noreferrer" style={{ color: T.green, fontWeight: 600, textDecoration: 'none' }}>Mentions légales</a>
                 </span>
               </label>
+
+              {archivedEmail && (
+                <div style={{ background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1.25rem', fontSize: '0.845rem', color: '#7C2D12', lineHeight: 1.55 }}>
+                  <div style={{ fontWeight: 700, marginBottom: '4px' }}>Un compte existe déjà avec cette adresse.</div>
+                  <div>S'il a été archivé, vous pouvez retrouver l'accès via{' '}
+                    <Link to="/forgot-password" style={{ color: '#C2410C', fontWeight: 600, textDecoration: 'underline' }}>Mot de passe oublié ?</Link>
+                  </div>
+                  <div style={{ marginTop: '4px' }}>
+                    Besoin d'aide ?{' '}
+                    <a href="mailto:contact@cloveria.fr" style={{ color: '#C2410C', fontWeight: 600, textDecoration: 'underline' }}>contact@cloveria.fr</a>
+                    {' '}🍀
+                  </div>
+                </div>
+              )}
 
               {error && (
                 <div style={{ background: '#FEE2E2', border: '1px solid #FCA5A5', borderRadius: '8px', padding: '0.65rem 0.9rem', marginBottom: '1.25rem', fontSize: '0.875rem', color: '#991B1B' }}>
