@@ -39,6 +39,7 @@ router.post('/inject-example', async (req, res) => {
       ...rest,
       id: uuidv4(),
       user_id: userId,
+      _source: 'example',
       createdAt: now,
     }));
     if (ingredients.length > 0) {
@@ -50,6 +51,7 @@ router.post('/inject-example', async (req, res) => {
       ...rest,
       id: uuidv4(),
       user_id: userId,
+      _source: 'example',
       createdAt: now,
       updatedAt: now,
     }));
@@ -62,7 +64,7 @@ router.post('/inject-example', async (req, res) => {
     const recettes = pack.recettes.map(({ id: oldId, user_id: _uid, ...rest }) => {
       const newId = uuidv4();
       recetteIdMap[oldId] = newId;
-      return { ...rest, id: newId, user_id: userId, createdAt: now, updatedAt: now };
+      return { ...rest, id: newId, user_id: userId, _source: 'example', createdAt: now, updatedAt: now };
     });
     if (recettes.length > 0) {
       await db.collection('recettes').insertMany(recettes);
@@ -74,6 +76,7 @@ router.post('/inject-example', async (req, res) => {
       ...carteRest,
       id: uuidv4(),
       user_id: userId,
+      _source: 'example',
       sections: carteRest.sections.map(section => ({
         ...section,
         plats: section.plats.map(plat => ({

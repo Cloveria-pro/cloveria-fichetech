@@ -25,9 +25,9 @@ const SAFE_PROJECTION = {
 
 function computeStatut(u, nbFiches) {
   if (u.subscriptionStatus === 'active') return 'client engagé';
-  if (u.emailVerified && u.onboardingComplete && nbFiches > 0) return 'activé';
-  if (u.emailVerified && u.onboardingComplete && nbFiches === 0) return 'à relancer';
-  return 'lead';
+  if (!u.emailVerified) return 'lead';
+  if (nbFiches > 0) return 'activé';
+  return 'à relancer';
 }
 
 router.get('/users', adminAuth, async (req, res) => {
@@ -39,10 +39,11 @@ router.get('/users', adminAuth, async (req, res) => {
       .toArray();
 
     const enriched = await Promise.all(users.map(async (u) => {
+      const realFilter = { user_id: u.id, _source: { $ne: 'example' } };
       const [nbFiches, nbIngredients, nbCartes] = await Promise.all([
-        db.collection('recettes').countDocuments({ user_id: u.id }),
-        db.collection('ingredients').countDocuments({ user_id: u.id }),
-        db.collection('cartes').countDocuments({ user_id: u.id }),
+        db.collection('recettes').countDocuments(realFilter),
+        db.collection('ingredients').countDocuments(realFilter),
+        db.collection('cartes').countDocuments(realFilter),
       ]);
 
       return {
@@ -58,6 +59,7 @@ router.get('/users', adminAuth, async (req, res) => {
         nbFiches,
         nbIngredients,
         nbCartes,
+        examplePackChoice: u.examplePackChoice || null,
         statutCommercial: computeStatut(u, nbFiches),
       };
     }));
