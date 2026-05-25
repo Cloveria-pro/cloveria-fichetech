@@ -115,7 +115,7 @@ router.post('/forgot-password', async (req, res) => {
     const db = await getDb();
     const user = await db.collection('users').findOne({ email: email.toLowerCase().trim() }, PROJ);
     if (user) {
-      const rawToken = uuidv4();
+      const rawToken = randomBytes(32).toString('hex');
       const tokenHash = hashResetToken(rawToken);
       const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
       await db.collection('users').updateOne(
