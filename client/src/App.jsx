@@ -17,6 +17,7 @@ import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import Onboarding from './pages/Onboarding.jsx';
 import VerifyEmail from './pages/VerifyEmail.jsx';
+import Admin from './pages/Admin.jsx';
 import Abonnement from './pages/Abonnement.jsx';
 import AbonnementConfirme from './pages/AbonnementConfirme.jsx';
 import CGU from './pages/CGU.jsx';
@@ -76,7 +77,8 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Pages légales — toujours publiques, sans sidebar, sans contrôle d'auth
+  // Pages toujours publiques, sans sidebar
+  if (location.pathname === '/admin') return <Admin />;
   if (location.pathname === '/cgu') return <CGU />;
   if (location.pathname === '/politique-confidentialite') return <PolitiqueConfidentialite />;
   if (location.pathname === '/mentions-legales') return <MentionsLegales />;

@@ -19,6 +19,7 @@ import documentsRouter from './routes/documents.js';
 import agendaRouter from './routes/agenda.js';
 import onboardingRouter from './routes/onboarding.js';
 import stripeRouter, { stripeWebhook } from './routes/stripe.js';
+import adminRouter from './routes/admin.js';
 import { authMiddleware } from './middleware/auth.js';
 import { checkAccess } from './middleware/checkAccess.js';
 
@@ -33,6 +34,7 @@ app.use(express.json());
 
 // ── Routes publiques ────────────────────────────────────────────────────────
 app.use('/api/auth', authRouter);
+app.use('/api/admin', adminRouter);
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.post('/api/stripe/webhook', stripeWebhook);
 
