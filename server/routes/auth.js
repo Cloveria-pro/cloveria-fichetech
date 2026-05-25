@@ -21,7 +21,12 @@ async function ensureDemoUser() {
   const db = await getDb();
   const col = db.collection('users');
   if (await col.findOne({ email: 'demo@cloveria.fr' })) return;
-  const hash = await bcrypt.hash('Demo1234!', 10);
+  const demoPassword = process.env.DEMO_PASSWORD;
+  if (!demoPassword) {
+    console.warn('[Demo] DEMO_PASSWORD non défini — compte demo non créé.');
+    return;
+  }
+  const hash = await bcrypt.hash(demoPassword, 10);
   await col.insertOne({
     id: 'demo',
     email: 'demo@cloveria.fr',

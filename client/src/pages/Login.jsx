@@ -99,6 +99,7 @@ export default function Login({ onLogin }) {
               <input
                 type="email" value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="chef@monrestaurant.fr" required autoFocus
+                autoComplete="username"
                 style={inputStyle}
                 onFocus={e => e.target.style.borderColor = T.green}
                 onBlur={e => e.target.style.borderColor = '#E5E0D8'}
@@ -112,6 +113,7 @@ export default function Login({ onLogin }) {
               <input
                 type="password" value={password} onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••" required
+                autoComplete="current-password"
                 style={inputStyle}
                 onFocus={e => e.target.style.borderColor = T.green}
                 onBlur={e => e.target.style.borderColor = '#E5E0D8'}

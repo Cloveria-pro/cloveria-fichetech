@@ -130,18 +130,21 @@ export default function Register({ onLogin }) {
               <div style={{ marginBottom: '1rem' }}>
                 <label style={labelStyle}>Email</label>
                 <input type="email" value={form.email} onChange={set('email')} placeholder="chef@monrestaurant.fr" required
+                  autoComplete="off"
                   style={inputStyle} onFocus={e => e.target.style.borderColor = T.green} onBlur={e => e.target.style.borderColor = '#E5E0D8'} />
               </div>
 
               <div style={{ marginBottom: '1rem' }}>
                 <label style={labelStyle}>Mot de passe</label>
                 <input type="password" value={form.password} onChange={set('password')} placeholder="6 caractères minimum" required
+                  autoComplete="new-password"
                   style={inputStyle} onFocus={e => e.target.style.borderColor = T.green} onBlur={e => e.target.style.borderColor = '#E5E0D8'} />
               </div>
 
               <div style={{ marginBottom: '1.5rem' }}>
                 <label style={labelStyle}>Confirmer le mot de passe</label>
                 <input type="password" value={form.confirm} onChange={set('confirm')} placeholder="••••••••" required
+                  autoComplete="new-password"
                   style={inputStyle} onFocus={e => e.target.style.borderColor = T.green} onBlur={e => e.target.style.borderColor = '#E5E0D8'} />
               </div>
 
