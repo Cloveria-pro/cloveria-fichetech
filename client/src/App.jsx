@@ -15,6 +15,8 @@ import Parametres from './pages/Parametres.jsx';
 import Aide from './pages/Aide.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
+import ForgotPassword from './pages/ForgotPassword.jsx';
+import ResetPassword from './pages/ResetPassword.jsx';
 import Onboarding from './pages/Onboarding.jsx';
 import VerifyEmail from './pages/VerifyEmail.jsx';
 import Admin from './pages/Admin.jsx';
@@ -128,6 +130,8 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login onLogin={handleLogin} />} />
         <Route path="/register" element={<Register onLogin={handleLogin} />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verify-email" element={<VerifyEmail userEmail={null} onVerified={() => navigate('/login')} />} />
         <Route path="/cgu" element={<CGU />} />
         <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />

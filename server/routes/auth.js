@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { randomBytes } from 'crypto';
 import { getDb } from '../db.js';
 import { authMiddleware } from '../middleware/auth.js';
-import { envoyerConfirmationEmail } from '../emails/verification.js';
+import { envoyerConfirmationEmail, envoyerResetEmail } from '../emails/verification.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'cloveria-fichetech-secret-2026';
@@ -100,6 +100,53 @@ router.delete('/delete-test-account', async (req, res) => {
   const result = await db.collection('users').deleteOne({ email: lower.trim() });
   if (result.deletedCount === 0) return res.status(404).json({ error: 'Compte introuvable' });
   res.json({ success: true, deleted: lower.trim() });
+});
+
+router.post('/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  const NEUTRAL = { message: 'Si cet email existe, un lien de réinitialisation a été envoyé.' };
+  if (!email) return res.json(NEUTRAL);
+
+  try {
+    const db = await getDb();
+    const user = await db.collection('users').findOne({ email: email.toLowerCase().trim() }, PROJ);
+    if (user) {
+      const token = uuidv4();
+      const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      await db.collection('users').updateOne(
+        { id: user.id },
+        { $set: { passwordResetToken: token, passwordResetExpiry: expiry } }
+      );
+      envoyerResetEmail(user.email, token).catch(console.error);
+    }
+  } catch (err) {
+    console.error('[ForgotPassword]', err.message);
+  }
+  res.json(NEUTRAL);
+});
+
+router.post('/reset-password', async (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) return res.status(400).json({ error: 'Token et mot de passe requis' });
+  if (password.length < 6) return res.status(400).json({ error: 'Mot de passe trop court (6 caractères minimum)' });
+
+  const db = await getDb();
+  const col = db.collection('users');
+  const user = await col.findOne({ passwordResetToken: token }, PROJ);
+  if (!user) return res.status(400).json({ error: 'Lien invalide ou déjà utilisé' });
+  if (new Date(user.passwordResetExpiry) < new Date()) {
+    return res.status(400).json({ error: 'Lien expiré. Demandez un nouveau lien depuis la page de connexion.' });
+  }
+
+  const hash = await bcrypt.hash(password, 10);
+  await col.updateOne(
+    { id: user.id },
+    {
+      $set: { password_hash: hash, updated_at: new Date().toISOString() },
+      $unset: { passwordResetToken: '', passwordResetExpiry: '' },
+    }
+  );
+  res.json({ success: true });
 });
 
 router.get('/verify-email', async (req, res) => {

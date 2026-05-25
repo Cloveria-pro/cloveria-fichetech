@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
 
 const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280' };
@@ -8,6 +8,7 @@ const BG_PHOTO = 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w
 export default function Login({ onLogin }) {
   const width = useWindowWidth();
   const isMobile = width < 768;
+  const location = useLocation();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -120,6 +121,12 @@ export default function Login({ onLogin }) {
               />
             </div>
 
+            {location.state?.message && (
+              <div style={{ background: '#D1FAE5', border: '1px solid #6EE7B7', borderRadius: '8px', padding: '0.65rem 0.9rem', marginBottom: '1.25rem', fontSize: '0.875rem', color: '#065F46' }}>
+                {location.state.message}
+              </div>
+            )}
+
             {error && (
               <div style={{ background: '#FEE2E2', border: '1px solid #FCA5A5', borderRadius: '8px', padding: '0.65rem 0.9rem', marginBottom: '1.25rem', fontSize: '0.875rem', color: '#991B1B' }}>
                 {error}
@@ -141,7 +148,12 @@ export default function Login({ onLogin }) {
             </button>
           </form>
 
-          <p style={{ textAlign: 'center', marginTop: '1.75rem', fontSize: '0.875rem', color: T.muted }}>
+          <p style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.8rem' }}>
+            <Link to="/forgot-password" style={{ color: T.muted, textDecoration: 'none' }}>
+              Mot de passe oublié ?
+            </Link>
+          </p>
+          <p style={{ textAlign: 'center', marginTop: '0.75rem', fontSize: '0.875rem', color: T.muted }}>
             Pas encore de compte ?{' '}
             <Link to="/register" style={{ color: T.green, fontWeight: 600, textDecoration: 'none' }}>
               S'inscrire

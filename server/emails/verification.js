@@ -50,6 +50,32 @@ function layout(contenu) {
 </html>`;
 }
 
+export async function envoyerResetEmail(email, token) {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('[Reset] RESEND_API_KEY manquant, email non envoyé');
+    return;
+  }
+
+  const url = `${APP_URL}/reset-password?token=${token}`;
+
+  const html = layout(`
+    <h2>Réinitialisez votre mot de passe</h2>
+    <p>Vous avez demandé la réinitialisation de votre mot de passe CloverIA FicheTech. Cliquez ci-dessous pour choisir un nouveau mot de passe.</p>
+    <div class="highlight">
+      <p>⏱ Ce lien expire dans <strong>1 heure</strong>. Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email — votre mot de passe reste inchangé.</p>
+    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:28px 0 16px;"><a href="${url}" target="_blank" style="background-color:#2D6A4F;color:#ffffff !important;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:16px;display:inline-block;mso-padding-alt:0;font-family:Arial,sans-serif;">Réinitialiser mon mot de passe →</a></td></tr></table>
+    <p style="font-size:12px;color:#9CA3AF;text-align:center;margin-top:4px;">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br /><span style="color:#2D6A4F;word-break:break-all;">${url}</span></p>
+  `);
+
+  await resend.emails.send({
+    from: 'CloverIA <contact@cloveria.fr>',
+    to: email,
+    subject: 'Réinitialisez votre mot de passe CloverIA 🍀',
+    html,
+  });
+}
+
 export async function envoyerConfirmationEmail(email, token) {
   if (!process.env.RESEND_API_KEY) {
     console.warn('[Verification] RESEND_API_KEY manquant, email non envoyé');
