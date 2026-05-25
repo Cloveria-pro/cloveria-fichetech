@@ -36,7 +36,6 @@ async function ensureDemoUser() {
     emailVerified: true,
     created_at: new Date().toISOString(),
   });
-  console.log('Compte demo cree : demo@cloveria.fr / Demo1234!');
 }
 
 ensureDemoUser().catch(console.error);
