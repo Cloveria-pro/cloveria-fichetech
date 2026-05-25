@@ -78,6 +78,42 @@ export default function Admin() {
     return ['test', 'beuce', 'chez'].some(m => lower.includes(m));
   }
 
+  async function handleDisableToggle(u) {
+    const action = u.disabled ? 'réactiver' : 'désactiver';
+    if (!window.confirm(`${u.disabled ? '✓' : '⚠️'} ${action.charAt(0).toUpperCase() + action.slice(1)} le compte :\n${u.email}\n\n${u.disabled ? 'Le compte retrouvera accès à l\'application.' : 'Le compte ne pourra plus se connecter.'}`)) return;
+    setDeleteMsg('');
+    try {
+      const res = await fetch(`${API_URL}/admin/users/${u.id}/disable`, {
+        method: 'PATCH',
+        headers: { 'X-Admin-Key': key },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+      setDeleteMsg(`✓ Compte ${data.disabled ? 'désactivé' : 'réactivé'} : ${data.email}`);
+      setUsers(prev => prev.map(x => x.id === u.id ? { ...x, disabled: data.disabled } : x));
+    } catch (e) {
+      setDeleteMsg(`✗ Erreur : ${e.message}`);
+    }
+  }
+
+  async function handleDeleteUser(u) {
+    const typed = window.prompt(`⚠️ SUPPRESSION DÉFINITIVE — action irréversible\n\nPour confirmer la suppression du compte :\n${u.email}\n\nTapez l'email exact du compte :`);
+    if (typed !== u.email) { setDeleteMsg('Suppression annulée — email incorrect.'); return; }
+    setDeleteMsg('');
+    try {
+      const res = await fetch(`${API_URL}/admin/users/${u.id}`, {
+        method: 'DELETE',
+        headers: { 'X-Admin-Key': key },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+      setDeleteMsg(`✓ Compte supprimé définitivement : ${data.deleted}`);
+      setUsers(prev => prev.filter(x => x.id !== u.id));
+    } catch (e) {
+      setDeleteMsg(`✗ Erreur : ${e.message}`);
+    }
+  }
+
   async function handleDeleteOne(u) {
     if (!window.confirm(`⚠️ Action irréversible\n\nSupprimer définitivement le compte :\n${u.email}\n\nCette action ne peut pas être annulée.`)) return;
     setDeleteMsg('');
@@ -260,8 +296,9 @@ export default function Admin() {
                 const sStyle = STATUT_STYLE[u.statutCommercial] || STATUT_STYLE['lead'];
                 return (
                   <tr key={u.id} style={{ borderBottom: `1px solid ${T.border}`, background: i % 2 === 0 ? T.white : '#FAFAF9' }}>
-                    <td style={{ padding: '0.6rem 1rem', color: T.text, fontWeight: 500, maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '0.6rem 1rem', color: u.disabled ? T.muted : T.text, fontWeight: 500, maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {u.email}
+                      {u.disabled && <span style={{ marginLeft: '6px', fontSize: '0.65rem', background: '#F3F4F6', color: '#6B7280', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>désactivé</span>}
                     </td>
                     <td style={{ padding: '0.6rem 1rem', color: T.text, maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {u.etablissement || '—'}
@@ -299,15 +336,32 @@ export default function Admin() {
                         : '—'}
                     </td>
                     <td style={{ padding: '0.6rem 0.75rem', whiteSpace: 'nowrap' }}>
-                      {isTestAccount(u.email) && (
+                      <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
                         <button
-                          onClick={() => handleDeleteOne(u)}
-                          title="Supprimer ce compte test"
-                          style={{ padding: '0.28rem 0.65rem', background: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5', borderRadius: '5px', fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'inherit' }}
+                          onClick={() => handleDisableToggle(u)}
+                          title={u.disabled ? 'Réactiver ce compte' : 'Désactiver ce compte'}
+                          style={{ padding: '0.28rem 0.6rem', background: u.disabled ? '#D1FAE5' : '#FEF3C7', color: u.disabled ? '#065F46' : '#92400E', border: `1px solid ${u.disabled ? '#6EE7B7' : '#FCD34D'}`, borderRadius: '5px', fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'inherit' }}
                         >
-                          🗑 Suppr.
+                          {u.disabled ? '↩ Réactiver' : '⊘ Désactiver'}
                         </button>
-                      )}
+                        {isTestAccount(u.email) ? (
+                          <button
+                            onClick={() => handleDeleteOne(u)}
+                            title="Supprimer ce compte test"
+                            style={{ padding: '0.28rem 0.55rem', background: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5', borderRadius: '5px', fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'inherit' }}
+                          >
+                            🗑
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleDeleteUser(u)}
+                            title="Supprimer définitivement ce compte"
+                            style={{ padding: '0.28rem 0.55rem', background: '#F9FAFB', color: '#6B7280', border: '1px solid #E5E7EB', borderRadius: '5px', fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'inherit' }}
+                          >
+                            🗑
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

@@ -103,6 +103,8 @@ router.post('/login', async (req, res) => {
   const user = await col.findOne({ email: email.toLowerCase().trim() }, PROJ);
   if (!user) return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
 
+  if (user.disabled) return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
+
   const match = await bcrypt.compare(password, user.password_hash);
   if (!match) return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
 
@@ -254,6 +256,22 @@ router.put('/profil', authMiddleware, async (req, res) => {
 
   const { password_hash, ...profile } = updated;
   res.json(profile);
+});
+
+router.delete('/account', authMiddleware, async (req, res) => {
+  const { password } = req.body;
+  if (!password) return res.status(400).json({ error: 'Mot de passe requis' });
+
+  const db = await getDb();
+  const col = db.collection('users');
+  const user = await col.findOne({ id: req.userId }, PROJ);
+  if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+
+  const match = await bcrypt.compare(password, user.password_hash);
+  if (!match) return res.status(401).json({ error: 'Mot de passe incorrect' });
+
+  await col.deleteOne({ id: user.id });
+  res.json({ success: true });
 });
 
 export default router;

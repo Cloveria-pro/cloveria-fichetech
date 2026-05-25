@@ -1,5 +1,5 @@
 ﻿import { useEffect, useRef, useState } from 'react';
-import { api } from '../api.js';
+import { api, API_URL, authHeaders } from '../api.js';
 
 const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280', orange: '#D97706', red: '#DC2626' };
 const card = { background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' };
@@ -42,6 +42,9 @@ export default function Parametres() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const skipSave = useRef(true);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -173,6 +176,55 @@ export default function Parametres() {
             <span style={{ fontSize: '0.82rem', color: T.green, fontWeight: 600 }}>Sauvegardé ✓</span>
           </div>
         )}
+
+        {/* Zone dangereuse */}
+        <div style={{ ...card, padding: '1.5rem', border: '1px solid #FECACA', marginTop: '1rem' }}>
+          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, color: T.red, marginBottom: '0.5rem' }}>Zone dangereuse</h3>
+          <p style={{ fontSize: '0.82rem', color: T.muted, marginBottom: '1.25rem', lineHeight: 1.6 }}>
+            La suppression de votre compte est <strong>définitive et irréversible</strong>. Toutes vos données (fiches techniques, ingrédients, cartes, paramètres) seront supprimées immédiatement et ne pourront pas être récupérées.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxWidth: '340px' }}>
+            <div>
+              <label style={{ ...labelStyle, color: T.red }}>Mot de passe actuel pour confirmer</label>
+              <input
+                type="password"
+                value={deletePassword}
+                onChange={e => { setDeletePassword(e.target.value); setDeleteError(''); }}
+                placeholder="Entrez votre mot de passe"
+                autoComplete="current-password"
+                style={{ ...inputStyle, borderColor: deleteError ? T.red : '#E5E0D8' }}
+              />
+            </div>
+            {deleteError && <p style={{ fontSize: '0.8rem', color: T.red, margin: 0 }}>{deleteError}</p>}
+            <button
+              disabled={deleteLoading || !deletePassword}
+              onClick={async () => {
+                if (!window.confirm('⚠️ Supprimer définitivement votre compte ?\n\nToutes vos données seront perdues. Cette action est irréversible.')) return;
+                setDeleteLoading(true);
+                setDeleteError('');
+                try {
+                  const res = await fetch(`${API_URL}/auth/account`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+                    body: JSON.stringify({ password: deletePassword }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) { setDeleteError(data.error || 'Erreur serveur'); return; }
+                  localStorage.clear();
+                  window.location.href = '/login';
+                } catch {
+                  setDeleteError('Erreur réseau. Réessayez.');
+                } finally {
+                  setDeleteLoading(false);
+                }
+              }}
+              style={{ padding: '0.6rem 1.25rem', background: deletePassword ? T.red : '#F3F4F6', color: deletePassword ? '#fff' : T.muted, border: 'none', borderRadius: '7px', fontWeight: 700, fontSize: '0.85rem', cursor: deletePassword ? 'pointer' : 'default', fontFamily: "'DM Sans', sans-serif", alignSelf: 'flex-start', transition: 'background 0.15s' }}
+            >
+              {deleteLoading ? 'Suppression…' : 'Supprimer mon compte'}
+            </button>
+          </div>
+        </div>
+
       </div>
 
     </div>

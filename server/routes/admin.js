@@ -66,6 +66,7 @@ router.get('/users', adminAuth, async (req, res) => {
         nbIngredients,
         nbCartes,
         examplePackChoice: u.examplePackChoice || null,
+        disabled: u.disabled === true,
         statutCommercial: computeStatut(u, nbFiches),
       };
     }));
@@ -90,6 +91,34 @@ router.post('/reset-user-password', adminAuth, async (req, res) => {
     );
     if (result.matchedCount === 0) return res.status(404).json({ error: 'Utilisateur introuvable' });
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.patch('/users/:id/disable', adminAuth, async (req, res) => {
+  try {
+    const db = await getDb();
+    const user = await db.collection('users').findOne({ id: req.params.id }, { projection: { _id: 0, id: 1, email: 1, disabled: 1 } });
+    if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+    const newState = !user.disabled;
+    await db.collection('users').updateOne(
+      { id: user.id },
+      { $set: { disabled: newState, disabledAt: newState ? new Date().toISOString() : null, updated_at: new Date().toISOString() } }
+    );
+    res.json({ success: true, disabled: newState, email: user.email });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/users/:id', adminAuth, async (req, res) => {
+  try {
+    const db = await getDb();
+    const user = await db.collection('users').findOne({ id: req.params.id }, { projection: { _id: 0, id: 1, email: 1 } });
+    if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+    await db.collection('users').deleteOne({ id: user.id });
+    res.json({ success: true, deleted: user.email });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
