@@ -17,33 +17,6 @@ function makeToken(user) {
   return jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
 }
 
-async function ensureDemoUser() {
-  const db = await getDb();
-  const col = db.collection('users');
-  if (await col.findOne({ email: 'demo@cloveria.fr' })) return;
-  const demoPassword = process.env.DEMO_PASSWORD;
-  if (!demoPassword) {
-    console.warn('[Demo] DEMO_PASSWORD non défini — compte demo non créé.');
-    return;
-  }
-  const hash = await bcrypt.hash(demoPassword, 10);
-  await col.insertOne({
-    id: 'demo',
-    email: 'demo@cloveria.fr',
-    password_hash: hash,
-    etablissement: 'Restaurant CloverIA',
-    plan: 'demo',
-    food_cost_cible: 30,
-    tva_defaut: 10,
-    onboardingComplete: true,
-    betaAccess: true,
-    subscriptionStatus: 'active',
-    emailVerified: true,
-    created_at: new Date().toISOString(),
-  });
-}
-
-ensureDemoUser().catch(console.error);
 
 router.post('/register', async (req, res) => {
   const { email, password, etablissement } = req.body;

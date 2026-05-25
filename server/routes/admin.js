@@ -1,4 +1,5 @@
 import express from 'express';
+import bcrypt from 'bcryptjs';
 import { getDb } from '../db.js';
 
 const router = express.Router();
@@ -67,6 +68,24 @@ router.get('/users', adminAuth, async (req, res) => {
     res.json(enriched);
   } catch (err) {
     console.error('[Admin] GET /users error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/reset-user-password', adminAuth, async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'email et password requis' });
+    if (password.length < 8) return res.status(400).json({ error: 'Mot de passe trop court (8 caractères minimum)' });
+    const db = await getDb();
+    const hash = await bcrypt.hash(password, 10);
+    const result = await db.collection('users').updateOne(
+      { email: email.toLowerCase().trim() },
+      { $set: { password_hash: hash, updated_at: new Date().toISOString() } }
+    );
+    if (result.matchedCount === 0) return res.status(404).json({ error: 'Utilisateur introuvable' });
+    res.json({ success: true });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
