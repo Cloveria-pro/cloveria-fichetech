@@ -3,15 +3,35 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { randomBytes, createHash } from 'crypto';
-
-function hashResetToken(raw) {
-  return createHash('sha256').update(raw).digest('hex');
-}
 import { getDb } from '../db.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { envoyerConfirmationEmail, envoyerResetEmail } from '../emails/verification.js';
 
 const router = express.Router();
+
+function hashResetToken(raw) {
+  return createHash('sha256').update(raw).digest('hex');
+}
+
+// Rate limiter in-memory : max 3 demandes par IP par fenêtre de 15 minutes
+const forgotPasswordAttempts = new Map();
+function forgotPasswordRateLimit(req, res, next) {
+  const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+  const now = Date.now();
+  const WINDOW = 15 * 60 * 1000;
+  const MAX = 3;
+  const entry = forgotPasswordAttempts.get(ip) || { count: 0, resetAt: now + WINDOW };
+  if (now > entry.resetAt) {
+    entry.count = 0;
+    entry.resetAt = now + WINDOW;
+  }
+  entry.count += 1;
+  forgotPasswordAttempts.set(ip, entry);
+  if (entry.count > MAX) {
+    return res.status(429).json({ error: 'Trop de demandes. Réessayez dans 15 minutes.' });
+  }
+  next();
+}
 const JWT_SECRET = process.env.JWT_SECRET || 'cloveria-fichetech-secret-2026';
 const JWT_EXPIRES = '7d';
 const PROJ = { projection: { _id: 0 } };
@@ -106,7 +126,7 @@ router.delete('/delete-test-account', async (req, res) => {
   res.json({ success: true, deleted: lower.trim() });
 });
 
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', forgotPasswordRateLimit, async (req, res) => {
   const { email } = req.body;
   const NEUTRAL = { message: 'Si cet email existe, un lien de réinitialisation a été envoyé.' };
   if (!email) return res.json(NEUTRAL);
