@@ -292,6 +292,7 @@ export default function Admin() {
 
   async function handleRevokeLifetime(u) {
     if (!window.confirm(`Révoquer l'accès à vie de :\n${u.email}\n\nLe compte repassera en période d'essai.`)) return;
+    setDeleteMsg('');
     try {
       const res = await fetch(`${API_URL}/admin/users/${u.id}/remove-lifetime`, {
         method: 'PATCH',
@@ -299,7 +300,9 @@ export default function Admin() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erreur serveur');
-      const updated = { ...u, subscriptionStatus: 'trial', trialEndDate: data.trialEndDate };
+      const nbFiches = u.nbFiches ?? 0;
+      const statutCommercial = !u.emailVerified ? 'lead' : nbFiches > 0 ? 'activé' : 'à relancer';
+      const updated = { ...u, subscriptionStatus: 'trial', trialEndDate: data.trialEndDate, statutCommercial };
       setUsers(prev => prev.map(x => x.id === u.id ? updated : x));
       setSelectedUser(updated);
       setDeleteMsg(`✓ Accès à vie révoqué : ${data.email}`);

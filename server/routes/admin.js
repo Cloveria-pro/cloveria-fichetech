@@ -32,6 +32,7 @@ function isTestAccount(email) {
 
 function computeStatut(u, nbFiches) {
   if (u.subscriptionStatus === 'active') return 'client engagé';
+  if (u.subscriptionStatus === 'lifetime') return 'client engagé';
   if (u.email === 'demo@cloveria.fr') return 'activé';
   if (!u.emailVerified) return 'lead';
   if (nbFiches > 0) return 'activé';
