@@ -158,6 +158,23 @@ router.patch('/users/:id/lifetime', adminAuth, async (req, res) => {
   }
 });
 
+router.patch('/users/:id/remove-lifetime', adminAuth, async (req, res) => {
+  try {
+    const db = await getDb();
+    const user = await db.collection('users').findOne({ id: req.params.id }, { projection: { _id: 0, id: 1, email: 1, created_at: 1 } });
+    if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+    const base = user.created_at ? new Date(user.created_at) : new Date();
+    const trialEndDate = new Date(base.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString();
+    await db.collection('users').updateOne(
+      { id: user.id },
+      { $set: { subscriptionStatus: 'trial', trialEndDate, updated_at: new Date().toISOString() } }
+    );
+    res.json({ success: true, email: user.email, trialEndDate });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.patch('/users/:id/restore', adminAuth, async (req, res) => {
   try {
     const db = await getDb();

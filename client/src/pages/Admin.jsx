@@ -46,7 +46,7 @@ function trialDaysLeft(trialEndDate) {
   return Math.ceil((new Date(trialEndDate) - new Date()) / 86400000);
 }
 
-function ClientDrawer({ user: u, onClose, onGrantLifetime }) {
+function ClientDrawer({ user: u, onClose, onGrantLifetime, onRevokeLifetime }) {
   if (!u) return null;
   const row = (label, value) => (
     <div key={label} style={{ display: 'flex', gap: '0.5rem', padding: '0.45rem 0', borderBottom: `1px solid ${T.border}` }}>
@@ -90,9 +90,12 @@ function ClientDrawer({ user: u, onClose, onGrantLifetime }) {
 
           <div style={{ marginTop: '1.25rem' }}>
             {u.subscriptionStatus === 'lifetime' ? (
-              <div style={{ padding: '0.5rem 0.85rem', background: '#D1FAE5', border: '1px solid #6EE7B7', borderRadius: '7px', fontSize: '0.8rem', color: '#065F46', fontWeight: 600 }}>
-                ✓ Accès à vie actif
-              </div>
+              <button
+                onClick={() => onRevokeLifetime(u)}
+                style={{ width: '100%', padding: '0.55rem 0.85rem', background: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5', borderRadius: '7px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}
+              >
+                🎁 Révoquer accès à vie
+              </button>
             ) : (
               <button
                 onClick={() => onGrantLifetime(u)}
@@ -287,6 +290,24 @@ export default function Admin() {
     }
   }
 
+  async function handleRevokeLifetime(u) {
+    if (!window.confirm(`Révoquer l'accès à vie de :\n${u.email}\n\nLe compte repassera en période d'essai.`)) return;
+    try {
+      const res = await fetch(`${API_URL}/admin/users/${u.id}/remove-lifetime`, {
+        method: 'PATCH',
+        headers: { 'X-Admin-Key': key },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+      const updated = { ...u, subscriptionStatus: 'trial', trialEndDate: data.trialEndDate };
+      setUsers(prev => prev.map(x => x.id === u.id ? updated : x));
+      setSelectedUser(updated);
+      setDeleteMsg(`✓ Accès à vie révoqué : ${data.email}`);
+    } catch (e) {
+      setDeleteMsg(`✗ Erreur : ${e.message}`);
+    }
+  }
+
   function handleLogout() {
     sessionStorage.removeItem('adminKey');
     setKey('');
@@ -472,7 +493,7 @@ export default function Admin() {
                 return (
                   <tr key={u.id} onClick={() => setSelectedUser(u)} style={{ borderBottom: `1px solid ${T.border}`, background: rowBg, opacity: isArchived ? 0.65 : 1, cursor: 'pointer' }}>
                     <td style={{ padding: '0.6rem 1rem', color: T.muted, fontWeight: 500, maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {u.email}
+                      {u.subscriptionStatus === 'lifetime' && '🎁 '}{u.email}
                       {isArchived && <span style={{ marginLeft: '6px', fontSize: '0.65rem', background: '#E5E7EB', color: '#6B7280', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>archivé</span>}
                       {!isArchived && u.disabled && <span style={{ marginLeft: '6px', fontSize: '0.65rem', background: '#F3F4F6', color: '#6B7280', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>désactivé</span>}
                     </td>
@@ -584,7 +605,7 @@ export default function Admin() {
           * Compteurs hors contenu d&apos;exemple injecté à l&apos;onboarding. Le badge <strong>+ex</strong> indique que le pack d&apos;exemple a été appliqué.
         </p>
       </div>
-      <ClientDrawer user={selectedUser} onClose={() => setSelectedUser(null)} onGrantLifetime={handleGrantLifetime} />
+      <ClientDrawer user={selectedUser} onClose={() => setSelectedUser(null)} onGrantLifetime={handleGrantLifetime} onRevokeLifetime={handleRevokeLifetime} />
     </div>
   );
 }
