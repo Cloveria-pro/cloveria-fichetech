@@ -46,7 +46,7 @@ function trialDaysLeft(trialEndDate) {
   return Math.ceil((new Date(trialEndDate) - new Date()) / 86400000);
 }
 
-function ClientDrawer({ user: u, onClose }) {
+function ClientDrawer({ user: u, onClose, onGrantLifetime }) {
   if (!u) return null;
   const row = (label, value) => (
     <div key={label} style={{ display: 'flex', gap: '0.5rem', padding: '0.45rem 0', borderBottom: `1px solid ${T.border}` }}>
@@ -87,6 +87,21 @@ function ClientDrawer({ user: u, onClose }) {
           {row('Food cost cible', u.foodCostCible != null ? `${u.foodCostCible}%` : null)}
           {row('Source découverte', u.sourceDecouverte || null)}
           {row('Pack exemple', u.examplePackChoice || null)}
+
+          <div style={{ marginTop: '1.25rem' }}>
+            {u.subscriptionStatus === 'lifetime' ? (
+              <div style={{ padding: '0.5rem 0.85rem', background: '#D1FAE5', border: '1px solid #6EE7B7', borderRadius: '7px', fontSize: '0.8rem', color: '#065F46', fontWeight: 600 }}>
+                ✓ Accès à vie actif
+              </div>
+            ) : (
+              <button
+                onClick={() => onGrantLifetime(u)}
+                style={{ width: '100%', padding: '0.55rem 0.85rem', background: '#FEF9C3', color: '#713F12', border: '1px solid #FDE68A', borderRadius: '7px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}
+              >
+                🎁 Offrir accès à vie
+              </button>
+            )}
+          </div>
 
           {section('Activité')}
           {row('Fiches réelles', u.nbFiches)}
@@ -249,6 +264,24 @@ export default function Admin() {
       setDeleteMsg(`✓ ${data.deleted} compte(s) supprimé(s) : ${data.emails.join(', ')}`);
       const deletedEmails = new Set(data.emails);
       setUsers(prev => prev.filter(x => !deletedEmails.has(x.email)));
+    } catch (e) {
+      setDeleteMsg(`✗ Erreur : ${e.message}`);
+    }
+  }
+
+  async function handleGrantLifetime(u) {
+    if (!window.confirm(`Êtes-vous sûr ? Cette action offre un accès permanent gratuit à :\n${u.email}`)) return;
+    try {
+      const res = await fetch(`${API_URL}/admin/users/${u.id}/lifetime`, {
+        method: 'PATCH',
+        headers: { 'X-Admin-Key': key },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+      const updated = { ...u, subscriptionStatus: 'lifetime', trialEndDate: null, statutCommercial: 'client engagé' };
+      setUsers(prev => prev.map(x => x.id === u.id ? updated : x));
+      setSelectedUser(updated);
+      setDeleteMsg(`✓ Accès à vie accordé : ${data.email}`);
     } catch (e) {
       setDeleteMsg(`✗ Erreur : ${e.message}`);
     }
@@ -551,7 +584,7 @@ export default function Admin() {
           * Compteurs hors contenu d&apos;exemple injecté à l&apos;onboarding. Le badge <strong>+ex</strong> indique que le pack d&apos;exemple a été appliqué.
         </p>
       </div>
-      <ClientDrawer user={selectedUser} onClose={() => setSelectedUser(null)} />
+      <ClientDrawer user={selectedUser} onClose={() => setSelectedUser(null)} onGrantLifetime={handleGrantLifetime} />
     </div>
   );
 }

@@ -143,6 +143,21 @@ router.delete('/users/:id', adminAuth, async (req, res) => {
   }
 });
 
+router.patch('/users/:id/lifetime', adminAuth, async (req, res) => {
+  try {
+    const db = await getDb();
+    const user = await db.collection('users').findOne({ id: req.params.id }, { projection: { _id: 0, id: 1, email: 1 } });
+    if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+    await db.collection('users').updateOne(
+      { id: user.id },
+      { $set: { subscriptionStatus: 'lifetime', trialEndDate: null, updated_at: new Date().toISOString() } }
+    );
+    res.json({ success: true, email: user.email });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.patch('/users/:id/restore', adminAuth, async (req, res) => {
   try {
     const db = await getDb();

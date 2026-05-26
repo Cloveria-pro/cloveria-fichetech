@@ -17,6 +17,7 @@ export async function checkAccess(req, res, next) {
 
   if (user.betaAccess === true) return next();
   if (user.subscriptionStatus === 'active') return next();
+  if (user.subscriptionStatus === 'lifetime') return next();
   if (user.subscriptionStatus === 'trial' && user.trialEndDate && new Date() < new Date(user.trialEndDate)) return next();
 
   return res.status(403).json({ error: 'trial_expired', trialEndDate: user.trialEndDate });
