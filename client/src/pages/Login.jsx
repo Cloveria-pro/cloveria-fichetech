@@ -50,20 +50,40 @@ export default function Login({ onLogin }) {
   return (
     <div style={{ minHeight: '100vh', display: 'flex' }}>
 
-      {/* ── Colonne gauche — photo pleine hauteur ── */}
+      {/* ── Colonne gauche — fond vert + logo blanc ── */}
       {!isMobile && (
-        <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-          <div style={{
-            position: 'absolute', inset: 0,
-            backgroundImage: `url('${BG_PHOTO}')`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }} />
-          {/* Fondu vers la droite pour une transition douce */}
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'linear-gradient(to right, transparent 70%, #ffffff 100%)',
-          }} />
+        <div style={{
+          width: '50%',
+          backgroundImage: `url('${BG_PHOTO}')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '3rem',
+          position: 'sticky',
+          top: 0,
+          height: '100vh',
+        }}>
+          <img
+            src="/logo.png"
+            alt="CloverIA"
+            style={{ width: '500px', height: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)', marginBottom: '2.5rem' }}
+            onError={e => { e.currentTarget.style.display = 'none'; }}
+          />
+          <p style={{
+            color: 'rgba(255,255,255,0.82)',
+            fontFamily: "'Playfair Display', serif",
+            fontSize: '1.2rem',
+            fontStyle: 'italic',
+            textAlign: 'center',
+            maxWidth: '340px',
+            lineHeight: 1.65,
+            margin: 0,
+          }}>
+            Fiches techniques et food cost. Automatisés.
+          </p>
         </div>
       )}
 

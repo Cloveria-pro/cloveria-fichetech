@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
 
 const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280' };
+const BG_PHOTO = 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1920&q=80';
 
 export default function Register({ onLogin }) {
   const navigate = useNavigate();
@@ -62,38 +63,17 @@ export default function Register({ onLogin }) {
   return (
     <div style={{ minHeight: '100vh', display: 'flex' }}>
 
-      {/* ── Colonne gauche — desktop uniquement ── */}
+      {/* ── Colonne gauche — photo pleine hauteur ── */}
       {!isMobile && (
-        <div style={{
-          width: '50%',
-          background: 'linear-gradient(135deg, #1a3a4a 0%, #2D6A4F 100%)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '3rem',
-          position: 'sticky',
-          top: 0,
-          height: '100vh',
-        }}>
-          <img
-            src="/logo.png"
-            alt="CloverIA"
-            style={{ width: '500px', height: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)', marginBottom: '2.5rem' }}
-            onError={e => { e.currentTarget.style.display = 'none'; }}
-          />
-          <p style={{
-            color: 'rgba(255,255,255,0.82)',
-            fontFamily: "'Playfair Display', serif",
-            fontSize: '1.2rem',
-            fontStyle: 'italic',
-            textAlign: 'center',
-            maxWidth: '340px',
-            lineHeight: 1.65,
-            margin: 0,
-          }}>
-            Fiches techniques et food cost. Automatisés.
-          </p>
+        <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(135deg, #1a3a4a 0%, #2D6A4F 100%)',
+          }} />
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(to right, transparent 70%, #F8F6F1 100%)',
+          }} />
         </div>
       )}
 

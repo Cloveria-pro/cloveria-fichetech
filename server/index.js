@@ -4,7 +4,7 @@ import express from 'express';
 import cors from 'cors';
 import cron from 'node-cron';
 import { getDb } from './db.js';
-import { envoyerRelance } from './emails/relances.js';
+import { envoyerRelance, envoyerLifecycle } from './emails/relances.js';
 import recettesRouter from './routes/recettes.js';
 import ingredientsRouter from './routes/ingredients.js';
 import cartesRouter from './routes/cartes.js';
@@ -102,6 +102,59 @@ async function sendTrialEmails() {
   }
 }
 
+// ── Emails lifecycle (onboarding + activation) ──────────────────────────────
+async function sendLifecycleEmails() {
+  const db = await getDb();
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const users = await db.collection('users')
+    .find({ emailVerified: true, deleted: { $ne: true }, disabled: { $ne: true }, email: { $exists: true } }, { projection: { _id: 0 } })
+    .toArray();
+
+  for (const user of users) {
+    if (!user.email || !user.created_at) continue;
+
+    const lifecycleEmailsSent = user.lifecycleEmailsSent || [];
+    const createdAt = new Date(new Date(user.created_at).toDateString());
+    const daysElapsed = Math.round((today - createdAt) / (1000 * 60 * 60 * 24));
+
+    let emailKey = null;
+
+    // Email 1 — J+4 : onboarding terminé, aucune fiche créée
+    if (daysElapsed === 4 && user.onboardingComplete && !lifecycleEmailsSent.includes('lifecycle_j4')) {
+      const nbFiches = await db.collection('recettes').countDocuments({ user_id: user.id, _source: { $ne: 'example' } });
+      if (nbFiches === 0) emailKey = 'lifecycle_j4';
+    }
+
+    // Email 2 — J+8 : aucune fiche créée (onboarding peu importe)
+    if (!emailKey && daysElapsed === 8 && !lifecycleEmailsSent.includes('lifecycle_j8')) {
+      const nbFiches = await db.collection('recettes').countDocuments({ user_id: user.id, _source: { $ne: 'example' } });
+      if (nbFiches === 0) emailKey = 'lifecycle_j8';
+    }
+
+    // Email 3 — J+4 après vérif email : onboarding non terminé
+    if (!emailKey && user.emailVerifiedAt && !user.onboardingComplete && !lifecycleEmailsSent.includes('lifecycle_onboarding_j4')) {
+      const verifiedAt = new Date(new Date(user.emailVerifiedAt).toDateString());
+      const daysVerified = Math.round((today - verifiedAt) / (1000 * 60 * 60 * 24));
+      if (daysVerified === 4) emailKey = 'lifecycle_onboarding_j4';
+    }
+
+    if (!emailKey) continue;
+
+    try {
+      await envoyerLifecycle(user, emailKey);
+      await db.collection('users').updateOne(
+        { id: user.id },
+        { $push: { lifecycleEmailsSent: emailKey } }
+      );
+      console.log(`[Lifecycle] ${emailKey} envoyé à ${user.email}`);
+    } catch (err) {
+      console.error(`[Lifecycle] Erreur ${emailKey} pour ${user.email}:`, err.message);
+    }
+  }
+}
+
 // ── Démarrage ────────────────────────────────────────────────────────────────
 getDb()
   .then(() => {
@@ -109,11 +162,12 @@ getDb()
       console.log(`Serveur demarre sur le port ${PORT}`);
     });
 
-    // Cron quotidien 9h00 : emails de relance essai J+9, J+12, J+14
+    // Cron quotidien 9h00 : emails de relance essai + lifecycle
     cron.schedule('0 9 * * *', () => {
       sendTrialEmails().catch(err => console.error('[Cron relances]', err.message));
+      sendLifecycleEmails().catch(err => console.error('[Cron lifecycle]', err.message));
     });
-    console.log('Cron relances essai démarré (quotidien à 9h00)');
+    console.log('Cron relances + lifecycle démarré (quotidien à 9h00)');
   })
   .catch(err => {
     console.error('[MongoDB] Connexion impossible:', err.message);

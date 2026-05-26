@@ -165,6 +165,68 @@ const TEMPLATES = {
   },
 };
 
+const APP_URL = 'https://app.cloveria-pro.fr';
+
+const LIFECYCLE_TEMPLATES = {
+  lifecycle_j4: {
+    subject: 'Votre première fiche vous attend 🍀',
+    html: (prenom, etablissement) => layout(`
+      <h2>${prenom ? `${prenom}, créez` : 'Créez'} votre première fiche technique</h2>
+      <p>Vous avez configuré votre espace${etablissement ? ` pour <strong>${etablissement}</strong>` : ''} — c'est une excellente première étape. Il ne manque plus qu'une chose : votre première fiche technique.</p>
+      <div class="highlight">
+        <p>🍀 En 5 minutes, vous pouvez calculer le food cost exact d'un plat, connaître votre marge réelle et savoir si votre prix de vente est rentable.</p>
+      </div>
+      <p>Commencez par votre recette phare, celle que vous faites les yeux fermés. CloverIA s'occupe des calculs.</p>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:24px 0;"><a href="${APP_URL}" target="_blank" style="background-color:#2D6A4F;color:#ffffff !important;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:16px;display:inline-block;mso-padding-alt:0;font-family:Arial,sans-serif;">Créer ma première fiche →</a></td></tr></table>
+    `),
+  },
+
+  lifecycle_j8: {
+    subject: 'Toujours là pour vous 🍀',
+    html: (prenom, etablissement) => layout(`
+      <h2>${prenom ? `${prenom}, un` : 'Un'} petit rappel amical</h2>
+      <p>Ça fait 8 jours que votre espace CloverIA est prêt${etablissement ? ` pour ${etablissement}` : ''}. On voulait juste s'assurer que tout allait bien de votre côté.</p>
+      <div class="highlight">
+        <p>🍀 Vous n'avez pas encore créé de fiche technique. Ce n'est pas grave — la cuisine, ça prend du temps. Mais quand vous serez prêt·e, CloverIA sera là pour calculer vos coûts et marges en quelques clics.</p>
+      </div>
+      <p>Si vous avez des questions ou besoin d'aide pour démarrer, répondez directement à cet email. On lit tout.</p>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:24px 0;"><a href="${APP_URL}" target="_blank" style="background-color:#2D6A4F;color:#ffffff !important;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:16px;display:inline-block;mso-padding-alt:0;font-family:Arial,sans-serif;">Accéder à mon espace →</a></td></tr></table>
+    `),
+  },
+
+  lifecycle_onboarding_j4: {
+    subject: 'Votre espace CloverIA vous attend 🍀',
+    html: (prenom, etablissement) => layout(`
+      <h2>${prenom ? `${prenom}, votre` : 'Votre'} espace n'est pas encore configuré</h2>
+      <p>Vous avez confirmé votre adresse email — merci ! Mais il reste une petite étape avant de pouvoir utiliser CloverIA pleinement : la configuration de votre espace.</p>
+      <div class="highlight">
+        <p>🍀 Ça prend moins de 2 minutes. Quelques informations sur votre établissement${etablissement ? ` (${etablissement})` : ''} et vous êtes prêt·e à créer votre première fiche technique.</p>
+      </div>
+      <p>Ne laissez pas votre essai gratuit passer sans en profiter.</p>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:24px 0;"><a href="${APP_URL}" target="_blank" style="background-color:#2D6A4F;color:#ffffff !important;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:16px;display:inline-block;mso-padding-alt:0;font-family:Arial,sans-serif;">Configurer mon espace →</a></td></tr></table>
+    `),
+  },
+};
+
+export async function envoyerLifecycle(user, emailKey) {
+  const tpl = LIFECYCLE_TEMPLATES[emailKey];
+  if (!tpl) throw new Error(`Template lifecycle inconnu : ${emailKey}`);
+
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('[Lifecycle] RESEND_API_KEY manquant, email non envoyé');
+    return;
+  }
+
+  console.log(`[Lifecycle] Envoi ${emailKey} à ${user.email}...`);
+  await resend.emails.send({
+    from: 'CloverIA <contact@cloveria.fr>',
+    to: user.email,
+    subject: tpl.subject,
+    html: tpl.html(user.prenom, user.etablissement),
+  });
+  console.log(`[Lifecycle] ${emailKey} envoyé avec succès à ${user.email}`);
+}
+
 export async function envoyerRelance(user, jour) {
   const tpl = TEMPLATES[jour];
   if (!tpl) throw new Error(`Template inconnu pour le jour ${jour}`);

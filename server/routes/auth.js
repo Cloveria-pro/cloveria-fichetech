@@ -194,7 +194,7 @@ router.get('/verify-email', async (req, res) => {
   }
 
   await col.updateOne({ id: user.id }, {
-    $set: { emailVerified: true },
+    $set: { emailVerified: true, emailVerifiedAt: new Date().toISOString() },
     $unset: { emailVerificationToken: '', emailVerificationExpiry: '', emailVerificationSentAt: '' },
   });
   notifierNouveauClient({ email: user.email, etablissement: user.etablissement, id: user.id });
