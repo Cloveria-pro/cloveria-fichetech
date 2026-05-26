@@ -112,6 +112,8 @@ router.post('/login', async (req, res) => {
   const match = await bcrypt.compare(password, user.password_hash);
   if (!match) return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
 
+  col.updateOne({ id: user.id }, { $set: { lastLoginAt: new Date().toISOString() } }).catch(console.error);
+
   const token = makeToken(user);
   res.json({
     token,

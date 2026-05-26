@@ -17,6 +17,11 @@ export function getDb() {
       const db = client.db('cloveria');
       console.log('[MongoDB] Connecté à cloveria');
       await seedAll(db);
+      const demoResult = await db.collection('users').updateOne(
+        { email: 'demo@cloveria.fr' },
+        { $set: { emailVerified: true, onboardingComplete: true } }
+      );
+      console.log(`[Demo] updateOne demo@cloveria.fr — matched: ${demoResult.matchedCount}, modified: ${demoResult.modifiedCount}`);
       return db;
     })();
   }

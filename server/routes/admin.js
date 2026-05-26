@@ -32,6 +32,7 @@ function isTestAccount(email) {
 
 function computeStatut(u, nbFiches) {
   if (u.subscriptionStatus === 'active') return 'client engagé';
+  if (u.email === 'demo@cloveria.fr') return 'activé';
   if (!u.emailVerified) return 'lead';
   if (nbFiches > 0) return 'activé';
   return 'à relancer';
@@ -47,10 +48,11 @@ router.get('/users', adminAuth, async (req, res) => {
 
     const enriched = await Promise.all(users.map(async (u) => {
       const realFilter = { user_id: u.id, _source: { $ne: 'example' } };
-      const [nbFiches, nbIngredients, nbCartes] = await Promise.all([
+      const [nbFiches, nbIngredients, nbCartes, firstFiche] = await Promise.all([
         db.collection('recettes').countDocuments(realFilter),
         db.collection('ingredients').countDocuments(realFilter),
         db.collection('cartes').countDocuments(realFilter),
+        db.collection('recettes').findOne(realFilter, { sort: { created_at: 1 }, projection: { _id: 0, created_at: 1 } }),
       ]);
 
       return {
@@ -70,6 +72,8 @@ router.get('/users', adminAuth, async (req, res) => {
         disabled: u.disabled === true,
         deleted: u.deleted === true,
         deletedAt: u.deletedAt || null,
+        lastLoginAt: u.lastLoginAt || null,
+        firstFicheAt: firstFiche?.created_at || null,
         statutCommercial: computeStatut(u, nbFiches),
       };
     }));

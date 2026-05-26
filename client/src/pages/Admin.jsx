@@ -308,7 +308,7 @@ export default function Admin() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
             <thead>
               <tr style={{ borderBottom: `2px solid ${T.border}`, background: '#FAFAF9' }}>
-                {['Email', 'Établissement', 'Inscription', 'Email vérifié', 'Onboarding', 'Fiches / Cartes*', 'Abonnement', 'Statut commercial', 'Essai', ''].map(h => (
+                {['Email', 'Établissement', 'Inscription', 'Email vérifié', 'Onboarding', 'Fiches / Cartes*', 'Abonnement', 'Statut commercial', 'Essai', 'Dernière connexion', '1ère fiche', ''].map(h => (
                   <th key={h} style={{ padding: '0.7rem 1rem', textAlign: 'left', fontWeight: 700, color: T.muted, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
                     {h}
                   </th>
@@ -363,6 +363,12 @@ export default function Admin() {
                         ? daysLeft > 0 ? `${daysLeft}j restants` : 'Expiré'
                         : '—'}
                     </td>
+                    <td style={{ padding: '0.6rem 1rem', color: T.muted, whiteSpace: 'nowrap', fontSize: '0.8rem' }}>
+                      {u.lastLoginAt ? formatDate(u.lastLoginAt) : 'Jamais'}
+                    </td>
+                    <td style={{ padding: '0.6rem 1rem', color: T.muted, whiteSpace: 'nowrap', fontSize: '0.8rem' }}>
+                      {formatDate(u.firstFicheAt)}
+                    </td>
                     <td style={{ padding: '0.6rem 0.75rem', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
                         {isArchived ? (
@@ -408,14 +414,14 @@ export default function Admin() {
               })}
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={10} style={{ padding: '2.5rem', textAlign: 'center', color: T.muted }}>
+                  <td colSpan={12} style={{ padding: '2.5rem', textAlign: 'center', color: T.muted }}>
                     Aucun utilisateur correspondant aux filtres.
                   </td>
                 </tr>
               )}
               {loading && (
                 <tr>
-                  <td colSpan={10} style={{ padding: '2.5rem', textAlign: 'center', color: T.muted }}>
+                  <td colSpan={12} style={{ padding: '2.5rem', textAlign: 'center', color: T.muted }}>
                     Chargement…
                   </td>
                 </tr>
