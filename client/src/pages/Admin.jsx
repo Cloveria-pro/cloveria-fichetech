@@ -17,6 +17,25 @@ const STATUT_STYLE = {
   'client engagé': { background: '#DCFCE7', color: '#166534', fontWeight: 700 },
 };
 
+const STATUT_ORDER = { 'lead': 0, 'à relancer': 1, 'activé': 2, 'client engagé': 3 };
+
+function sortValue(u, col) {
+  switch (col) {
+    case 'email':             return (u.email || '').toLowerCase();
+    case 'etablissement':     return (u.etablissement || '').toLowerCase();
+    case 'createdAt':         return u.createdAt || '';
+    case 'emailVerified':     return u.emailVerified ? 1 : 0;
+    case 'onboardingComplete':return u.onboardingComplete ? 1 : 0;
+    case 'nbFiches':          return u.nbFiches ?? 0;
+    case 'statutCommercial':  return STATUT_ORDER[u.statutCommercial] ?? -1;
+    case 'trialEndDate':      return u.trialEndDate || '';
+    case 'lastLoginAt':       return u.lastLoginAt || '';
+    case 'firstFicheAt':      return u.firstFicheAt || '';
+    case 'lastSeenAt':        return u.lastSeenAt || '';
+    default:                  return '';
+  }
+}
+
 function formatDate(iso) {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
@@ -39,6 +58,13 @@ export default function Admin() {
   const [search, setSearch] = useState('');
   const [filterAccountStatus, setFilterAccountStatus] = useState('active');
   const [deleteMsg, setDeleteMsg] = useState('');
+  const [sortCol, setSortCol] = useState(null);
+  const [sortDir, setSortDir] = useState('asc');
+
+  function handleSort(col) {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortCol(col); setSortDir('asc'); }
+  }
 
   useEffect(() => {
     if (key) fetchUsers(key);
@@ -197,6 +223,18 @@ export default function Admin() {
     return true;
   });
 
+  const sorted = sortCol
+    ? [...filtered].sort((a, b) => {
+        const va = sortValue(a, sortCol);
+        const vb = sortValue(b, sortCol);
+        if (va === '' && vb !== '') return 1;
+        if (vb === '' && va !== '') return -1;
+        if (va === vb) return 0;
+        const cmp = typeof va === 'string' ? va.localeCompare(vb) : va - vb;
+        return sortDir === 'asc' ? cmp : -cmp;
+      })
+    : filtered;
+
   const inputBase = {
     padding: '0.6rem 0.85rem', border: `1px solid ${T.border}`, borderRadius: '7px',
     fontSize: '0.82rem', background: T.white, color: T.text, fontFamily: 'inherit',
@@ -308,25 +346,36 @@ export default function Admin() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
             <thead>
               <tr style={{ borderBottom: `2px solid ${T.border}`, background: '#FAFAF9' }}>
-                {['Email', 'Établissement', 'Inscription', 'Email vérifié', 'Onboarding', 'Fiches / Cartes*', 'Abonnement', 'Statut commercial', 'Essai'].map(h => (
-                  <th key={h} style={{ padding: '0.7rem 1rem', textAlign: 'left', fontWeight: 700, color: T.muted, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
-                    {h}
-                  </th>
-                ))}
-                <th title="Connexion avec email/mot de passe" style={{ padding: '0.7rem 1rem', textAlign: 'left', fontWeight: 700, color: T.muted, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', cursor: 'help' }}>
-                  Dernière connexion
-                </th>
-                <th style={{ padding: '0.7rem 1rem', textAlign: 'left', fontWeight: 700, color: T.muted, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
-                  1ère fiche
-                </th>
-                <th title="Dernier passage dans l'application" style={{ padding: '0.7rem 1rem', textAlign: 'left', fontWeight: 700, color: T.muted, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', cursor: 'help' }}>
-                  Dernière activité
-                </th>
-                <th style={{ padding: '0.7rem 1rem' }} />
+                {(() => {
+                  const th = (label, col, opts = {}) => {
+                    const active = sortCol === col;
+                    const base = { padding: '0.7rem 1rem', textAlign: 'left', fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none', color: active ? T.text : T.muted, ...(opts.style || {}) };
+                    return (
+                      <th key={col} title={opts.title} style={base} onClick={() => handleSort(col)}>
+                        {label}{active ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''}
+                      </th>
+                    );
+                  };
+                  return (<>
+                    {th('Email', 'email')}
+                    {th('Établissement', 'etablissement')}
+                    {th('Inscription', 'createdAt')}
+                    {th('Email vérifié', 'emailVerified')}
+                    {th('Onboarding', 'onboardingComplete')}
+                    {th('Fiches / Cartes*', 'nbFiches')}
+                    <th style={{ padding: '0.7rem 1rem', textAlign: 'left', fontWeight: 700, color: T.muted, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Abonnement</th>
+                    {th('Statut commercial', 'statutCommercial')}
+                    {th('Essai', 'trialEndDate')}
+                    {th('Dernière connexion', 'lastLoginAt', { title: 'Connexion avec email/mot de passe' })}
+                    {th('1ère fiche', 'firstFicheAt')}
+                    {th('Dernière activité', 'lastSeenAt', { title: "Dernier passage dans l'application" })}
+                    <th style={{ padding: '0.7rem 1rem' }} />
+                  </>);
+                })()}
               </tr>
             </thead>
             <tbody>
-              {filtered.map((u, i) => {
+              {sorted.map((u, i) => {
                 const daysLeft = trialDaysLeft(u.trialEndDate);
                 const sStyle = STATUT_STYLE[u.statutCommercial] || STATUT_STYLE['lead'];
                 const isArchived = u.deleted === true;
