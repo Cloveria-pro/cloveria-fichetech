@@ -73,6 +73,7 @@ router.get('/users', adminAuth, async (req, res) => {
         deleted: u.deleted === true,
         deletedAt: u.deletedAt || null,
         lastLoginAt: u.lastLoginAt || null,
+        lastSeenAt: u.lastSeenAt || null,
         firstFicheAt: firstFiche?.created_at || null,
         statutCommercial: computeStatut(u, nbFiches),
       };
