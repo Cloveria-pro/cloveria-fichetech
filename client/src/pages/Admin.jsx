@@ -46,6 +46,61 @@ function trialDaysLeft(trialEndDate) {
   return Math.ceil((new Date(trialEndDate) - new Date()) / 86400000);
 }
 
+function ClientDrawer({ user: u, onClose }) {
+  if (!u) return null;
+  const row = (label, value) => (
+    <div key={label} style={{ display: 'flex', gap: '0.5rem', padding: '0.45rem 0', borderBottom: `1px solid ${T.border}` }}>
+      <span style={{ flex: '0 0 140px', fontSize: '0.75rem', color: T.muted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em', paddingTop: '1px' }}>{label}</span>
+      <span style={{ fontSize: '0.82rem', color: T.text, wordBreak: 'break-word' }}>{value ?? '—'}</span>
+    </div>
+  );
+  const section = (title) => (
+    <div style={{ fontSize: '0.68rem', fontWeight: 800, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '1.25rem 0 0.5rem' }}>{title}</div>
+  );
+  const daysLeft = trialDaysLeft(u.trialEndDate);
+  return (
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.25)', zIndex: 200 }} />
+      <div style={{ position: 'fixed', top: 0, right: 0, width: '400px', height: '100vh', background: T.white, zIndex: 300, boxShadow: '-4px 0 24px rgba(0,0,0,0.12)', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.1rem 1.25rem', borderBottom: `1px solid ${T.border}`, flexShrink: 0 }}>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: '0.9rem', color: T.text, maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</div>
+            <div style={{ fontSize: '0.75rem', color: T.muted, marginTop: '2px' }}>{u.etablissement || '—'}</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: T.muted, padding: '0.25rem' }}>✕</button>
+        </div>
+        <div style={{ overflowY: 'auto', padding: '0 1.25rem 1.5rem', flex: 1 }}>
+          {section('Compte')}
+          {row('Prénom', u.prenom || null)}
+          {row('Inscrit le', formatDate(u.createdAt))}
+          {row('Email vérifié', u.emailVerified ? '✓ Oui' : '✗ Non')}
+          {row('Onboarding', u.onboardingComplete ? '✓ Complet' : '✗ Incomplet')}
+          {row('Statut', u.statutCommercial)}
+          {row('Abonnement', u.subscriptionStatus || null)}
+          {u.subscriptionStatus === 'trial' && row('Essai', daysLeft !== null ? (daysLeft > 0 ? `${daysLeft}j restants` : 'Expiré') : null)}
+
+          {section('Profil onboarding')}
+          {row('Type établissement', u.typeEtablissement || null)}
+          {row('Rôle', u.role || null)}
+          {row('Objectifs', u.objectifs?.length ? u.objectifs.join(', ') : null)}
+          {row('Nb plats carte', u.nbPlats || null)}
+          {row('Food cost cible', u.foodCostCible != null ? `${u.foodCostCible}%` : null)}
+          {row('Source découverte', u.sourceDecouverte || null)}
+          {row('Pack exemple', u.examplePackChoice || null)}
+
+          {section('Activité')}
+          {row('Fiches réelles', u.nbFiches)}
+          {row('Ingrédients', u.nbIngredients)}
+          {row('Cartes', u.nbCartes)}
+          {row('1ère fiche', formatDate(u.firstFicheAt))}
+          {row('Dernière connexion', u.lastLoginAt ? formatDate(u.lastLoginAt) : 'Jamais')}
+          {row('Dernière activité', u.lastSeenAt ? formatDate(u.lastSeenAt) : null)}
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function Admin() {
   const [key, setKey] = useState(() => sessionStorage.getItem('adminKey') || '');
   const [keyInput, setKeyInput] = useState('');
@@ -60,6 +115,7 @@ export default function Admin() {
   const [deleteMsg, setDeleteMsg] = useState('');
   const [sortCol, setSortCol] = useState(null);
   const [sortDir, setSortDir] = useState('asc');
+  const [selectedUser, setSelectedUser] = useState(null);
 
   function handleSort(col) {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -381,7 +437,7 @@ export default function Admin() {
                 const isArchived = u.deleted === true;
                 const rowBg = isArchived ? '#F9F9F9' : i % 2 === 0 ? T.white : '#FAFAF9';
                 return (
-                  <tr key={u.id} style={{ borderBottom: `1px solid ${T.border}`, background: rowBg, opacity: isArchived ? 0.65 : 1 }}>
+                  <tr key={u.id} onClick={() => setSelectedUser(u)} style={{ borderBottom: `1px solid ${T.border}`, background: rowBg, opacity: isArchived ? 0.65 : 1, cursor: 'pointer' }}>
                     <td style={{ padding: '0.6rem 1rem', color: T.muted, fontWeight: 500, maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {u.email}
                       {isArchived && <span style={{ marginLeft: '6px', fontSize: '0.65rem', background: '#E5E7EB', color: '#6B7280', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>archivé</span>}
@@ -431,7 +487,7 @@ export default function Admin() {
                     <td style={{ padding: '0.6rem 1rem', color: T.muted, whiteSpace: 'nowrap', fontSize: '0.8rem' }}>
                       {u.lastSeenAt ? formatDate(u.lastSeenAt) : '—'}
                     </td>
-                    <td style={{ padding: '0.6rem 0.75rem', whiteSpace: 'nowrap' }}>
+                    <td onClick={e => e.stopPropagation()} style={{ padding: '0.6rem 0.75rem', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
                         {isArchived ? (
                           <button
@@ -495,6 +551,7 @@ export default function Admin() {
           * Compteurs hors contenu d&apos;exemple injecté à l&apos;onboarding. Le badge <strong>+ex</strong> indique que le pack d&apos;exemple a été appliqué.
         </p>
       </div>
+      <ClientDrawer user={selectedUser} onClose={() => setSelectedUser(null)} />
     </div>
   );
 }
