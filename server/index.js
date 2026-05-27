@@ -67,9 +67,9 @@ async function sendTrialEmails() {
     .toArray();
 
   for (const user of users) {
-    if (!user.trialEndsAt || !user.email) continue;
+    if (!user.trialEndDate || !user.email) continue;
 
-    const trialEnd = new Date(user.trialEndsAt);
+    const trialEnd = new Date(user.trialEndDate);
     const trialStart = new Date(trialEnd.getFullYear(), trialEnd.getMonth(), trialEnd.getDate() - 14);
     const msElapsed = today - trialStart;
     const daysElapsed = Math.round(msElapsed / (1000 * 60 * 60 * 24));
