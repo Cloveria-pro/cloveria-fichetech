@@ -131,7 +131,6 @@ function buildDonutSVG(ingredients) {
 }
 
 export default function FicheTechnique() {
-  console.log('[FicheTechnique] render');
   const { id } = useParams();
   const navigate = useNavigate();
   const [recette, setRecette] = useState(null);
@@ -165,12 +164,6 @@ export default function FicheTechnique() {
       setCartes(cartesData);
       setAliases(aliasesData);
       setSousRecettes(srsData);
-      console.log('[FicheTechnique] data loaded:', data);
-      console.log('[FicheTechnique] ingredients cost debug:', (data.ingredients || []).map(i => ({
-        nom: i.nom, quantite: i.quantite, unite: i.unite, prixUnitaire: i.prixUnitaire,
-        cout: (i.quantite * ({ kg:1,g:0.001,mg:0.000001,L:1,l:1,ml:0.001,cl:0.01,'c.c.':0.005,'c.s.':0.015 }[i.unite] || 1) * i.prixUnitaire).toFixed(4) + ' EUR',
-        interpretation: `${i.prixUnitaire} EUR/${{ kg:'kg',g:'kg',mg:'kg',L:'L',l:'L',ml:'L',cl:'L','c.c.':'L','c.s.':'L' }[i.unite] || i.unite}`,
-      })));
       const etapes = Array.isArray(data.etapes) ? data.etapes
         : typeof data.etapes === 'string' ? data.etapes.split('\n').map(s => s.trim()).filter(Boolean)
         : [];

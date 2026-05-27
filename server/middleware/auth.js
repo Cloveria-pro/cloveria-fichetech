@@ -23,10 +23,10 @@ export function authMiddleware(req, res, next) {
 async function updateLastSeen(userId) {
   try {
     const db = await getDb();
-    const user = await db.collection('users').findOne({ id: userId }, { projection: { _id: 0, lastSeenAt: 1 } });
-    if (!user) return;
-    const now = Date.now();
-    if (user.lastSeenAt && now - new Date(user.lastSeenAt).getTime() < SEEN_THROTTLE_MS) return;
-    await db.collection('users').updateOne({ id: userId }, { $set: { lastSeenAt: new Date(now).toISOString() } });
+    const threshold = new Date(Date.now() - SEEN_THROTTLE_MS).toISOString();
+    await db.collection('users').updateOne(
+      { id: userId, $or: [{ lastSeenAt: { $exists: false } }, { lastSeenAt: { $lt: threshold } }] },
+      { $set: { lastSeenAt: new Date().toISOString() } }
+    );
   } catch { /* silencieux */ }
 }

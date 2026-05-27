@@ -15,6 +15,18 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-charts': ['recharts'],
+          'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
+          'vendor-pdf': ['html2pdf.js'],
+          'vendor-tour': ['driver.js'],
+        },
+      },
+    },
   },
   define: {
     'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || '')

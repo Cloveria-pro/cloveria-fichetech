@@ -1,7 +1,5 @@
 import { Resend } from 'resend';
 
-console.log('[Relances] RESEND_API_KEY:', process.env.RESEND_API_KEY ? '***' : '(non défini)');
-
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const CHECKOUT_URL = 'https://app.cloveria-pro.fr/abonnement';
@@ -217,14 +215,12 @@ export async function envoyerLifecycle(user, emailKey) {
     return;
   }
 
-  console.log(`[Lifecycle] Envoi ${emailKey} à ${user.email}...`);
   await resend.emails.send({
     from: 'CloverIA <contact@cloveria.fr>',
     to: user.email,
     subject: tpl.subject,
     html: tpl.html(user.prenom, user.etablissement),
   });
-  console.log(`[Lifecycle] ${emailKey} envoyé avec succès à ${user.email}`);
 }
 
 export async function envoyerRelance(user, jour) {
@@ -236,12 +232,10 @@ export async function envoyerRelance(user, jour) {
     return;
   }
 
-  console.log(`[Relance] Envoi j${jour} à ${user.email}...`);
   await resend.emails.send({
     from: 'CloverIA <contact@cloveria.fr>',
     to: user.email,
     subject: tpl.subject,
     html: tpl.html(user.prenom),
   });
-  console.log(`[Relance] j${jour} envoyé avec succès à ${user.email}`);
 }

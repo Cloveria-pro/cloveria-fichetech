@@ -94,12 +94,10 @@ export async function envoyerConfirmationEmail(email, token) {
     <p style="font-size:12px;color:#9CA3AF;text-align:center;margin-top:4px;">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br /><span style="color:#2D6A4F;word-break:break-all;">${url}</span></p>
   `);
 
-  console.log(`[Verification] Envoi confirmation à ${email}...`);
   await resend.emails.send({
     from: 'CloverIA <contact@cloveria.fr>',
     to: email,
     subject: 'Confirmez votre adresse email — CloverIA FicheTech',
     html,
   });
-  console.log(`[Verification] Confirmation envoyée à ${email}`);
 }

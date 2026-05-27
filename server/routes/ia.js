@@ -257,7 +257,6 @@ router.post('/analyser-facture', upload.single('facture'), async (req, res) => {
 });
 
 router.post('/structurer', async (req, res) => {
-  console.log('Clé API:', process.env.ANTHROPIC_API_KEY ? 'PRÉSENTE' : 'ABSENTE');
   const { description } = req.body;
   if (!description?.trim()) return res.status(400).json({ error: 'Description manquante' });
 
