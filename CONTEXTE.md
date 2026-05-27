@@ -1,6 +1,6 @@
 # CloverIA FicheTech — Contexte projet
 
-> Dernière mise à jour : 2026-05-27
+> Dernière mise à jour : 2026-05-27 (ajout Business model, État actuel, Clients cibles, Règles de travail)
 
 ---
 
@@ -11,6 +11,33 @@ CloverIA FicheTech est un **assistant chef hybride** pour restaurateurs indépen
 - **Food cost** : suivi coût matière par portion, food cost cible paramétrable, prix de vente suggéré
 - **Organisation quotidienne** : agenda intégré, rappels/événements/notes, widget J0→J+2 sur le dashboard, anecdote du jour
 - **CRM interne** : page admin protégée, vue complète des inscrits, pilotage commercial
+
+---
+
+## Clients cibles
+
+- Restaurateurs indépendants
+- Chefs de cuisine
+- Traiteurs
+- Cuisines professionnelles souhaitant maîtriser leurs coûts
+
+---
+
+## Business model
+
+- Abonnement **39 €/mois** sans engagement
+- Essai gratuit **14 jours** sans carte bancaire
+- Stripe en mode **live** configuré
+- **Accès à vie** possible manuellement via CRM admin (`subscriptionStatus: 'lifetime'`)
+- Cible : restaurateurs indépendants, chefs, traiteurs
+
+---
+
+## État actuel du projet
+
+- V1 en **production** sur `app.cloveria-pro.fr`
+- 3 bêta-testeurs en cours
+- Google Search Console en attente de validation DNS
 
 ---
 
@@ -676,3 +703,14 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 - [ ] Vérifier le déclenchement correct du product tour sur mobile (scroll + highlight)
 - [ ] Ajouter `rel="noopener noreferrer"` systématiquement sur tous les liens externes `target="_blank"`
 - [ ] CORS : confirmer que `CORS_ORIGIN` est défini sur Render
+
+---
+
+## Règles de travail avec Claude Code
+
+- Toujours **lire les fichiers concernés** avant de modifier
+- **Scope lock** : préciser quels fichiers peuvent être modifiés dans chaque sprint
+- Un seul repo à la fois (`cloveria-fichetech` ou `cloveria-landing`)
+- Toujours terminer par `git add . && git commit && git push`
+- Ne jamais modifier le design, les textes produit ou les données sans validation explicite
+- Prompt en langage naturel — un sprint = une chose bien délimitée
