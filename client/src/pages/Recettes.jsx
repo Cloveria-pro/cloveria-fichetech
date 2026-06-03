@@ -151,6 +151,8 @@ export default function Recettes() {
   const [recherche, setRecherche] = useState('');
   const [carteFilter, setCarteFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [categorieFilter, setCategorieFilter] = useState('');
+  const [allergeneFilter, setAllergeneFilter] = useState('');
   const [sectionsOpen, setSectionsOpen] = useState({});
   const [showImport, setShowImport] = useState(false);
   const [duplicationToast, setDuplicationToast] = useState('');
@@ -205,11 +207,15 @@ export default function Recettes() {
     ? new Set((cartes.find(c => c.id === carteFilter)?.sections || []).flatMap(s => (s.plats || []).map(p => p.recetteId)))
     : null;
 
+  const allergenesDispo = [...new Set(recettes.flatMap(r => r.allergenes || []))].sort();
+
   const filtrees = recettes.filter(r => {
     const matchRecherche = !recherche || r.nom.toLowerCase().includes(recherche.toLowerCase()) || (r.categorie || '').toLowerCase().includes(recherche.toLowerCase());
     const matchCarte = !carteFilter || carteRecettesIds?.has(r.id);
     const matchStatus = !statusFilter || getStatus(r) === statusFilter;
-    return matchRecherche && matchCarte && matchStatus;
+    const matchCategorie = !categorieFilter || sectionFor(r.categorie) === categorieFilter;
+    const matchAllergene = !allergeneFilter || (r.allergenes || []).includes(allergeneFilter);
+    return matchRecherche && matchCarte && matchStatus && matchCategorie && matchAllergene;
   });
 
   const grouped = Object.fromEntries(SECTIONS.map(s => [s, []]));
@@ -248,6 +254,16 @@ export default function Recettes() {
             >
               <option value="">Toutes les cartes</option>
               {cartes.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+            </select>
+          )}
+          <select value={categorieFilter} onChange={e => setCategorieFilter(e.target.value)} style={selectStyle}>
+            <option value="">Toutes les catégories</option>
+            {SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          {allergenesDispo.length > 0 && (
+            <select value={allergeneFilter} onChange={e => setAllergeneFilter(e.target.value)} style={selectStyle}>
+              <option value="">Tous les allergènes</option>
+              {allergenesDispo.map(a => <option key={a} value={a}>{a.charAt(0).toUpperCase() + a.slice(1)}</option>)}
             </select>
           )}
           <input
