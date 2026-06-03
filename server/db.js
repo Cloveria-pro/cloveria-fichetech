@@ -17,6 +17,7 @@ export function getDb() {
       const db = client.db('cloveria');
       console.log('[MongoDB] Connecté à cloveria');
       await seedAll(db);
+      await db.collection('users').createIndex({ id: 1 }, { unique: true, background: true });
       const demoResult = await db.collection('users').updateOne(
         { email: 'demo@cloveria.fr' },
         { $set: { emailVerified: true, onboardingComplete: true } }
