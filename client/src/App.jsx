@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { startTour } from './utils/onboardingTour.js';
 import { Routes, Route, NavLink, Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Dashboard from './pages/Dashboard.jsx';
 import Recettes from './pages/Recettes.jsx';
-import FicheTechnique from './pages/FicheTechnique.jsx';
+const FicheTechnique = lazy(() => import('./pages/FicheTechnique.jsx'));
 import NouvelleRecette from './pages/NouvelleRecette.jsx';
-import Ingredients from './pages/Ingredients.jsx';
+const Ingredients = lazy(() => import('./pages/Ingredients.jsx'));
 import SousRecettes from './pages/SousRecettes.jsx';
-import Cartes from './pages/Cartes.jsx';
-import MenuEngineering from './pages/MenuEngineering.jsx';
+const Cartes = lazy(() => import('./pages/Cartes.jsx'));
+const MenuEngineering = lazy(() => import('./pages/MenuEngineering.jsx'));
 import Documents from './pages/Documents.jsx';
 import Organisation from './pages/Organisation.jsx';
 import Parametres from './pages/Parametres.jsx';
@@ -293,6 +293,7 @@ export default function App() {
       )}
 
       <main style={mainStyle}>
+        <Suspense fallback={<div />}>
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/fiches-techniques" element={<Recettes />} />
@@ -315,6 +316,7 @@ export default function App() {
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="/register" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </main>
     </div>
   );
