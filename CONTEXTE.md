@@ -1,6 +1,6 @@
 # CloverIA FicheTech — Contexte projet
 
-> Dernière mise à jour : 2026-06-04 (Menu Engineering sprints D/F/E — édition rapport, imports multiples, lien scan source)
+> Dernière mise à jour : 2026-06-04 (simplification flow d'import + suppression cards redondantes Menu Engineering)
 
 ---
 
@@ -550,9 +550,11 @@ Anti-doublon : chaque clé envoyée est pushée dans `user.lifecycleEmailsSent`.
 - Recommandations automatiques par catégorie (garder, valoriser, ajuster prix, retirer)
 - **Calendrier des imports** : navigation mensuelle, dates occupées visuellement marquées (basées sur `reportDate`), clic date occupée → vue consultation, clic date libre → import
 - **Vue consultation par date** (`DateReportViewer`) : sélecteur en pills si plusieurs rapports sur la même date, affiche `validatedData` (lignes confirmées avec quadrants) et `extractedData` (brut IA)
-- **Édition inline** (Sprint D) : bouton "Modifier" sur chaque rapport — édition des quantités ligne par ligne + modification de la `reportDate`. Sauvegarde via `PUT /api/ventes/:id`. Quadrants BCG non recalculés depuis la vue consultation (recalcul au prochain import complet).
-- **Import multiple à la même date** (Sprint F) : depuis la vue consultation, bouton "Ajouter un rapport" démarre un import sans écraser les existants. Bannière de contexte dans l'étape 1 + date verrouillée. Après sauvegarde, retour automatique à la vue consultation avec le nouveau rapport sélectionné.
-- **Lien scan source** (Sprint E) : chaque rapport mémorise `sourceDocumentId` pointant vers `documents_ventes`. Vue consultation lazy-fetch le fichier et affiche une prévisualisation inline (image) ou lien de téléchargement (PDF).
+- **Édition inline** : bouton "Modifier" sur chaque rapport — édition des quantités ligne par ligne + modification de la `reportDate`. Sauvegarde via `PUT /api/ventes/:id`. Quadrants BCG non recalculés depuis la vue consultation (recalcul au prochain import complet).
+- **Import multiple à la même date** : depuis la vue consultation, bouton "Ajouter un rapport" démarre un import sans écraser les existants. Bannière de contexte dans l'étape 1 + date verrouillée. Après sauvegarde, retour automatique à la vue consultation avec le nouveau rapport sélectionné.
+- **Lien scan source** : chaque rapport mémorise `sourceDocumentId` pointant vers `documents_ventes`. Vue consultation lazy-fetch le fichier et affiche une prévisualisation inline (image) ou lien de téléchargement (PDF).
+- **Flow d'import simplifié** : les blocs "Granularité des données" et "Période et carte concernée" ont été supprimés. La `reportDate` est directement la date sélectionnée dans le calendrier (fallback : date du jour). Plus de saisie manuelle de dateDebut/dateFin ni de sélecteur de carte à l'import. Les champs `dateDebut`, `dateFin`, `cartesIds` restent présents en base pour la compatibilité des anciens rapports.
+- **Résultats** : seule la matrice 2×2 et l'analyse détaillée (tableau + graphiques) sont affichées. Les 4 cards de synthèse horizontales (⭐ À conserver / 🐄 À retravailler / 🔍 À pousser / 💀 À sortir) ont été supprimées comme redondantes.
 
 ### Organisation / Calendrier
 - Module accessible depuis la sidebar
