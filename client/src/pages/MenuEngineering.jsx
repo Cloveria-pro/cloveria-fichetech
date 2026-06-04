@@ -141,6 +141,89 @@ function CartesMultiSelect({ cartes, value, onChange }) {
   );
 }
 
+function ImportCalendar({ month, occupiedDates, selectedDate, onMonthChange, onDateSelect }) {
+  const [y, m] = month.split('-').map(Number);
+  const firstDayMon = (new Date(y, m - 1, 1).getDay() + 6) % 7; // Lun=0 … Dim=6
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const today = new Date().toISOString().slice(0, 10);
+  const monthLabel = new Date(y, m - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  const prevM = m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`;
+  const nextM = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
+
+  const cells = [];
+  for (let i = 0; i < firstDayMon; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  const navBtn = {
+    background: 'none', border: '1px solid #E8E2D9', borderRadius: '6px',
+    cursor: 'pointer', padding: '2px 10px', fontSize: '1.1rem',
+    color: T.muted, lineHeight: '22px', fontFamily: "'DM Sans', sans-serif",
+  };
+
+  return (
+    <div style={{ background: '#fff', border: '1px solid #E8E2D9', borderRadius: '12px', padding: '0.875rem 1rem 0.75rem', marginBottom: '1.5rem' }}>
+      {/* En-tête mois */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.625rem' }}>
+        <button style={navBtn} onClick={() => onMonthChange(prevM)} title="Mois précédent">‹</button>
+        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: T.text, textTransform: 'capitalize' }}>{monthLabel}</span>
+        <button style={navBtn} onClick={() => onMonthChange(nextM)} title="Mois suivant">›</button>
+      </div>
+
+      {/* Jours de la semaine */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', marginBottom: '3px' }}>
+        {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (
+          <div key={i} style={{ textAlign: 'center', fontSize: '0.6rem', fontWeight: 700, color: T.muted, padding: '2px 0' }}>{d}</div>
+        ))}
+      </div>
+
+      {/* Grille des jours */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
+        {cells.map((d, i) => {
+          if (!d) return <div key={`e${i}`} />;
+          const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          const occupied = occupiedDates.includes(dateStr);
+          const selected = selectedDate === dateStr;
+          const isToday = today === dateStr;
+          return (
+            <button
+              key={dateStr}
+              title={occupied ? `${dateStr} — rapport existant` : dateStr}
+              onClick={() => onDateSelect(dateStr)}
+              style={{
+                padding: '3px 2px', textAlign: 'center', borderRadius: '6px',
+                border: selected
+                  ? `1.5px solid ${T.green}`
+                  : isToday ? `1px solid ${T.gold}` : '1px solid transparent',
+                background: selected ? 'rgba(45,106,79,0.1)' : 'transparent',
+                cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+                lineHeight: '1.2', minWidth: 0,
+              }}
+            >
+              {occupied ? (
+                <span title={`${dateStr} — rapport existant`} style={{ fontSize: '0.8rem', display: 'block', lineHeight: '1.4' }}>✅</span>
+              ) : (
+                <span style={{ fontSize: '0.75rem', fontWeight: selected ? 700 : 400, color: isToday ? T.gold : T.text, display: 'block', lineHeight: '1.4' }}>{d}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Légende / sélection */}
+      <div style={{ marginTop: '0.625rem', fontSize: '0.72rem', color: T.muted, display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+        <span>✅ = rapport existant</span>
+        {selectedDate && (
+          <span style={{ color: T.green, fontWeight: 700 }}>
+            {occupiedDates.includes(selectedDate)
+              ? `📅 ${selectedDate} sélectionné`
+              : `📅 Rapport prévu le ${selectedDate}`}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function MenuEngineering() {
   const [tab, setTab] = useState('import');
   const [step, setStep] = useState(1);
@@ -159,6 +242,10 @@ export default function MenuEngineering() {
   const [cartes, setCartes] = useState([]);
   const [rapportEnCours, setRapportEnCours] = useState(null);
   const [hasLineDates, setHasLineDates] = useState(null);
+  const [calMonth, setCalMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [calOccupied, setCalOccupied] = useState([]);
+  const [selectedCalDate, setSelectedCalDate] = useState(null);
+  const [rawExtracted, setRawExtracted] = useState(null);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const width = useWindowWidth();
@@ -168,6 +255,11 @@ export default function MenuEngineering() {
     api.recettes.list().then(setRecettes).catch(() => {});
     api.cartes.list().then(setCartes).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (tab !== 'import') return;
+    api.ventes.dates(calMonth).then(res => setCalOccupied(res.dates || [])).catch(() => setCalOccupied([]));
+  }, [tab, calMonth]);
 
   useEffect(() => {
     if (tab === 'historique' || tab === 'analyse') {
@@ -193,6 +285,7 @@ export default function MenuEngineering() {
       const result = await api.ia.analyserVentes(formData);
       const colonnesResult = result.colonnes || [];
       const lignesResult = result.lignes || [];
+      setRawExtracted({ colonnes: colonnesResult, lignes: lignesResult, nomFichier: file.name });
       setColonnes(colonnesResult);
       const hasDate = colonnesResult.some(c => c.type === 'date') || lignesResult.some(l => l.date);
       setHasLineDates(hasDate ? true : false);
@@ -302,6 +395,11 @@ export default function MenuEngineering() {
       matchings: actifs,
       hasLineDates: hasLineDates === true,
       nomFichier: file?.name || rapportEnCours?.nomFichier || null,
+      // Métadonnées Sprint A
+      reportDate: selectedCalDate || dateDebut || null,
+      sourceFileName: file?.name || rapportEnCours?.nomFichier || null,
+      sourceFileMimeType: file?.type || rapportEnCours?.sourceFileMimeType || null,
+      extractedData: rawExtracted || null,
     };
 
     try {
@@ -352,6 +450,7 @@ export default function MenuEngineering() {
               setStep(1); setFile(null); setColonnes([]); setMatchings([]);
               setResultats([]); setRapportEnCours(null); setHasLineDates(null);
               setDateDebut(''); setDateFin(''); setCartesSelectes(['__all']);
+              setSelectedCalDate(null); setRawExtracted(null);
             }
             setTab(t.key);
           }} style={{
@@ -425,6 +524,13 @@ export default function MenuEngineering() {
           {/* ── ÉTAPE 1 : Import ── */}
           {step === 1 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <ImportCalendar
+                month={calMonth}
+                occupiedDates={calOccupied}
+                selectedDate={selectedCalDate}
+                onMonthChange={setCalMonth}
+                onDateSelect={setSelectedCalDate}
+              />
               <div
                 onDragOver={e => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}

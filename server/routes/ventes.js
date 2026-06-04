@@ -30,6 +30,31 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Retourne les reportDate distinctes d'un mois donné pour l'utilisateur courant.
+// month : YYYY-MM
+router.get('/dates', async (req, res) => {
+  const { month } = req.query;
+  if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+    return res.status(400).json({ error: 'Paramètre month requis (format YYYY-MM)' });
+  }
+  try {
+    const [y, m] = month.split('-').map(Number);
+    const start = `${month}-01`;
+    const nextM = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
+    const db = await getDb();
+    const docs = await db.collection('ventes_imports')
+      .find(
+        { user_id: req.userId, reportDate: { $gte: start, $lt: `${nextM}-01` } },
+        { projection: { _id: 0, reportDate: 1 } }
+      )
+      .toArray();
+    const dates = [...new Set(docs.map(d => d.reportDate).filter(Boolean))].sort();
+    res.json({ dates });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.post('/', async (req, res) => {
   const {
     periode, lignes, dateDebut, dateFin, cartesIds, matchings,

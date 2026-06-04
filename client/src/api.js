@@ -86,6 +86,7 @@ export const api = {
   },
   ventes: {
     list: () => request('/ventes'),
+    dates: (month) => request(`/ventes/dates?month=${encodeURIComponent(month)}`),
     create: (data) => request('/ventes', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => request(`/ventes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id) => request(`/ventes/${id}`, { method: 'DELETE' }),
