@@ -1,6 +1,6 @@
 # CloverIA FicheTech — Contexte projet
 
-> Dernière mise à jour : 2026-05-27 (ajout Business model, État actuel, Clients cibles, Règles de travail)
+> Dernière mise à jour : 2026-06-04 (Menu Engineering sprints D/F/E — édition rapport, imports multiples, lien scan source)
 
 ---
 
@@ -133,7 +133,7 @@ cloveria-fichetech/
 │   │   ├── aliases.js              # GET/POST (upsert) — mapping noms ingrédients
 │   │   ├── historique_prix.js      # GET/POST/DELETE — horodatage ISO 8601 complet
 │   │   ├── sous_recettes.js        # CRUD sous-recettes (préparations de base réutilisables)
-│   │   ├── ventes.js               # GET/POST/DELETE — ventes pour menu engineering
+│   │   ├── ventes.js               # CRUD + GET /dates + GET /by-date — rapports Menu Engineering
 │   │   ├── stripe.js               # /checkout, /portal, /webhook
 │   │   ├── documents.js            # GET/POST/DELETE — archive factures fournisseurs
 │   │   ├── agenda.js               # CRUD rappels/événements/notes
@@ -325,6 +325,51 @@ cloveria-fichetech/
 }
 ```
 
+### `ventes_imports`
+```json
+{
+  "id": "uuid",
+  "user_id": "uuid",
+  "periode": "string|null",
+  "lignes": [...],
+  "dateDebut": "YYYY-MM-DD|null",
+  "dateFin": "YYYY-MM-DD|null",
+  "cartesIds": ["uuid"],
+  "matchings": [...],
+  "hasLineDates": false,
+  "nomFichier": "string|null",
+  "statut": "validé",
+  "reportDate": "YYYY-MM-DD",
+  "_reportDateSource": "dateDebut|dateFin|backfill",
+  "sourceFileName": "string|null",
+  "sourceFileMimeType": "string|null",
+  "sourceDocumentId": "uuid|null",
+  "extractedData": {}|null,
+  "validatedData": [...],
+  "status": "validated",
+  "createdAt": "ISO8601",
+  "updatedAt": "ISO8601"
+}
+```
+
+> `reportDate` est la date métier du rapport (YYYY-MM-DD). `_reportDateSource` trace l'origine : `'dateDebut'` | `'dateFin'` | `'backfill'` (dérivée de `createdAt`). `validatedData` = lignes confirmées par l'utilisateur (avec quadrants BCG). `extractedData` = sortie brute IA avant validation. `sourceDocumentId` = référence vers `documents_ventes` pour accéder au fichier source.
+
+### `documents_ventes`
+```json
+{
+  "id": "uuid",
+  "user_id": "uuid",
+  "nomFichier": "string",
+  "fileBase64": "string",
+  "fileMimeType": "string",
+  "dateImport": "ISO8601",
+  "statut": "validé",
+  "lignesCount": 12
+}
+```
+
+> Stocké automatiquement à chaque appel `POST /api/ia/analyser-ventes`. Accessible via `GET /api/documents/ventes/:id/file` → `{ base64, mimeType, nomFichier }`. Jamais exposé en liste sans le `fileBase64` (projection exclut le contenu binaire du listing).
+
 ---
 
 ## Routes API
@@ -369,8 +414,11 @@ Les routes `/api/admin/*` requièrent le header `X-Admin-Key`.
 | GET/POST/DELETE | `/api/historique-prix` | Historique prix ingrédients |
 | GET/POST | `/api/aliases` | Mapping noms ingrédients (upsert) |
 | GET/POST/PUT/DELETE | `/api/sous-recettes/:id?` | CRUD sous-recettes |
-| GET/POST/DELETE | `/api/ventes` | Ventes par plat (pour menu engineering) |
-| GET/POST/DELETE | `/api/documents/:id?` | Archive factures fournisseurs |
+| GET/POST/PUT/DELETE | `/api/ventes` | Rapports de ventes Menu Engineering |
+| GET | `/api/ventes/dates?month=` | Dates distinctes avec imports pour un mois (YYYY-MM) |
+| GET | `/api/ventes/by-date?date=` | Rapports d'une date donnée (YYYY-MM-DD) |
+| GET/POST/DELETE | `/api/documents/:type/:id?` | Archive documents (factures fournisseurs, scans ventes) |
+| GET | `/api/documents/:type/:id/file` | Fichier brut base64 d'un document (`{ base64, mimeType, nomFichier }`) |
 | GET/POST/PUT/DELETE | `/api/agenda/:id?` | CRUD rappels/événements/notes |
 | POST | `/api/onboarding/inject-example` | Injecte le pack démarrage exemple |
 | POST | `/api/onboarding/skip-example` | Passe le pack exemple |
@@ -497,9 +545,14 @@ Anti-doublon : chaque clé envoyée est pushée dans `user.lifecycleEmailsSent`.
 - Même modèle de calcul que les recettes (`coutPortionHT`)
 
 ### Menu Engineering
-- Import des ventes (nom plat + quantité vendue sur une période)
+- Import des ventes via scan IA (image/PDF rapport de caisse → extraction automatique nom plat + quantités)
 - Matrice BCG automatique : **Stars** (marge haute + ventes hautes), **Plowhorses** (marge faible + ventes hautes), **Puzzles** (marge haute + ventes faibles), **Dogs** (marge faible + ventes faibles)
 - Recommandations automatiques par catégorie (garder, valoriser, ajuster prix, retirer)
+- **Calendrier des imports** : navigation mensuelle, dates occupées visuellement marquées (basées sur `reportDate`), clic date occupée → vue consultation, clic date libre → import
+- **Vue consultation par date** (`DateReportViewer`) : sélecteur en pills si plusieurs rapports sur la même date, affiche `validatedData` (lignes confirmées avec quadrants) et `extractedData` (brut IA)
+- **Édition inline** (Sprint D) : bouton "Modifier" sur chaque rapport — édition des quantités ligne par ligne + modification de la `reportDate`. Sauvegarde via `PUT /api/ventes/:id`. Quadrants BCG non recalculés depuis la vue consultation (recalcul au prochain import complet).
+- **Import multiple à la même date** (Sprint F) : depuis la vue consultation, bouton "Ajouter un rapport" démarre un import sans écraser les existants. Bannière de contexte dans l'étape 1 + date verrouillée. Après sauvegarde, retour automatique à la vue consultation avec le nouveau rapport sélectionné.
+- **Lien scan source** (Sprint E) : chaque rapport mémorise `sourceDocumentId` pointant vers `documents_ventes`. Vue consultation lazy-fetch le fichier et affiche une prévisualisation inline (image) ou lien de téléchargement (PDF).
 
 ### Organisation / Calendrier
 - Module accessible depuis la sidebar
@@ -648,15 +701,15 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 
 ## Performance & maintenance
 
-### Optimisations appliquées (2026-05-27)
-- **Code splitting Vite** : 5 chunks séparés (`vendor-react`, `vendor-charts`, `vendor-dnd`, `vendor-pdf`, `vendor-tour`). Gain estimé : -30 à -50% sur le bundle initial chargé au premier accès.
-- **`updateLastSeen` optimisé** : 1 seule opération MongoDB (`updateOne` avec filtre temporel) au lieu de `findOne` + `updateOne` conditionnelle.
-- **`console.log` debug supprimés** : `FicheTechnique.jsx` (render + data dump), `relances.js` (startup + envois verbeux), `ia.js` (log clé API sur chaque appel), `verification.js` (logs envoi).
-- **`trialEndDate` corrigé** : `sendTrialEmails()` utilisait `user.trialEndsAt` (champ inexistant) → corrigé en `user.trialEndDate`. Les relances essai étaient silencieusement désactivées.
+### Optimisations appliquées
+- **Code splitting Vite** (2026-05-27) : 5 chunks séparés (`vendor-react`, `vendor-charts`, `vendor-dnd`, `vendor-pdf`, `vendor-tour`). Gain estimé : -30 à -50% sur le bundle initial chargé au premier accès.
+- **`updateLastSeen` optimisé** (2026-05-27) : 1 seule opération MongoDB (`updateOne` avec filtre temporel) au lieu de `findOne` + `updateOne` conditionnelle.
+- **`console.log` debug supprimés** (2026-05-27) : `FicheTechnique.jsx` (render + data dump), `relances.js` (startup + envois verbeux), `ia.js` (log clé API sur chaque appel), `verification.js` (logs envoi).
+- **`trialEndDate` corrigé** (2026-05-27) : `sendTrialEmails()` utilisait `user.trialEndsAt` (champ inexistant) → corrigé en `user.trialEndDate`. Les relances essai étaient silencieusement désactivées.
+- **Lazy loading React pages** (Sprint 2) : `React.lazy()` + `Suspense` sur les pages lourdes (MenuEngineering, Ingredients, FicheTechnique, Cartes). Implémenté dans `App.jsx`.
+- **Index MongoDB sur `users.id`** (Sprint 1) : index créé sur Atlas — `checkAccess` et `updateLastSeen` font un lookup par `id` sur chaque requête. Plus de full scan.
 
 ### Recommandations non appliquées
-- **Lazy loading React pages** : `React.lazy()` + `Suspense` sur les pages lourdes (MenuEngineering 74KB, Ingredients 65KB, FicheTechnique 60KB, Cartes 56KB). Fort ROI bundle mais touche au routing dans `App.jsx`.
-- **Index MongoDB sur `users.id`** : `checkAccess` et `updateLastSeen` font un lookup par `id` sur chaque requête. Si l'index n'existe pas sur Atlas, c'est un full scan. À vérifier depuis la console Atlas.
 - **CORS** : vérifier que `CORS_ORIGIN` est défini sur Render (sinon `*` en production).
 
 ---
@@ -670,6 +723,10 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 | 3 | **Allergènes détectés en editMode non sauvegardés immédiatement** : le scan dans EtapesEditor met à jour `form.allergenes` mais la sauvegarde MongoDB n'arrive qu'au clic "Sauvegarder". En mode lecture, le toggle badge sauvegarde immédiatement. | Mineur — risque de perte si fermeture sans sauvegarde. | Toujours cliquer "Sauvegarder" après avoir modifié les étapes. |
 | 4 | **Render cold start** : backend en plan gratuit, peut mettre 30-60 s à répondre après inactivité. | Gênant en démo — première requête lente. | Aucun — limitation plan gratuit Render. |
 | 5 | **Isolation données démo** : les ingrédients du compte `demo` sont visibles par tous les utilisateurs connectés (comportement voulu mais à revoir si multi-tenant). | Faible — aucun risque de fuite de données utilisateur. | — |
+| 6 | **Quadrants BCG non recalculés en édition** (Sprint D) : modifier les quantités depuis la vue consultation met à jour `validatedData` mais ne relance pas l'algorithme BCG. Les quadrants affichés restent ceux du dernier import complet. | Mineur — incohérence visuelle si les quantités éditées changeraient de catégorie. | Réimporter le fichier pour recalculer. |
+| 7 | **Bouton "Modifier" masqué** (Sprint D) : si un rapport n'a que `extractedData` (brut IA, jamais validé) et pas de `validatedData`, le bouton d'édition n'apparaît pas. | Mineur — cas rare (import interrompu avant validation). | Aucun depuis l'UI. |
+| 8 | **Pas de lien scan source sur anciens rapports** (Sprint E) : les rapports importés avant le déploiement de Sprint E ne portent pas `sourceDocumentId`. Le bloc "Document source" n'apparaît pas pour ces rapports. | Faible — informatif uniquement. | Aucun — limitation rétroactive. |
+| 9 | **Fichiers base64 lourds sur mobile Safari** (Sprint E) : les images de prévisualisation embarquent le base64 complet en mémoire. Fichiers > 5 Mo peuvent causer des crashs sur mobile Safari. | Faible — usage Desktop majoritaire. | Éviter d'importer des scans > 5 Mo. |
 
 ---
 
@@ -680,8 +737,8 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 - [x] **Emails de relance essai** : séquence J+9 / J+12 / J+14 + post-essai J+2 / J+7 / J+15 / J+40
 - [x] **Emails lifecycle** : J+4 (sans fiche), J+8 (sans fiche), J+4 post-vérification (onboarding incomplet)
 - [x] **CRM Admin** : tableau, filtres, tri colonnes, fiche client drawer, accès à vie
-- [ ] **Lazy loading React** : `React.lazy()` sur les pages > 50KB (MenuEngineering, Ingredients, FicheTechnique, Cartes)
-- [ ] **Index MongoDB** : vérifier/créer index sur `users.id` dans Atlas
+- [x] **Lazy loading React** : `React.lazy()` sur les pages > 50KB (MenuEngineering, Ingredients, FicheTechnique, Cartes)
+- [x] **Index MongoDB** : vérifier/créer index sur `users.id` dans Atlas
 - [ ] Import/export CSV des ingrédients
 
 ### Priorité moyenne
