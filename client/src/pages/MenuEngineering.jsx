@@ -1344,9 +1344,9 @@ function AnalyseTab({ historique, loading, cartes }) {
     return computeQuadrant(rows.map(r => ({ ...r })));
   }, [historique, appliedDebut, appliedFin, appliedCartes]);
 
-  const { nbRapports, rapportsSansDetails } = useMemo(() => {
+  const nbRapports = useMemo(() => {
     const all = appliedCartes.includes('__all');
-    const inclus = historique.filter(r => {
+    return historique.filter(r => {
       if (!all && r.cartesIds && r.cartesIds.length > 0) {
         if (!r.cartesIds.some(id => appliedCartes.includes(id))) return false;
       }
@@ -1360,11 +1360,7 @@ function AnalyseTab({ historique, loading, cartes }) {
         }
       }
       return true;
-    });
-    const sansDetails = (appliedDebut || appliedFin)
-      ? inclus.filter(r => !r.hasLineDates)
-      : [];
-    return { nbRapports: inclus.length, rapportsSansDetails: sansDetails };
+    }).length;
   }, [historique, appliedDebut, appliedFin, appliedCartes]);
 
   const hasActiveFilter = !!(appliedDebut || appliedFin || !appliedCartes.includes('__all'));
@@ -1448,17 +1444,6 @@ function AnalyseTab({ historique, loading, cartes }) {
         )}
       </div>
 
-      {rapportsSansDetails.length > 0 && (
-        <div style={{ background: 'rgba(217,119,6,0.06)', border: '1px solid rgba(217,119,6,0.3)', borderRadius: '10px', padding: '0.875rem 1.25rem', fontSize: '0.82rem', color: '#78350F', lineHeight: 1.55, display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-          <span style={{ fontSize: '1rem', flexShrink: 0 }}>⚠️</span>
-          <span>
-            <strong>{rapportsSansDetails.length} rapport{rapportsSansDetails.length !== 1 ? 's' : ''} sans détail journalier</strong> inclus dans cette analyse.
-            {' '}Données disponibles uniquement sur la période globale du rapport, pas par jour.
-            {' '}L'analyse reflète les ventes totales de {rapportsSansDetails.length !== 1 ? 'ces rapports' : 'ce rapport'}, indépendamment du filtre de date choisi.
-          </span>
-        </div>
-      )}
-
       {analyseResultats.length === 0 ? (
         <div style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', padding: '3rem 2rem', textAlign: 'center' }}>
           <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>📊</div>
@@ -1482,7 +1467,6 @@ function AnalyseTab({ historique, loading, cartes }) {
 function ResultatsView({ resultats, onBack }) {
   const [filterService, setFilterService] = useState('');
   const [filterCategorie, setFilterCategorie] = useState('');
-  const [highlightedRow, setHighlightedRow] = useState(null);
   const rvWidth = useWindowWidth();
   const isMobile = rvWidth < 768;
 
@@ -1524,36 +1508,10 @@ function ResultatsView({ resultats, onBack }) {
   const hasLineData = lineData.length > 1;
   const sortedRows = useMemo(() => [...filtered].sort((a, b) => b.margeTotal - a.margeTotal), [filtered]);
 
-  const bestEtoile = useMemo(() => [...filtered.filter(r => r.quadrant === 'etoile')].sort((a, b) => b.margeUnitaire - a.margeUnitaire)[0] ?? null, [filtered]);
-  const bestVache = useMemo(() => [...filtered.filter(r => r.quadrant === 'vache')].sort((a, b) => b.quantite - a.quantite)[0] ?? null, [filtered]);
-  const bestEnigme = useMemo(() => [...filtered.filter(r => r.quadrant === 'enigme')].sort((a, b) => b.margeUnitaire - a.margeUnitaire)[0] ?? null, [filtered]);
-  const worstMort = useMemo(() => [...filtered.filter(r => r.quadrant === 'poids_mort')].sort((a, b) => a.margeUnitaire - b.margeUnitaire)[0] ?? null, [filtered]);
-
-  function scrollToRow(rowId) {
-    const el = document.getElementById(`trow-${rowId}`);
-    if (!el) return;
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    setHighlightedRow(rowId);
-    setTimeout(() => setHighlightedRow(null), 2000);
-  }
-
-  const EXEC_CARDS = [
-    { plat: bestEtoile,  label: 'À conserver',   icon: '⭐', color: '#2D6A4F', bg: '#F0FDF4', border: '#86EFAC',  sub: p => `+${p.margeUnitaire.toFixed(2)} €/u` },
-    { plat: bestVache,   label: 'À retravailler', icon: '🐄', color: '#D97706', bg: '#FFFBEB', border: '#FCD34D',  sub: p => `${p.quantite} vendus` },
-    { plat: bestEnigme,  label: 'À pousser',      icon: '🔍', color: '#3B82F6', bg: '#EFF6FF', border: '#BFDBFE',  sub: p => `+${p.margeUnitaire.toFixed(2)} €/u` },
-    { plat: worstMort,   label: 'À sortir',       icon: '💀', color: '#DC2626', bg: '#FEF2F2', border: '#FCA5A5',  sub: p => `${p.margeUnitaire.toFixed(2)} €/u` },
-  ].filter(c => c.plat !== null);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', fontFamily: "'DM Sans', sans-serif" }}>
       <style>{`
-        @keyframes me-pulse { 0%,100%{background:transparent} 35%,65%{background:rgba(201,168,76,0.18)} }
-        .me-row-pulse { animation: me-pulse 1.8s ease forwards; }
-        .me-exec-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:0.875rem; }
-        @media(max-width:860px){ .me-exec-grid{grid-template-columns:repeat(2,1fr);} }
-        @media(max-width:480px){ .me-exec-grid{grid-template-columns:1fr 1fr;gap:0.5rem;} }
-        .me-exec-card { border-radius:12px; padding:1rem 1.1rem; cursor:pointer; border-width:1px; border-style:solid; transition:box-shadow 0.15s,transform 0.12s; }
-        .me-exec-card:hover { box-shadow:0 6px 20px rgba(0,0,0,0.1); transform:translateY(-2px); }
         .me-tbl-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
         .me-pill { padding:0.28rem 0.875rem; border-radius:99px; border:1px solid #D6D0C8; background:#fff; font-size:0.8rem; cursor:pointer; font-family:"DM Sans",sans-serif; transition:all 0.12s; }
         .me-pill:hover { border-color:#2D6A4F; color:#2D6A4F; }
@@ -1585,38 +1543,6 @@ function ResultatsView({ resultats, onBack }) {
               ))}
             </div>
           )}
-        </div>
-      )}
-
-      {/* ── 2. Résumé exécutif ── */}
-      {EXEC_CARDS.length === 0 ? (
-        <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #E8E2D9', padding: '1.5rem', textAlign: 'center', color: T.muted, fontSize: '0.875rem' }}>
-          Aucun résultat pour les filtres sélectionnés.
-        </div>
-      ) : (
-        <div className="me-exec-grid">
-          {EXEC_CARDS.map((c, i) => {
-            const rowId = c.plat.recetteId || c.plat.nomFiche;
-            return (
-              <div key={i} className="me-exec-card"
-                style={{ background: c.bg, borderColor: c.border }}
-                onClick={() => scrollToRow(rowId)}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.6rem' }}>
-                  <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>{c.icon}</span>
-                  <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#fff', background: c.color, padding: '2px 8px', borderRadius: '99px', whiteSpace: 'nowrap' }}>
-                    {c.label}
-                  </span>
-                </div>
-                <div style={{ fontWeight: 700, fontSize: '0.85rem', color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '3px' }}>
-                  {c.plat.nomFiche}
-                </div>
-                <div style={{ fontSize: '0.78rem', fontWeight: 600, color: c.color }}>
-                  {c.sub(c.plat)}
-                </div>
-              </div>
-            );
-          })}
         </div>
       )}
 
@@ -1728,13 +1654,11 @@ function ResultatsView({ resultats, onBack }) {
                 const part = totalVentes > 0 ? (r.quantite / totalVentes * 100).toFixed(1) : '—';
                 const rowId = r.recetteId || r.nomFiche;
                 const isNeg = r.margeUnitaire < 0;
-                const isHl = highlightedRow === rowId;
                 return (
                   <tr key={i} id={`trow-${rowId}`}
-                    className={isHl ? 'me-row-pulse' : ''}
                     style={{ borderBottom: '1px solid #F3EDE4', transition: 'background 0.1s' }}
-                    onMouseEnter={e => { if (!isHl) e.currentTarget.style.background = '#FAFAF8'; }}
-                    onMouseLeave={e => { if (!isHl) e.currentTarget.style.background = ''; }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#FAFAF8'}
+                    onMouseLeave={e => { e.currentTarget.style.background = ''; }}
                   >
                     <td style={{ padding: '11px 14px', fontWeight: 700, color: T.text, whiteSpace: 'nowrap' }}>
                       <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: q.color, marginRight: '8px', verticalAlign: 'middle', flexShrink: 0 }} />
