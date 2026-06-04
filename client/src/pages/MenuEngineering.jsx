@@ -141,7 +141,7 @@ function CartesMultiSelect({ cartes, value, onChange }) {
   );
 }
 
-function DateReportViewer({ date, reports, loading, idx, onIdxChange, onRetour, onSave }) {
+function DateReportViewer({ date, reports, loading, idx, onIdxChange, onRetour, onSave, onAddForDate }) {
   const VISIBLE = 20;
   const [showAll, setShowAll] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -397,6 +397,18 @@ function DateReportViewer({ date, reports, loading, idx, onIdxChange, onRetour, 
           )}
         </>
       )}
+
+      {/* Footer — bouton ajout rapport (masqué en mode édition) */}
+      {!editMode && onAddForDate && (
+        <div style={{ marginTop: '1rem', paddingTop: '0.875rem', borderTop: '1px solid #F0EBE3', display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            onClick={onAddForDate}
+            style={{ padding: '0.35rem 1rem', background: 'none', border: `1px solid ${T.green}`, borderRadius: '6px', cursor: 'pointer', fontSize: '0.78rem', color: T.green, fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}
+          >
+            ＋ Ajouter un rapport pour cette date
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -510,6 +522,7 @@ export default function MenuEngineering() {
   const [dateReports, setDateReports] = useState([]);
   const [dateReportsLoading, setDateReportsLoading] = useState(false);
   const [dateReportIdx, setDateReportIdx] = useState(0);
+  const [addingForDate, setAddingForDate] = useState(false);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const width = useWindowWidth();
@@ -552,6 +565,19 @@ export default function MenuEngineering() {
       setDateReports([]);
       setDateReportIdx(0);
     }
+  }
+
+  function handleAddForDate() {
+    setAddingForDate(true);
+    setCalViewMode('import');
+    setFile(null);
+    setColonnes([]);
+    setMatchings([]);
+    setHasLineDates(null);
+    setDateDebut('');
+    setDateFin('');
+    setCartesSelectes(['__all']);
+    setRawExtracted(null);
   }
 
   function handleFile(f) {
@@ -699,6 +725,19 @@ export default function MenuEngineering() {
       console.error('Erreur sauvegarde:', err);
     }
 
+    if (addingForDate) {
+      try {
+        const res = await api.ventes.byDate(selectedCalDate);
+        const rapports = res.rapports || [];
+        setDateReports(rapports);
+        setDateReportIdx(Math.max(0, rapports.length - 1));
+      } catch { /* ignore */ }
+      setAddingForDate(false);
+      setCalViewMode('view');
+      setRapportEnCours(null);
+      return;
+    }
+
     setRapportEnCours(null);
     setStep(3);
   }
@@ -739,6 +778,7 @@ export default function MenuEngineering() {
               setDateDebut(''); setDateFin(''); setCartesSelectes(['__all']);
               setSelectedCalDate(null); setRawExtracted(null);
               setCalViewMode('import'); setDateReports([]); setDateReportIdx(0);
+              setAddingForDate(false);
             }
             setTab(t.key);
           }} style={{
@@ -834,10 +874,23 @@ export default function MenuEngineering() {
                     setDateReports(res.rapports || []);
                     api.ventes.dates(calMonth).then(r => setCalOccupied(r.dates || [])).catch(() => {});
                   }}
+                  onAddForDate={handleAddForDate}
                 />
               )}
 
               {calViewMode === 'import' && (<>
+              {addingForDate && selectedCalDate && (
+                <div style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.3)', borderRadius: '10px', padding: '0.75rem 1.25rem', fontSize: '0.85rem', color: '#78350F', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '1rem' }}>➕</span>
+                  <span>Rapport supplémentaire pour le <strong>{selectedCalDate}</strong> — la date est verrouillée.</span>
+                  <button
+                    onClick={() => { setAddingForDate(false); setCalViewMode('view'); }}
+                    style={{ marginLeft: 'auto', padding: '0.3rem 0.875rem', background: 'none', border: '1px solid rgba(201,168,76,0.4)', borderRadius: '6px', cursor: 'pointer', fontSize: '0.78rem', color: '#78350F', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}
+                  >
+                    ← Retour à la consultation
+                  </button>
+                </div>
+              )}
               <div
                 onDragOver={e => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
@@ -1147,6 +1200,10 @@ export default function MenuEngineering() {
                     if (rapportEnCours?.id) {
                       setRapportEnCours(null);
                       setTab('historique');
+                    } else if (addingForDate) {
+                      setAddingForDate(false);
+                      setCalViewMode('view');
+                      setStep(1);
                     } else {
                       setCalViewMode('import'); setDateReports([]); setDateReportIdx(0);
                       setStep(1);
