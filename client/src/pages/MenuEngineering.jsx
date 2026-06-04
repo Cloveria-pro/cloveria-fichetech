@@ -141,6 +141,131 @@ function CartesMultiSelect({ cartes, value, onChange }) {
   );
 }
 
+function DateReportViewer({ date, reports, loading, idx, onIdxChange, onRetour }) {
+  const VISIBLE = 20;
+  const [showAll, setShowAll] = useState(false);
+
+  if (loading) {
+    return (
+      <div style={{ background: '#fff', border: '1px solid #E8E2D9', borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem', textAlign: 'center', color: T.muted, fontSize: '0.85rem' }}>
+        <span style={{ width: '16px', height: '16px', border: '2px solid rgba(45,106,79,0.25)', borderTopColor: T.green, borderRadius: '50%', display: 'inline-block', animation: 'spin-me 0.7s linear infinite', verticalAlign: 'middle', marginRight: '8px' }} />
+        Chargement du rapport…
+      </div>
+    );
+  }
+
+  if (!reports.length) {
+    return (
+      <div style={{ background: '#fff', border: '1px solid #E8E2D9', borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: T.text }}>📅 {date}</span>
+          <button onClick={onRetour} style={{ background: 'none', border: '1px solid #E8E2D9', borderRadius: '6px', padding: '0.3rem 0.75rem', cursor: 'pointer', fontSize: '0.78rem', color: T.muted, fontFamily: "'DM Sans', sans-serif" }}>← Retour</button>
+        </div>
+        <p style={{ color: T.muted, fontSize: '0.82rem', margin: 0 }}>Aucun rapport trouvé pour cette date.</p>
+      </div>
+    );
+  }
+
+  const rapport = reports[idx];
+  const rows = (rapport.validatedData?.length > 0 ? rapport.validatedData : null)
+    || rapport.extractedData?.lignes
+    || [];
+  const isRich = rapport.validatedData?.length > 0;
+  const displayed = showAll ? rows : rows.slice(0, VISIBLE);
+
+  return (
+    <div style={{ background: '#fff', border: `1px solid ${T.green}`, borderRadius: '12px', padding: '1.25rem', marginBottom: '1.5rem' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.875rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div>
+          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: T.text }}>📅 {date}</span>
+          {rapport.sourceFileName && (
+            <span style={{ marginLeft: '0.75rem', fontSize: '0.75rem', color: T.muted }}>📎 {rapport.sourceFileName}</span>
+          )}
+          {rapport.sourceFileUrl && (
+            <a href={rapport.sourceFileUrl} target="_blank" rel="noopener noreferrer" style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: T.green, textDecoration: 'underline' }}>Télécharger</a>
+          )}
+        </div>
+        <button onClick={onRetour} style={{ background: 'none', border: '1px solid #E8E2D9', borderRadius: '6px', padding: '0.3rem 0.75rem', cursor: 'pointer', fontSize: '0.78rem', color: T.muted, fontFamily: "'DM Sans', sans-serif" }}>← Retour</button>
+      </div>
+
+      {/* Pill selector if multiple reports */}
+      {reports.length > 1 && (
+        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.875rem' }}>
+          {reports.map((r, i) => (
+            <button key={r.id || i} onClick={() => { onIdxChange(i); setShowAll(false); }} style={{
+              padding: '0.25rem 0.75rem', borderRadius: '99px', fontSize: '0.75rem', fontFamily: "'DM Sans', sans-serif",
+              border: `1px solid ${i === idx ? T.green : '#D6D0C8'}`,
+              background: i === idx ? T.green : '#fff',
+              color: i === idx ? '#fff' : T.muted,
+              cursor: 'pointer', fontWeight: i === idx ? 700 : 400,
+            }}>
+              {r.periode || r.sourceFileName || `Rapport ${i + 1}`}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Metadata row */}
+      <div style={{ fontSize: '0.72rem', color: T.muted, marginBottom: '0.75rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+        {rapport.periode && <span>Période : {rapport.periode}</span>}
+        {rapport.createdAt && <span>Importé le {new Date(rapport.createdAt).toLocaleDateString('fr-FR')}</span>}
+        {!isRich && rows.length > 0 && (
+          <span style={{ color: '#D97706', fontWeight: 600 }}>⚠ Données brutes IA — non validées</span>
+        )}
+      </div>
+
+      {/* Table */}
+      {rows.length === 0 ? (
+        <p style={{ color: T.muted, fontSize: '0.82rem', margin: 0 }}>Aucune ligne de données.</p>
+      ) : (
+        <>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #E8E2D9' }}>
+                  <th style={{ textAlign: 'left', padding: '6px 8px', color: T.muted, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    {isRich ? 'Plat' : 'Nom POS'}
+                  </th>
+                  <th style={{ textAlign: 'right', padding: '6px 8px', color: T.muted, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Qté</th>
+                  {isRich && <th style={{ textAlign: 'right', padding: '6px 8px', color: T.muted, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Marge unit.</th>}
+                  {isRich && <th style={{ textAlign: 'center', padding: '6px 8px', color: T.muted, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Quadrant</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {displayed.map((row, i) => {
+                  const q = row.quadrant ? QUADRANTS[row.quadrant] : null;
+                  return (
+                    <tr key={i} style={{ borderBottom: '1px solid #F5F1EC' }}>
+                      <td style={{ padding: '6px 8px', color: T.text, fontWeight: 500 }}>{isRich ? (row.nomFiche || row.nomPOS) : row.nomPOS}</td>
+                      <td style={{ padding: '6px 8px', textAlign: 'right', color: T.text }}>{row.quantite ?? '—'}</td>
+                      {isRich && <td style={{ padding: '6px 8px', textAlign: 'right', color: row.margeUnitaire >= 0 ? T.green : '#DC2626' }}>
+                        {row.margeUnitaire != null ? `${row.margeUnitaire.toFixed(2)} €` : '—'}
+                      </td>}
+                      {isRich && <td style={{ padding: '6px 8px', textAlign: 'center' }}>
+                        {q ? (
+                          <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '99px', fontSize: '0.7rem', fontWeight: 700, background: q.bg, color: q.color, border: `1px solid ${q.border}` }}>
+                            {q.icon} {q.label}
+                          </span>
+                        ) : '—'}
+                      </td>}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {rows.length > VISIBLE && !showAll && (
+            <button onClick={() => setShowAll(true)} style={{ marginTop: '0.625rem', background: 'none', border: 'none', cursor: 'pointer', color: T.green, fontSize: '0.8rem', fontWeight: 600, fontFamily: "'DM Sans', sans-serif", padding: 0 }}>
+              Voir {rows.length - VISIBLE} ligne{rows.length - VISIBLE !== 1 ? 's' : ''} de plus ↓
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function ImportCalendar({ month, occupiedDates, selectedDate, onMonthChange, onDateSelect }) {
   const [y, m] = month.split('-').map(Number);
   const firstDayMon = (new Date(y, m - 1, 1).getDay() + 6) % 7; // Lun=0 … Dim=6
@@ -246,6 +371,10 @@ export default function MenuEngineering() {
   const [calOccupied, setCalOccupied] = useState([]);
   const [selectedCalDate, setSelectedCalDate] = useState(null);
   const [rawExtracted, setRawExtracted] = useState(null);
+  const [calViewMode, setCalViewMode] = useState('import');
+  const [dateReports, setDateReports] = useState([]);
+  const [dateReportsLoading, setDateReportsLoading] = useState(false);
+  const [dateReportIdx, setDateReportIdx] = useState(0);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const width = useWindowWidth();
@@ -267,6 +396,28 @@ export default function MenuEngineering() {
       api.ventes.list().then(setHistorique).catch(() => {}).finally(() => setHistLoading(false));
     }
   }, [tab]);
+
+  async function handleCalDateSelect(dateStr) {
+    setSelectedCalDate(dateStr);
+    if (calOccupied.includes(dateStr)) {
+      setCalViewMode('view');
+      setDateReports([]);
+      setDateReportIdx(0);
+      setDateReportsLoading(true);
+      try {
+        const res = await api.ventes.byDate(dateStr);
+        setDateReports(res.rapports || []);
+      } catch {
+        setDateReports([]);
+      } finally {
+        setDateReportsLoading(false);
+      }
+    } else {
+      setCalViewMode('import');
+      setDateReports([]);
+      setDateReportIdx(0);
+    }
+  }
 
   function handleFile(f) {
     if (!f) return;
@@ -408,6 +559,7 @@ export default function MenuEngineering() {
       } else {
         await api.ventes.create(rapportData);
       }
+      api.ventes.dates(calMonth).then(res => setCalOccupied(res.dates || [])).catch(() => {});
     } catch (err) {
       console.error('Erreur sauvegarde:', err);
     }
@@ -451,6 +603,7 @@ export default function MenuEngineering() {
               setResultats([]); setRapportEnCours(null); setHasLineDates(null);
               setDateDebut(''); setDateFin(''); setCartesSelectes(['__all']);
               setSelectedCalDate(null); setRawExtracted(null);
+              setCalViewMode('import'); setDateReports([]); setDateReportIdx(0);
             }
             setTab(t.key);
           }} style={{
@@ -529,8 +682,21 @@ export default function MenuEngineering() {
                 occupiedDates={calOccupied}
                 selectedDate={selectedCalDate}
                 onMonthChange={setCalMonth}
-                onDateSelect={setSelectedCalDate}
+                onDateSelect={handleCalDateSelect}
               />
+
+              {calViewMode === 'view' && (
+                <DateReportViewer
+                  date={selectedCalDate}
+                  reports={dateReports}
+                  loading={dateReportsLoading}
+                  idx={dateReportIdx}
+                  onIdxChange={setDateReportIdx}
+                  onRetour={() => { setCalViewMode('import'); setDateReports([]); setDateReportIdx(0); setSelectedCalDate(null); }}
+                />
+              )}
+
+              {calViewMode === 'import' && (<>
               <div
                 onDragOver={e => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
@@ -720,6 +886,7 @@ export default function MenuEngineering() {
                   </button>
                 )}
               </div>
+              </>)}
             </div>
           )}
 
@@ -840,6 +1007,7 @@ export default function MenuEngineering() {
                       setRapportEnCours(null);
                       setTab('historique');
                     } else {
+                      setCalViewMode('import'); setDateReports([]); setDateReportIdx(0);
                       setStep(1);
                     }
                   }}

@@ -55,6 +55,34 @@ router.get('/dates', async (req, res) => {
   }
 });
 
+// Retourne les rapports d'une date donnée pour l'utilisateur courant.
+// date : YYYY-MM-DD
+router.get('/by-date', async (req, res) => {
+  const { date } = req.query;
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return res.status(400).json({ error: 'Paramètre date requis (format YYYY-MM-DD)' });
+  }
+  try {
+    const db = await getDb();
+    const rapports = await db.collection('ventes_imports')
+      .find(
+        { user_id: req.userId, reportDate: date },
+        {
+          projection: {
+            _id: 0, id: 1, reportDate: 1, periode: 1, createdAt: 1,
+            sourceFileName: 1, sourceFileMimeType: 1, sourceFileUrl: 1,
+            extractedData: 1, validatedData: 1, status: 1,
+          },
+        }
+      )
+      .sort({ createdAt: -1 })
+      .toArray();
+    res.json({ rapports });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.post('/', async (req, res) => {
   const {
     periode, lignes, dateDebut, dateFin, cartesIds, matchings,
