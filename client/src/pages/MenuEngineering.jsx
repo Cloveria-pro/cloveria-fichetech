@@ -141,9 +141,56 @@ function CartesMultiSelect({ cartes, value, onChange }) {
   );
 }
 
-function DateReportViewer({ date, reports, loading, idx, onIdxChange, onRetour }) {
+function DateReportViewer({ date, reports, loading, idx, onIdxChange, onRetour, onSave }) {
   const VISIBLE = 20;
   const [showAll, setShowAll] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editRows, setEditRows] = useState([]);
+  const [editDate, setEditDate] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
+
+  const rapport = reports[idx] || null;
+
+  // Réinitialise le mode édition quand on change de rapport sélectionné
+  useEffect(() => {
+    setEditMode(false);
+    setShowAll(false);
+  }, [idx, reports]);
+
+  function enterEdit() {
+    const src = rapport?.validatedData?.length > 0 ? rapport.validatedData : [];
+    setEditRows(src.map(r => ({ ...r })));
+    setEditDate(rapport?.reportDate || '');
+    setEditMode(true);
+  }
+
+  function cancelEdit() {
+    setEditMode(false);
+  }
+
+  async function saveEdit() {
+    if (editSaving) return;
+    setEditSaving(true);
+    try {
+      await onSave(rapport.id, {
+        lignes: editRows,
+        dateDebut: editDate || rapport.dateDebut || null,
+        dateFin: rapport.dateFin || null,
+        periode: rapport.periode || null,
+        cartesIds: rapport.cartesIds || [],
+        matchings: rapport.matchings || [],
+        hasLineDates: rapport.hasLineDates ?? false,
+        nomFichier: rapport.sourceFileName || null,
+        sourceFileMimeType: rapport.sourceFileMimeType || null,
+        extractedData: rapport.extractedData || null,
+      });
+      setEditMode(false);
+    } catch (err) {
+      alert('Erreur lors de la sauvegarde : ' + err.message);
+    } finally {
+      setEditSaving(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -166,7 +213,6 @@ function DateReportViewer({ date, reports, loading, idx, onIdxChange, onRetour }
     );
   }
 
-  const rapport = reports[idx];
   const rows = (rapport.validatedData?.length > 0 ? rapport.validatedData : null)
     || rapport.extractedData?.lignes
     || [];
@@ -174,23 +220,69 @@ function DateReportViewer({ date, reports, loading, idx, onIdxChange, onRetour }
   const displayed = showAll ? rows : rows.slice(0, VISIBLE);
 
   return (
-    <div style={{ background: '#fff', border: `1px solid ${T.green}`, borderRadius: '12px', padding: '1.25rem', marginBottom: '1.5rem' }}>
+    <div style={{ background: '#fff', border: `1px solid ${editMode ? T.gold : T.green}`, borderRadius: '12px', padding: '1.25rem', marginBottom: '1.5rem', transition: 'border-color 0.15s' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.875rem', flexWrap: 'wrap', gap: '0.5rem' }}>
         <div>
-          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: T.text }}>📅 {date}</span>
-          {rapport.sourceFileName && (
-            <span style={{ marginLeft: '0.75rem', fontSize: '0.75rem', color: T.muted }}>📎 {rapport.sourceFileName}</span>
-          )}
-          {rapport.sourceFileUrl && (
-            <a href={rapport.sourceFileUrl} target="_blank" rel="noopener noreferrer" style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: T.green, textDecoration: 'underline' }}>Télécharger</a>
+          {editMode ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#78350F' }}>✏️ Modification</span>
+              <input
+                type="date"
+                value={editDate}
+                onChange={e => setEditDate(e.target.value)}
+                style={{ ...inputSm, fontSize: '0.8rem' }}
+              />
+            </div>
+          ) : (
+            <>
+              <span style={{ fontSize: '0.9rem', fontWeight: 700, color: T.text }}>📅 {date}</span>
+              {rapport.sourceFileName && (
+                <span style={{ marginLeft: '0.75rem', fontSize: '0.75rem', color: T.muted }}>📎 {rapport.sourceFileName}</span>
+              )}
+              {rapport.sourceFileUrl && (
+                <a href={rapport.sourceFileUrl} target="_blank" rel="noopener noreferrer" style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: T.green, textDecoration: 'underline' }}>Télécharger</a>
+              )}
+            </>
           )}
         </div>
-        <button onClick={onRetour} style={{ background: 'none', border: '1px solid #E8E2D9', borderRadius: '6px', padding: '0.3rem 0.75rem', cursor: 'pointer', fontSize: '0.78rem', color: T.muted, fontFamily: "'DM Sans', sans-serif" }}>← Retour</button>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          {editMode ? (
+            <>
+              <button
+                onClick={cancelEdit}
+                disabled={editSaving}
+                style={{ padding: '0.3rem 0.875rem', background: 'none', border: '1px solid #E8E2D9', borderRadius: '6px', cursor: 'pointer', fontSize: '0.78rem', color: T.muted, fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={saveEdit}
+                disabled={editSaving}
+                style={{ padding: '0.3rem 0.875rem', background: editSaving ? '#C5BDB0' : T.green, color: '#fff', border: 'none', borderRadius: '6px', cursor: editSaving ? 'default' : 'pointer', fontSize: '0.78rem', fontWeight: 700, fontFamily: "'DM Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '5px' }}
+              >
+                {editSaving && <span style={{ width: '11px', height: '11px', border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin-me 0.7s linear infinite' }} />}
+                Enregistrer
+              </button>
+            </>
+          ) : (
+            <>
+              {isRich && (
+                <button
+                  onClick={enterEdit}
+                  style={{ padding: '0.3rem 0.875rem', background: 'none', border: `1px solid ${T.gold}`, borderRadius: '6px', cursor: 'pointer', fontSize: '0.78rem', color: '#78350F', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}
+                >
+                  Modifier
+                </button>
+              )}
+              <button onClick={onRetour} style={{ background: 'none', border: '1px solid #E8E2D9', borderRadius: '6px', padding: '0.3rem 0.75rem', cursor: 'pointer', fontSize: '0.78rem', color: T.muted, fontFamily: "'DM Sans', sans-serif" }}>← Retour</button>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Pill selector if multiple reports */}
-      {reports.length > 1 && (
+      {/* Pill selector if multiple reports — masqué en mode édition */}
+      {!editMode && reports.length > 1 && (
         <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.875rem' }}>
           {reports.map((r, i) => (
             <button key={r.id || i} onClick={() => { onIdxChange(i); setShowAll(false); }} style={{
@@ -207,58 +299,101 @@ function DateReportViewer({ date, reports, loading, idx, onIdxChange, onRetour }
       )}
 
       {/* Metadata row */}
-      <div style={{ fontSize: '0.72rem', color: T.muted, marginBottom: '0.75rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-        {rapport.periode && <span>Période : {rapport.periode}</span>}
-        {rapport.createdAt && <span>Importé le {new Date(rapport.createdAt).toLocaleDateString('fr-FR')}</span>}
-        {!isRich && rows.length > 0 && (
-          <span style={{ color: '#D97706', fontWeight: 600 }}>⚠ Données brutes IA — non validées</span>
-        )}
-      </div>
+      {!editMode && (
+        <div style={{ fontSize: '0.72rem', color: T.muted, marginBottom: '0.75rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          {rapport.periode && <span>Période : {rapport.periode}</span>}
+          {rapport.createdAt && <span>Importé le {new Date(rapport.createdAt).toLocaleDateString('fr-FR')}</span>}
+          {!isRich && rows.length > 0 && (
+            <span style={{ color: '#D97706', fontWeight: 600 }}>⚠ Données brutes IA — non validées</span>
+          )}
+        </div>
+      )}
 
-      {/* Table */}
-      {rows.length === 0 ? (
-        <p style={{ color: T.muted, fontSize: '0.82rem', margin: 0 }}>Aucune ligne de données.</p>
-      ) : (
-        <>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid #E8E2D9' }}>
-                  <th style={{ textAlign: 'left', padding: '6px 8px', color: T.muted, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    {isRich ? 'Plat' : 'Nom POS'}
-                  </th>
-                  <th style={{ textAlign: 'right', padding: '6px 8px', color: T.muted, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Qté</th>
-                  {isRich && <th style={{ textAlign: 'right', padding: '6px 8px', color: T.muted, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Marge unit.</th>}
-                  {isRich && <th style={{ textAlign: 'center', padding: '6px 8px', color: T.muted, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Quadrant</th>}
+      {/* ── Mode édition ── */}
+      {editMode && (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid #E8E2D9' }}>
+                <th style={{ textAlign: 'left', padding: '6px 8px', color: T.muted, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Plat</th>
+                <th style={{ textAlign: 'right', padding: '6px 8px', color: T.muted, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Quantité</th>
+              </tr>
+            </thead>
+            <tbody>
+              {editRows.map((row, i) => (
+                <tr key={i} style={{ borderBottom: '1px solid #F5F1EC' }}>
+                  <td style={{ padding: '6px 8px', color: T.text, fontWeight: 500 }}>{row.nomFiche || row.nomPOS}</td>
+                  <td style={{ padding: '6px 8px', textAlign: 'right' }}>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={editRows[i].quantite ?? ''}
+                      onChange={e => {
+                        const val = parseFloat(e.target.value);
+                        setEditRows(prev => prev.map((r, j) => j === i ? { ...r, quantite: isNaN(val) ? 0 : val } : r));
+                      }}
+                      style={{ ...inputSm, width: '80px', textAlign: 'right' }}
+                    />
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {displayed.map((row, i) => {
-                  const q = row.quadrant ? QUADRANTS[row.quadrant] : null;
-                  return (
-                    <tr key={i} style={{ borderBottom: '1px solid #F5F1EC' }}>
-                      <td style={{ padding: '6px 8px', color: T.text, fontWeight: 500 }}>{isRich ? (row.nomFiche || row.nomPOS) : row.nomPOS}</td>
-                      <td style={{ padding: '6px 8px', textAlign: 'right', color: T.text }}>{row.quantite ?? '—'}</td>
-                      {isRich && <td style={{ padding: '6px 8px', textAlign: 'right', color: row.margeUnitaire >= 0 ? T.green : '#DC2626' }}>
-                        {row.margeUnitaire != null ? `${row.margeUnitaire.toFixed(2)} €` : '—'}
-                      </td>}
-                      {isRich && <td style={{ padding: '6px 8px', textAlign: 'center' }}>
-                        {q ? (
-                          <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '99px', fontSize: '0.7rem', fontWeight: 700, background: q.bg, color: q.color, border: `1px solid ${q.border}` }}>
-                            {q.icon} {q.label}
-                          </span>
-                        ) : '—'}
-                      </td>}
+              ))}
+            </tbody>
+          </table>
+          {editRows.length === 0 && (
+            <p style={{ color: T.muted, fontSize: '0.82rem', margin: '0.5rem 0 0' }}>Aucune ligne éditable.</p>
+          )}
+        </div>
+      )}
+
+      {/* ── Mode consultation ── */}
+      {!editMode && (
+        <>
+          {rows.length === 0 ? (
+            <p style={{ color: T.muted, fontSize: '0.82rem', margin: 0 }}>Aucune ligne de données.</p>
+          ) : (
+            <>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid #E8E2D9' }}>
+                      <th style={{ textAlign: 'left', padding: '6px 8px', color: T.muted, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        {isRich ? 'Plat' : 'Nom POS'}
+                      </th>
+                      <th style={{ textAlign: 'right', padding: '6px 8px', color: T.muted, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Qté</th>
+                      {isRich && <th style={{ textAlign: 'right', padding: '6px 8px', color: T.muted, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Marge unit.</th>}
+                      {isRich && <th style={{ textAlign: 'center', padding: '6px 8px', color: T.muted, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Quadrant</th>}
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          {rows.length > VISIBLE && !showAll && (
-            <button onClick={() => setShowAll(true)} style={{ marginTop: '0.625rem', background: 'none', border: 'none', cursor: 'pointer', color: T.green, fontSize: '0.8rem', fontWeight: 600, fontFamily: "'DM Sans', sans-serif", padding: 0 }}>
-              Voir {rows.length - VISIBLE} ligne{rows.length - VISIBLE !== 1 ? 's' : ''} de plus ↓
-            </button>
+                  </thead>
+                  <tbody>
+                    {displayed.map((row, i) => {
+                      const q = row.quadrant ? QUADRANTS[row.quadrant] : null;
+                      return (
+                        <tr key={i} style={{ borderBottom: '1px solid #F5F1EC' }}>
+                          <td style={{ padding: '6px 8px', color: T.text, fontWeight: 500 }}>{isRich ? (row.nomFiche || row.nomPOS) : row.nomPOS}</td>
+                          <td style={{ padding: '6px 8px', textAlign: 'right', color: T.text }}>{row.quantite ?? '—'}</td>
+                          {isRich && <td style={{ padding: '6px 8px', textAlign: 'right', color: row.margeUnitaire >= 0 ? T.green : '#DC2626' }}>
+                            {row.margeUnitaire != null ? `${row.margeUnitaire.toFixed(2)} €` : '—'}
+                          </td>}
+                          {isRich && <td style={{ padding: '6px 8px', textAlign: 'center' }}>
+                            {q ? (
+                              <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '99px', fontSize: '0.7rem', fontWeight: 700, background: q.bg, color: q.color, border: `1px solid ${q.border}` }}>
+                                {q.icon} {q.label}
+                              </span>
+                            ) : '—'}
+                          </td>}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {rows.length > VISIBLE && !showAll && (
+                <button onClick={() => setShowAll(true)} style={{ marginTop: '0.625rem', background: 'none', border: 'none', cursor: 'pointer', color: T.green, fontSize: '0.8rem', fontWeight: 600, fontFamily: "'DM Sans', sans-serif", padding: 0 }}>
+                  Voir {rows.length - VISIBLE} ligne{rows.length - VISIBLE !== 1 ? 's' : ''} de plus ↓
+                </button>
+              )}
+            </>
           )}
         </>
       )}
@@ -693,6 +828,12 @@ export default function MenuEngineering() {
                   idx={dateReportIdx}
                   onIdxChange={setDateReportIdx}
                   onRetour={() => { setCalViewMode('import'); setDateReports([]); setDateReportIdx(0); setSelectedCalDate(null); }}
+                  onSave={async (rapportId, data) => {
+                    await api.ventes.update(rapportId, data);
+                    const res = await api.ventes.byDate(selectedCalDate);
+                    setDateReports(res.rapports || []);
+                    api.ventes.dates(calMonth).then(r => setCalOccupied(r.dates || [])).catch(() => {});
+                  }}
                 />
               )}
 

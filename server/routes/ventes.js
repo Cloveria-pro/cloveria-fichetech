@@ -72,6 +72,7 @@ router.get('/by-date', async (req, res) => {
             _id: 0, id: 1, reportDate: 1, periode: 1, createdAt: 1,
             sourceFileName: 1, sourceFileMimeType: 1, sourceFileUrl: 1,
             extractedData: 1, validatedData: 1, status: 1,
+            lignes: 1, dateDebut: 1, dateFin: 1, cartesIds: 1, matchings: 1, hasLineDates: 1,
           },
         }
       )
