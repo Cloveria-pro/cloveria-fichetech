@@ -550,9 +550,6 @@ export default function MenuEngineering() {
   const [resultats, setResultats] = useState([]);
   const [historique, setHistorique] = useState([]);
   const [histLoading, setHistLoading] = useState(false);
-  const [dateDebut, setDateDebut] = useState('');
-  const [dateFin, setDateFin] = useState('');
-  const [cartesSelectes, setCartesSelectes] = useState(['__all']);
   const [cartes, setCartes] = useState([]);
   const [rapportEnCours, setRapportEnCours] = useState(null);
   const [hasLineDates, setHasLineDates] = useState(null);
@@ -616,9 +613,6 @@ export default function MenuEngineering() {
     setColonnes([]);
     setMatchings([]);
     setHasLineDates(null);
-    setDateDebut('');
-    setDateFin('');
-    setCartesSelectes(['__all']);
     setRawExtracted(null);
   }
 
@@ -676,9 +670,6 @@ export default function MenuEngineering() {
     setMatchings(rapport.matchings);
     setColonnes([]);
     setFile(null);
-    setDateDebut(rapport.dateDebut || '');
-    setDateFin(rapport.dateFin || '');
-    setCartesSelectes(rapport.cartesIds?.length > 0 ? rapport.cartesIds : ['__all']);
     setHasLineDates(rapport.hasLineDates ?? false);
     setStep(2);
     setTab('import');
@@ -697,7 +688,6 @@ export default function MenuEngineering() {
   async function validerEtCalculer() {
     const actifs = matchings.filter(m => !m.ignore && m.recetteId);
     if (actifs.length === 0) return alert('Associez au moins un plat à une fiche technique pour calculer.');
-    if (!dateDebut || !dateFin) return alert('Veuillez renseigner les dates de début et de fin de la période.');
 
     const byRecette = {};
     actifs.forEach(m => {
@@ -740,17 +730,18 @@ export default function MenuEngineering() {
       return `${allDates[0]} → ${allDates[allDates.length - 1]}`;
     })();
 
+    const today = new Date().toISOString().slice(0, 10);
+    const effectiveDate = selectedCalDate || rapportEnCours?.dateDebut || today;
     const rapportData = {
       periode,
       lignes: withQuadrant,
-      dateDebut: dateDebut || null,
-      dateFin: dateFin || null,
-      cartesIds: cartesSelectes.includes('__all') ? [] : cartesSelectes,
+      dateDebut: effectiveDate,
+      dateFin: selectedCalDate || rapportEnCours?.dateFin || null,
+      cartesIds: rapportEnCours?.cartesIds || [],
       matchings: actifs,
       hasLineDates: hasLineDates === true,
       nomFichier: file?.name || rapportEnCours?.nomFichier || null,
-      // Métadonnées Sprint A
-      reportDate: selectedCalDate || dateDebut || null,
+      reportDate: effectiveDate,
       sourceFileName: file?.name || rapportEnCours?.nomFichier || null,
       sourceFileMimeType: file?.type || rapportEnCours?.sourceFileMimeType || null,
       extractedData: rawExtracted || null,
@@ -818,7 +809,6 @@ export default function MenuEngineering() {
             if (t.key === 'import') {
               setStep(1); setFile(null); setColonnes([]); setMatchings([]);
               setResultats([]); setRapportEnCours(null); setHasLineDates(null);
-              setDateDebut(''); setDateFin(''); setCartesSelectes(['__all']);
               setSelectedCalDate(null); setRawExtracted(null);
               setCalViewMode('import'); setDateReports([]); setDateReportIdx(0);
               setAddingForDate(false);
@@ -1019,78 +1009,10 @@ export default function MenuEngineering() {
                 </div>
               )}
 
-              {colonnes.length > 0 && (
-                <div style={{ ...card, padding: '1.25rem' }}>
-                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.95rem', fontWeight: 700, color: T.text, marginBottom: '0.5rem' }}>
-                    Granularité des données
-                  </h3>
-                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: hasLineDates === false ? '0.875rem' : 0 }}>
-                    {[
-                      { val: true,  label: '📅 Chaque ligne contient une date exploitable' },
-                      { val: false, label: '📋 Données globales sur la période' },
-                    ].map(({ val, label }) => {
-                      const active = hasLineDates === val;
-                      const disabled = val === true && hasLineDates === false;
-                      return (
-                        <button key={String(val)} type="button"
-                          disabled={disabled}
-                          onClick={() => !disabled && setHasLineDates(val)}
-                          style={{
-                            padding: '0.55rem 1.1rem', borderRadius: '8px',
-                            border: `1.5px solid ${active ? T.green : disabled ? '#E5E0D8' : '#D6D0C8'}`,
-                            background: active ? 'rgba(45,106,79,0.08)' : '#fff',
-                            color: active ? T.green : disabled ? '#C5BDB0' : T.muted,
-                            fontSize: '0.82rem', fontWeight: active ? 700 : 400,
-                            cursor: disabled ? 'not-allowed' : 'pointer',
-                            fontFamily: "'DM Sans', sans-serif",
-                            transition: 'all 0.12s',
-                            opacity: disabled ? 0.5 : 1,
-                          }}>{label}</button>
-                      );
-                    })}
-                  </div>
-                  {hasLineDates === false && (
-                    <div style={{ background: 'rgba(217,119,6,0.06)', border: '1px solid rgba(217,119,6,0.25)', borderRadius: '8px', padding: '0.65rem 0.9rem', fontSize: '0.8rem', color: '#92400E', lineHeight: 1.55 }}>
-                      ⚠️ Ce rapport ne contient aucune date par ligne exploitable. L'analyse fine par sous-période n'est pas possible — les données seront rattachées à la période globale.
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {colonnes.length > 0 && (
-                <div style={{ ...card, padding: '1.25rem' }}>
-                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.95rem', fontWeight: 700, color: T.text, marginBottom: '1rem' }}>
-                    Période et carte concernée
-                  </h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                    <label>
-                      <span style={labelStyle}>Date de début *</span>
-                      <input
-                        type="date" value={dateDebut}
-                        onChange={e => setDateDebut(e.target.value)}
-                        style={{ ...inputSm, width: '100%', boxSizing: 'border-box' }}
-                      />
-                    </label>
-                    <label>
-                      <span style={labelStyle}>Date de fin *</span>
-                      <input
-                        type="date" value={dateFin}
-                        onChange={e => setDateFin(e.target.value)}
-                        style={{ ...inputSm, width: '100%', boxSizing: 'border-box' }}
-                      />
-                    </label>
-                  </div>
-                  <span style={labelStyle}>Carte(s) concernée(s)</span>
-                  <CartesMultiSelect cartes={cartes} value={cartesSelectes} onChange={setCartesSelectes} />
-                </div>
-              )}
-
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
                 {colonnes.length > 0 && (
                   <button
                     onClick={() => {
-                      if (hasLineDates === null) return alert('Veuillez indiquer si le fichier contient une date par ligne.');
-                      if (!dateDebut || !dateFin) return alert('Veuillez renseigner les dates de début et de fin de la période.');
                       setStep(2);
                     }}
                     style={{ padding: '0.65rem 1.75rem', background: T.green, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
