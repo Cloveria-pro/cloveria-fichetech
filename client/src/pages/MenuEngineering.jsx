@@ -150,12 +150,25 @@ function DateReportViewer({ date, reports, loading, idx, onIdxChange, onRetour, 
   const [editSaving, setEditSaving] = useState(false);
 
   const rapport = reports[idx] || null;
+  const [sourceDoc, setSourceDoc] = useState(null);
+  const [sourceDocLoading, setSourceDocLoading] = useState(false);
 
   // Réinitialise le mode édition quand on change de rapport sélectionné
   useEffect(() => {
     setEditMode(false);
     setShowAll(false);
   }, [idx, reports]);
+
+  // Charge le document source quand le rapport change
+  useEffect(() => {
+    const docId = rapport?.sourceDocumentId;
+    if (!docId) { setSourceDoc(null); return; }
+    setSourceDocLoading(true);
+    api.documents.getFile('ventes', docId)
+      .then(setSourceDoc)
+      .catch(() => setSourceDoc(null))
+      .finally(() => setSourceDocLoading(false));
+  }, [rapport?.sourceDocumentId]);
 
   function enterEdit() {
     const src = rapport?.validatedData?.length > 0 ? rapport.validatedData : [];
@@ -399,6 +412,35 @@ function DateReportViewer({ date, reports, loading, idx, onIdxChange, onRetour, 
       )}
 
       {/* Footer — bouton ajout rapport (masqué en mode édition) */}
+      {/* Document source — visible uniquement en consultation */}
+      {!editMode && (sourceDocLoading || sourceDoc) && (
+        <div style={{ marginTop: '1rem', paddingTop: '0.875rem', borderTop: '1px solid #F0EBE3' }}>
+          <div style={{ fontSize: '0.72rem', fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+            Document source
+          </div>
+          {sourceDocLoading ? (
+            <div style={{ fontSize: '0.8rem', color: T.muted, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: '12px', height: '12px', border: '2px solid rgba(45,106,79,0.25)', borderTopColor: T.green, borderRadius: '50%', display: 'inline-block', animation: 'spin-me 0.7s linear infinite' }} />
+              Chargement…
+            </div>
+          ) : sourceDoc && sourceDoc.mimeType?.startsWith('image/') ? (
+            <img
+              src={`data:${sourceDoc.mimeType};base64,${sourceDoc.base64}`}
+              alt={sourceDoc.nomFichier || 'Document source'}
+              style={{ maxWidth: '100%', maxHeight: '340px', objectFit: 'contain', borderRadius: '8px', border: '1px solid #E8E2D9', display: 'block' }}
+            />
+          ) : sourceDoc ? (
+            <a
+              href={`data:${sourceDoc.mimeType};base64,${sourceDoc.base64}`}
+              download={sourceDoc.nomFichier || 'document-source'}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '0.35rem 0.875rem', background: '#F8F6F1', border: '1px solid #E8E2D9', borderRadius: '6px', fontSize: '0.8rem', color: T.text, textDecoration: 'none', fontFamily: "'DM Sans', sans-serif" }}
+            >
+              📄 {sourceDoc.nomFichier || 'Télécharger le document source'}
+            </a>
+          ) : null}
+        </div>
+      )}
+
       {!editMode && onAddForDate && (
         <div style={{ marginTop: '1rem', paddingTop: '0.875rem', borderTop: '1px solid #F0EBE3', display: 'flex', justifyContent: 'flex-end' }}>
           <button
@@ -597,7 +639,7 @@ export default function MenuEngineering() {
       const result = await api.ia.analyserVentes(formData);
       const colonnesResult = result.colonnes || [];
       const lignesResult = result.lignes || [];
-      setRawExtracted({ colonnes: colonnesResult, lignes: lignesResult, nomFichier: file.name });
+      setRawExtracted({ colonnes: colonnesResult, lignes: lignesResult, nomFichier: file.name, sourceDocumentId: result.sourceDocumentId || null });
       setColonnes(colonnesResult);
       const hasDate = colonnesResult.some(c => c.type === 'date') || lignesResult.some(l => l.date);
       setHasLineDates(hasDate ? true : false);
@@ -712,6 +754,7 @@ export default function MenuEngineering() {
       sourceFileName: file?.name || rapportEnCours?.nomFichier || null,
       sourceFileMimeType: file?.type || rapportEnCours?.sourceFileMimeType || null,
       extractedData: rawExtracted || null,
+      sourceDocumentId: rawExtracted?.sourceDocumentId || rapportEnCours?.sourceDocumentId || null,
     };
 
     try {

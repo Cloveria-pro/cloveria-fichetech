@@ -128,9 +128,10 @@ router.post('/analyser-ventes', uploadVentes.single('ventes'), async (req, res) 
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return res.status(422).json({ error: 'Réponse IA invalide', raw: text });
     const parsed = JSON.parse(jsonMatch[0]);
+    const sourceDocumentId = uuidv4();
     getDb().then(db => {
       const doc = {
-        id: uuidv4(), user_id: req.userId,
+        id: sourceDocumentId, user_id: req.userId,
         nomFichier: req.file.originalname,
         fileBase64,
         fileMimeType: req.file.mimetype,
@@ -140,7 +141,7 @@ router.post('/analyser-ventes', uploadVentes.single('ventes'), async (req, res) 
       };
       db.collection('documents_ventes').insertOne(doc).catch(() => {});
     }).catch(() => {});
-    res.json({ ...parsed, nomFichier: req.file.originalname });
+    res.json({ ...parsed, nomFichier: req.file.originalname, sourceDocumentId });
   } catch (err) {
     console.error('IA analyser-ventes error:', err.message);
     res.status(500).json({ error: err.message });

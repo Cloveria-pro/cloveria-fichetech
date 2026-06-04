@@ -73,6 +73,7 @@ router.get('/by-date', async (req, res) => {
             sourceFileName: 1, sourceFileMimeType: 1, sourceFileUrl: 1,
             extractedData: 1, validatedData: 1, status: 1,
             lignes: 1, dateDebut: 1, dateFin: 1, cartesIds: 1, matchings: 1, hasLineDates: 1,
+            sourceDocumentId: 1,
           },
         }
       )
@@ -88,7 +89,7 @@ router.post('/', async (req, res) => {
   const {
     periode, lignes, dateDebut, dateFin, cartesIds, matchings,
     typePeriode, service, nomFichier, hasLineDates,
-    extractedData, sourceFileMimeType,
+    extractedData, sourceFileMimeType, sourceDocumentId,
   } = req.body;
   if (!lignes || !Array.isArray(lignes)) return res.status(400).json({ error: 'lignes requis' });
   try {
@@ -118,6 +119,7 @@ router.post('/', async (req, res) => {
       extractedData: extractedData || null,  // sortie brute IA avant validation utilisateur
       validatedData: lignes,                 // données confirmées par l'utilisateur
       status: 'validated',
+      sourceDocumentId: sourceDocumentId || null, // référence vers documents_ventes
       // ── timestamps ──────────────────────────────────────────────────────
       createdAt: now,
       updatedAt: now,
@@ -135,7 +137,7 @@ router.put('/:rapportId', async (req, res) => {
   const {
     periode, lignes, dateDebut, dateFin, cartesIds, matchings,
     nomFichier, hasLineDates,
-    extractedData, sourceFileMimeType,
+    extractedData, sourceFileMimeType, sourceDocumentId,
   } = req.body;
   if (!lignes || !Array.isArray(lignes)) return res.status(400).json({ error: 'lignes requis' });
   try {
@@ -169,6 +171,7 @@ router.put('/:rapportId', async (req, res) => {
     };
     if (sourceFileMimeType !== undefined) setFields.sourceFileMimeType = sourceFileMimeType;
     if (extractedData !== undefined) setFields.extractedData = extractedData;
+    if (sourceDocumentId !== undefined) setFields.sourceDocumentId = sourceDocumentId;
 
     const result = await db.collection('ventes_imports').findOneAndUpdate(
       { id: rapportId, user_id: req.userId },
