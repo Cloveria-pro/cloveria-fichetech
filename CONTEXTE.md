@@ -729,6 +729,7 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 | 7 | **Bouton "Modifier" masqué** (Sprint D) : si un rapport n'a que `extractedData` (brut IA, jamais validé) et pas de `validatedData`, le bouton d'édition n'apparaît pas. | Mineur — cas rare (import interrompu avant validation). | Aucun depuis l'UI. |
 | 8 | **Pas de lien scan source sur anciens rapports** (Sprint E) : les rapports importés avant le déploiement de Sprint E ne portent pas `sourceDocumentId`. Le bloc "Document source" n'apparaît pas pour ces rapports. | Faible — informatif uniquement. | Aucun — limitation rétroactive. |
 | 9 | **Fichiers base64 lourds sur mobile Safari** (Sprint E) : les images de prévisualisation embarquent le base64 complet en mémoire. Fichiers > 5 Mo peuvent causer des crashs sur mobile Safari. | Faible — usage Desktop majoritaire. | Éviter d'importer des scans > 5 Mo. |
+| 10 | **[Corrigé] Incohérence unité/prix ingrédients** (catalogue vs fiche technique) — commit `7a1ee78`. Unités officielles désormais : `g`, `kg`, `ml`, `L`, `pièce`, `c.s`, `c.c`. `botte`/`tranche` ne sont plus proposées pour les nouvelles lignes mais restent affichées pour les anciennes fiches (valeurs legacy préservées, non migrées). | N/A — corrigé. | — |
 
 ---
 
@@ -750,6 +751,7 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 - [ ] Historique des modifications d'une fiche (versioning léger)
 - [ ] Section "Plat du jour" dans les cartes (mise en avant visuelle)
 - [ ] Page Aide → lier le product tour aux vraies cibles DOM de chaque section
+- [ ] `NouvelleRecette.jsx` et `SousRecettes.jsx` ont été alignés sur les unités officielles (`g`, `kg`, `ml`, `L`, `pièce`, `c.s`, `c.c`) lors du sprint unités/prix (commit `7a1ee78`), mais aucune migration des données existantes n'a été faite : certaines fiches anciennes peuvent encore contenir `tranche`, `botte` ou `piece` (sans accent) en base.
 
 ### Priorité basse / idées
 - [ ] QR Code allergènes (lien vers Format B en ligne)
