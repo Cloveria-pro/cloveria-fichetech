@@ -50,11 +50,11 @@ async function downloadPDF(htmlString, filename) {
   }
 }
 
-const UNITES = ['g', 'kg', 'ml', 'L', 'piece', 'c.s.', 'c.c.', 'botte', 'tranche'];
+const UNITES = ['g', 'kg', 'ml', 'L', 'pièce', 'c.s', 'c.c'];
 
 function baseUnit(unite) {
   if (['kg', 'g', 'mg'].includes(unite)) return 'kg';
-  if (['L', 'l', 'ml', 'cl', 'c.c.', 'c.s.', 'càc', 'càs'].includes(unite)) return 'L';
+  if (['L', 'l', 'ml', 'cl', 'c.c', 'c.s', 'c.c.', 'c.s.', 'càc', 'càs'].includes(unite)) return 'L';
   return unite;
 }
 const ALLERGENES_LIST = [
@@ -682,7 +682,7 @@ export default function FicheTechnique() {
                     </td>
                     <td style={{ padding: '0.6rem 0.75rem' }}>
                       {editMode
-                        ? <select value={ing.unite} onChange={e => updateIngredient(idx, { unite: e.target.value })} style={inputStyle}>{UNITES.map(u => <option key={u}>{u}</option>)}</select>
+                        ? <select value={ing.unite} onChange={e => updateIngredient(idx, { unite: e.target.value })} style={inputStyle}>{(UNITES.includes(ing.unite) ? UNITES : [...UNITES, ing.unite]).map(u => <option key={u}>{u}</option>)}</select>
                         : <span style={{ color: T.muted }}>{ing.unite}</span>}
                     </td>
                     <td style={{ padding: '0.6rem 0.75rem' }}>

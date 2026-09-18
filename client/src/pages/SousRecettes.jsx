@@ -4,7 +4,7 @@ import { coutIng } from '../utils.js';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
 
 const UNITES_SR = ['g', 'ml', 'piece'];
-const UNITES_ING = ['g', 'kg', 'ml', 'L', 'piece', 'c.s.', 'c.c.', 'botte', 'tranche'];
+const UNITES_ING = ['g', 'kg', 'ml', 'L', 'pièce', 'c.s', 'c.c'];
 const CONV = { g: 0.001, kg: 1, mg: 0.000001, ml: 0.001, cl: 0.01, L: 1, l: 1, piece: 1, pièce: 1, unite: 1 };
 
 const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280' };
@@ -204,7 +204,7 @@ export default function SousRecettes() {
                       </td>
                       <td style={{ padding: '0.5rem 0.75rem' }}>
                         <select value={ing.unite} onChange={e => updateIng(idx, { unite: e.target.value })} style={{ ...inputStyle, width: 'auto' }}>
-                          {UNITES_ING.map(u => <option key={u} value={u}>{u}</option>)}
+                          {(UNITES_ING.includes(ing.unite) ? UNITES_ING : [...UNITES_ING, ing.unite]).map(u => <option key={u} value={u}>{u}</option>)}
                         </select>
                       </td>
                       <td style={{ padding: '0.5rem 0.75rem' }}>

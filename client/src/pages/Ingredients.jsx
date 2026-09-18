@@ -8,12 +8,12 @@ function norm(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[̀-
 
 function baseUnit(unite) {
   if (['kg', 'g', 'mg'].includes(unite)) return 'kg';
-  if (['L', 'l', 'ml', 'cl', 'c.c.', 'c.s.', 'càc', 'càs'].includes(unite)) return 'L';
+  if (['L', 'l', 'ml', 'cl', 'c.c', 'c.s', 'c.c.', 'c.s.', 'càc', 'càs'].includes(unite)) return 'L';
   return unite;
 }
 
 const CATEGORIES = ['viande', 'poisson', 'légume', 'produit laitier', 'épice', 'condiment', 'épicerie', 'épicerie fine', 'fruit', 'autre'];
-const UNITES = ['kg', 'L', 'piece', 'g', 'ml', 'botte', 'c.s.', 'c.c.'];
+const UNITES = ['kg', 'g', 'L', 'ml', 'pièce', 'c.s', 'c.c'];
 const TVA_OPTIONS = [
   { value: 5.5, label: '5,5%' },
   { value: 10, label: '10%' },
@@ -564,7 +564,7 @@ export default function Ingredients() {
                   </td>
                   <td style={tdStyle}>
                     <select value={editForm.unite} onChange={e => updateEditForm(f => ({ ...f, unite: e.target.value }))} style={inputStyle}>
-                      {UNITES.map(u => <option key={u} value={u}>{u}</option>)}
+                      {(UNITES.includes(editForm.unite) ? UNITES : [...UNITES, editForm.unite]).map(u => <option key={u} value={u}>{u}</option>)}
                     </select>
                   </td>
                   <td style={tdStyle}>

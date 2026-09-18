@@ -9,6 +9,8 @@ const CONVERSIONS = {
   'ml': 0.001,
   'cl': 0.01,
   // Cuillères → L (approximations culinaires standard)
+  'c.c': 0.005,
+  'c.s': 0.015,
   'c.c.': 0.005,
   'c.s.': 0.015,
   'càc': 0.005,

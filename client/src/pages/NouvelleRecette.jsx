@@ -5,7 +5,7 @@ import { coutIng } from '../utils.js';
 import EtapesEditor from '../components/EtapesEditor.jsx';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
 
-const UNITES = ['g', 'kg', 'ml', 'L', 'piece', 'c.s.', 'c.c.', 'botte', 'tranche'];
+const UNITES = ['g', 'kg', 'ml', 'L', 'pièce', 'c.s', 'c.c'];
 const ALLERGENES_LIST = ['gluten', 'lait', 'oeufs', 'arachides', 'poisson', 'crustaces', 'soja', 'fruits_a_coque'];
 const CATEGORIES = ['Amuse-bouche', 'Entrée', 'Plat viande', 'Plat poisson', 'Plat végétarien', 'Dessert', 'Autre'];
 const TVA_OPTIONS = [
@@ -239,7 +239,7 @@ export default function NouvelleRecette() {
                 </td>
                 <td style={{ padding: '0.5rem 0.75rem' }}>
                   <select value={ing.unite} onChange={e => updateIngredient(idx, 'unite', e.target.value)} style={inputStyle}>
-                    {UNITES.map(u => <option key={u}>{u}</option>)}
+                    {(UNITES.includes(ing.unite) ? UNITES : [...UNITES, ing.unite]).map(u => <option key={u}>{u}</option>)}
                   </select>
                 </td>
                 <td style={{ padding: '0.5rem 0.75rem' }}>
