@@ -1,6 +1,6 @@
 # CloverIA FicheTech — Contexte projet
 
-> Dernière mise à jour : 2026-06-04 (simplification flow d'import + suppression cards redondantes Menu Engineering)
+> Dernière mise à jour : 2026-09-30 (bug unités/prix ingrédients catalogue vs fiche technique corrigé — commit 7a1ee78 — + note migration restante NouvelleRecette/SousRecettes)
 
 ---
 
