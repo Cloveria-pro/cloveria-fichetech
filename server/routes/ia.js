@@ -172,7 +172,7 @@ Retourne UNIQUEMENT un JSON valide sans markdown :
   "tempsCuisson": number_en_minutes ou null,
   "incertains": ["noms des champs de haut niveau dont tu n'es pas certain"],
   "ingredients": [
-    { "nom": "string", "quantite": number ou null, "unite": "g|kg|ml|L|piece|c.s.|c.c.|botte|tranche ou null", "prixUnitaire": number ou null, "incertain": boolean }
+    { "nom": "string", "quantite": number ou null, "unite": "g|kg|ml|L|pièce|c.s|c.c ou null", "prixUnitaire": number ou null, "incertain": boolean }
   ]
 }
 
@@ -181,7 +181,9 @@ RÈGLES ABSOLUES :
 - Ajoute le nom du champ dans "incertains" si la valeur est déduite ou peu lisible.
 - "prixUnitaire" d'un ingrédient : null sauf si clairement visible sur le document.
 - "categorie" déduite (non explicite) → ajouter "categorie" dans "incertains".
-- Ingrédient peu lisible → "incertain": true.`,
+- Ingrédient peu lisible → "incertain": true.
+- "unite" : n'utilise g|kg|ml|L|pièce|c.s|c.c que lorsque la conversion depuis l'unité d'origine du document est certaine (ex. cl vers ml, cuillère à soupe/café vers c.s/c.c, ingrédient comptable comme œuf ou citron vers pièce).
+- Si l'unité d'origine (pincée, gousse, feuille, tranche, sachet, botte, ou toute autre unité) ne peut pas être convertie de façon certaine vers cette liste : ne jamais convertir en grammes, ne jamais inventer d'équivalent. Garde la mention d'origine directement dans "nom" (ex. "Ail (2 gousses)"), mets "quantite" à null, "unite" à null, et "incertain" à true.`,
       messages: [{ role: 'user', content: [fileBlock, { type: 'text', text: 'Analyse cette fiche technique et retourne le JSON.' }] }],
     });
 
@@ -277,9 +279,12 @@ router.post('/structurer', async (req, res) => {
   "description": "string",
   "description_commerciale": "string",
   "allergenes": ["gluten"|"crustaces"|"oeufs"|"poisson"|"arachides"|"soja"|"lait"|"fruits_a_coque"|"celeri"|"moutarde"|"sesame"|"sulfites"|"lupin"|"mollusques"],
-  "ingredients": [{ "nom": "string", "quantite": number, "unite": "g|kg|ml|cl|L|piece|c.s.|c.c.|botte|tranche|pincée|gousse|feuille|sachet", "prixUnitaire": 0, "tva": 10 }],
+  "ingredients": [{ "nom": "string", "quantite": number, "unite": "g|kg|ml|L|pièce|c.s|c.c", "prixUnitaire": 0, "tva": 10 }],
   "etapes": ["string"]
 }
+
+RÈGLE ABSOLUE sur les unités :
+N'utilise g|kg|ml|L|pièce|c.s|c.c que lorsque la conversion est certaine (ex. cl vers ml, cuillère à soupe/café vers c.s/c.c, ingrédient comptable comme œuf ou citron vers pièce). Pour pincée, gousse, feuille, tranche, sachet, botte, ou toute autre unité qui ne peut pas être convertie de façon certaine vers cette liste : ne jamais convertir en grammes, ne jamais inventer d'équivalent. Garde la mention d'origine directement dans "nom" (ex. "Ail (2 gousses)"), mets "quantite" à 0 et "unite" à "g".
 
 RÈGLE ABSOLUE sur les temps de cuisson :
 Analyse chaque ingrédient de la recette un par un. Le temps de cuisson est la somme des cuissons réelles nécessaires. Si aucun ingrédient n'est soumis à une source de chaleur directe, le temps de cuisson est 0. Exemples : salade melon prosciutto burrata = 0 min de cuisson. Burger = 8-10 min (cuisson du steak). Pasta carbonara = 12 min (cuisson des pâtes). Ne jamais inventer un temps de cuisson.
