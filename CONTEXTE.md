@@ -772,6 +772,8 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 - [x] **Lazy loading React** : `React.lazy()` sur les pages > 50KB (MenuEngineering, Ingredients, FicheTechnique, Cartes)
 - [x] **Index MongoDB** : vérifier/créer index sur `users.id` dans Atlas
 - [ ] Import/export CSV des ingrédients
+- [ ] Sprint 3 : signal visuel sur les lignes incomplètes (quantité 0 ou unité inconnue).
+- [ ] Diagnostic puis correction du matching de prix côté serveur (`matchIngredientPrice()` dans `ia.js`).
 
 ### Priorité moyenne
 - [ ] Recherche et filtres sur la liste des fiches (par catégorie, food cost, allergène présent)
@@ -782,8 +784,6 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 - [ ] Page Aide → lier le product tour aux vraies cibles DOM de chaque section
 - [ ] `NouvelleRecette.jsx` et `SousRecettes.jsx` ont été alignés sur les unités officielles (`g`, `kg`, `ml`, `L`, `pièce`, `c.s`, `c.c`) lors du sprint unités/prix (commit `7a1ee78`), mais aucune migration des données existantes n'a été faite : certaines fiches anciennes peuvent encore contenir `tranche`, `botte` ou `piece` (sans accent) en base.
 - [ ] Sprint 2b : remplacer les 4 tables d'unités dupliquées (`baseUnit` dans `FicheTechnique.jsx`/`Ingredients.jsx`, `CONV` dans `IngredientAutocomplete.jsx`/`SousRecettes.jsx`) par un import depuis `conversions.js`.
-- [ ] Sprint 3 : signal visuel sur les lignes incomplètes (quantité 0 ou unité inconnue).
-- [ ] Diagnostic puis correction du matching de prix côté serveur (`matchIngredientPrice()` dans `ia.js`).
 - [ ] Import de fiche (`ImportFicheModal`) : conserver le nom d'origine à l'association au catalogue, revoir l'option par défaut "Créer sans prix".
 - [ ] Aliases : empêcher la création d'alias contenant une quantité, traiter les alias déjà créés en ce sens.
 - [ ] Migration des unités legacy en base, après création d'un environnement isolé.
@@ -801,7 +801,7 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 - [ ] CORS : confirmer que `CORS_ORIGIN` est défini sur Render
 
 ### À vérifier, non confirmé
-- [ ] `JWT_SECRET` réellement défini sur Render (une valeur par défaut est codée en dur dans `middleware/auth.js`)
+- [ ] `JWT_SECRET` réellement défini sur Render (une valeur par défaut est codée en dur dans `server/middleware/auth.js` ET dans `server/routes/auth.js`)
 - [ ] `CORS_ORIGIN` défini sur Render en production
 - [ ] Exécution effective des crons quotidiens (relances/lifecycle) sur le plan gratuit Render
 - [ ] Limite de stockage 512 Mo de MongoDB Atlas M0 — marge restante non vérifiée
