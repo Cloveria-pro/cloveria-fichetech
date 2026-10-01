@@ -2,6 +2,7 @@ const CONVERSIONS = {
   // Masse → kg (prixUnitaire stocké en €/kg)
   'kg': 1,
   'g': 0.001,
+  'gr': 0.001,
   'mg': 0.000001,
   // Volume → L (prixUnitaire stocké en €/L)
   'L': 1,
@@ -32,8 +33,31 @@ const CONVERSIONS = {
   'tranche': 0.03,
 };
 
+// Normalise une unité avant recherche : trim, minuscules, un seul point final supprimé.
+// Ne lève jamais d'exception — toute entrée qui n'est pas une chaîne renvoie ''.
+function normaliserUnite(unite) {
+  if (typeof unite !== 'string') return '';
+  let u = unite.trim().toLowerCase();
+  if (u.endsWith('.')) u = u.slice(0, -1);
+  return u;
+}
+
+// Table de recherche construite à partir des clés de CONVERSIONS, elles-mêmes normalisées,
+// afin qu'une clé comme 'L' reste trouvable après normalisation (lowercase) sous 'l'.
+const CONVERSIONS_NORMALISEES = Object.keys(CONVERSIONS).reduce((acc, cle) => {
+  acc[normaliserUnite(cle)] = CONVERSIONS[cle];
+  return acc;
+}, {});
+
 export function convertirEnUniteBase(quantite, unite) {
-  return (parseFloat(quantite) || 0) * (CONVERSIONS[unite] || 1);
+  const u = normaliserUnite(unite);
+  return (parseFloat(quantite) || 0) * (CONVERSIONS_NORMALISEES[u] || 1);
+}
+
+// Indique si une unité (après normalisation) correspond à une clé connue de la table.
+export function estUniteConnue(unite) {
+  const u = normaliserUnite(unite);
+  return u !== '' && Object.prototype.hasOwnProperty.call(CONVERSIONS_NORMALISEES, u);
 }
 
 export function calculerCoutIngredient(quantite, uniteRecette, prixUnitaire) {
