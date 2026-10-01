@@ -1,6 +1,6 @@
 # CloverIA FicheTech — Contexte projet
 
-> Dernière mise à jour : 2026-09-30 (bug unités/prix ingrédients catalogue vs fiche technique corrigé — commit 7a1ee78 — + note migration restante NouvelleRecette/SousRecettes)
+> Dernière mise à jour : 2026-10-01 (Sprint 1 — prompts IA alignés sur les 7 unités officielles, commit b556585 ; Sprint 2 — normalisation des unités dans conversions.js, commit c7d7c95)
 
 ---
 
@@ -370,6 +370,25 @@ cloveria-fichetech/
 
 > Stocké automatiquement à chaque appel `POST /api/ia/analyser-ventes`. Accessible via `GET /api/documents/ventes/:id/file` → `{ base64, mimeType, nomFichier }`. Jamais exposé en liste sans le `fileBase64` (projection exclut le contenu binaire du listing).
 
+### `documents_fiches`
+```json
+{
+  "id": "uuid",
+  "user_id": "uuid",
+  "nomFichier": "string",
+  "fileBase64": "string",
+  "fileMimeType": "string",
+  "dateImport": "ISO8601",
+  "statut": "validé",
+  "version": 1,
+  "nomPlat": "string|null",
+  "categoriePlat": "string|null",
+  "recetteLiee": "uuid|null"
+}
+```
+
+> Stocké automatiquement à chaque appel `POST /api/ia/analyser-fiche` — le fichier complet (image/PDF) est écrit en base à chaque analyse, indépendamment de toute sauvegarde de fiche ultérieure par l'utilisateur. Absente du reste de cette documentation jusqu'ici.
+
 ---
 
 ## Routes API
@@ -699,6 +718,9 @@ const SAFE_PROJECTION = {
 ```
 Les champs sensibles ne sont jamais renvoyés par les routes admin.
 
+### Environnement — aucun environnement local isolé
+`client/src/api.js` pointe en dur vers le backend de production (`https://cloveria-fichetech.onrender.com/api`) — `VITE_API_URL` est défini dans `vite.config.js` mais jamais utilisé dans `api.js`. Démarrer le serveur en local avec le `.env` actuel écrit directement dans la base de production dès `getDb()` (seed conditionnel, `createIndex` sur `users`, migration `ventes_imports`, reset du compte démo) — avant même toute requête API. **Il n'existe aujourd'hui aucun environnement local isolé pour ce projet.**
+
 ---
 
 ## Performance & maintenance
@@ -729,7 +751,14 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 | 7 | **Bouton "Modifier" masqué** (Sprint D) : si un rapport n'a que `extractedData` (brut IA, jamais validé) et pas de `validatedData`, le bouton d'édition n'apparaît pas. | Mineur — cas rare (import interrompu avant validation). | Aucun depuis l'UI. |
 | 8 | **Pas de lien scan source sur anciens rapports** (Sprint E) : les rapports importés avant le déploiement de Sprint E ne portent pas `sourceDocumentId`. Le bloc "Document source" n'apparaît pas pour ces rapports. | Faible — informatif uniquement. | Aucun — limitation rétroactive. |
 | 9 | **Fichiers base64 lourds sur mobile Safari** (Sprint E) : les images de prévisualisation embarquent le base64 complet en mémoire. Fichiers > 5 Mo peuvent causer des crashs sur mobile Safari. | Faible — usage Desktop majoritaire. | Éviter d'importer des scans > 5 Mo. |
-| 10 | **[Corrigé] Incohérence unité/prix ingrédients** (catalogue vs fiche technique) — commit `7a1ee78`. Unités officielles désormais : `g`, `kg`, `ml`, `L`, `pièce`, `c.s`, `c.c`. `botte`/`tranche` ne sont plus proposées pour les nouvelles lignes mais restent affichées pour les anciennes fiches (valeurs legacy préservées, non migrées). | N/A — corrigé. | — |
+| 10 | **[Corrigé — partiellement] Incohérence unité/prix ingrédients** (catalogue vs fiche technique) — commit `7a1ee78`. Unités officielles désormais : `g`, `kg`, `ml`, `L`, `pièce`, `c.s`, `c.c`. `botte`/`tranche` ne sont plus proposées pour les nouvelles lignes mais restent affichées pour les anciennes fiches (valeurs legacy préservées, non migrées). **Ce correctif ne couvrait que le frontend** — les prompts IA côté serveur n'étaient pas alignés (voir Sprint 1 ci-dessous). <br>**Sprint 1** (commit `b556585`) : les prompts `/structurer` et `/analyser-fiche` (`server/routes/ia.js`) sont désormais alignés sur les 7 unités officielles (`g`, `kg`, `ml`, `L`, `pièce`, `c.s`, `c.c`). Pour `pincée`, `gousse`, `feuille`, `tranche`, `sachet`, `botte` : aucune conversion inventée — la mention reste dans le nom (ex. "Ail (2 gousses)"), quantité à `0` (`/structurer`) ou `null` avec `incertain: true` (`/analyser-fiche`). <br>**Sprint 2** (commit `c7d7c95`) : `conversions.js` normalise désormais l'unité avant recherche (espaces, minuscules, point final supprimé) et ajoute l'alias `gr`. Exporte `estUniteConnue()` (pas encore utilisée ailleurs). Une unité toujours inconnue après normalisation retombe toujours sur le facteur `1`. | N/A — corrigé pour la partie frontend + prompts IA ; voir bugs #11-17 pour les points encore ouverts. | — |
+| 11 | **Ligne à quantité 0 associée au catalogue sans signal visuel** : une ligne de fiche avec `quantite: 0` mais `prixUnitaire` renseigné via association catalogue affiche `0,00 EUR` sans avertissement — le `⚠️` de `FicheTechnique.jsx` ne couvre que `prixUnitaire === 0`, jamais une quantité nulle. | Modéré — un coût à 0 peut passer pour une ligne correcte alors qu'elle attend une quantité. | Vérifier manuellement les lignes à quantité 0 après import IA ou association catalogue. |
+| 12 | **Unité inconnue = facteur 1 silencieux** dans `convertirEnUniteBase()` (`conversions.js`). Après normalisation (Sprint 2), une unité toujours non reconnue (ex. `"carton"`) n'empêche aucun calcul — elle est traitée comme si elle valait déjà l'unité de référence (kg/L/pièce), sans erreur ni avertissement. | Modéré — un écart d'unité non couvert peut fausser silencieusement un coût. | Vérifier les unités affichées sur les lignes à prix suspect. |
+| 13 | **4 tables d'unités codées en dur hors `conversions.js`** : `baseUnit()` dans `FicheTechnique.jsx` et `Ingredients.jsx` (dupliquée à l'identique), `CONV` dans `IngredientAutocomplete.jsx` et `SousRecettes.jsx`. Elles ne bénéficient pas de la normalisation ajoutée en Sprint 2 (casse, espaces, point final). | Modéré — incohérence potentielle entre l'affichage/calcul de ces 4 endroits et le reste de l'application pour une unité mal formatée. | Aucun — contournement = toujours saisir les unités dans leur forme canonique exacte. |
+| 14 | **`matchIngredientPrice()` (`ia.js`) : match exact uniquement** — un nom modifié comme `"Ail (2 gousses)"` ne retrouve pas le prix catalogue de `"Ail"`. Cas observé : **"Huile d'olive" présente en catalogue mais prix à `0` après `/structurer`** — cause non vérifiée (à diagnostiquer). | Modéré à élevé selon fréquence — prix catalogue non appliqué silencieusement. | Vérifier et compléter manuellement le prix après génération IA. |
+| 15 | **`ImportFicheModal` — perte du nom d'origine et ingrédients parasites** : l'association à un ingrédient existant remplace le nom de la ligne par celui du catalogue (la mention d'origine, ex. "(2 gousses)", est perdue) ; l'option par défaut "Créer sans prix" crée un nouvel ingrédient catalogue pour chaque nom à parenthèse non associé manuellement. | Modéré — pollution progressive du catalogue, perte d'information de quantité d'origine. | Vérifier le catalogue après chaque import de fiche IA ; associer manuellement plutôt que laisser "Créer sans prix" par défaut. |
+| 16 | **Aliases : création systématique et portée globale** : un alias est créé à chaque association dans `FicheTechnique.jsx`, y compris quand le nom source contient une quantité (ex. "Ail (2 gousses)" → "Ail") — alias à usage unique, jamais réutilisable pour une autre quantité. La collection `aliases` est globale, **sans `user_id`**, partagée entre tous les utilisateurs. | Faible à modéré — accumulation d'alias inutiles ; un alias créé par un utilisateur s'applique à tous les autres. | Aucun actuellement. |
+| 17 | **`findSimilarInCatalog` (FicheTechnique) et le lookup `ingData` non synchronisés** : deux mécanismes de correspondance différents (l'un tolérant via substring, l'autre strict) peuvent désaccorder — l'avertissement "Ingrédient absent de la base — prix saisi manuellement" peut rester affiché sur une ligne pourtant déjà associée au catalogue. | Faible — trompeur visuellement, sans impact sur le calcul du coût lui-même. | Ignorer l'avertissement si le prix est confirmé correct par ailleurs. |
 
 ---
 
@@ -752,6 +781,12 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 - [ ] Section "Plat du jour" dans les cartes (mise en avant visuelle)
 - [ ] Page Aide → lier le product tour aux vraies cibles DOM de chaque section
 - [ ] `NouvelleRecette.jsx` et `SousRecettes.jsx` ont été alignés sur les unités officielles (`g`, `kg`, `ml`, `L`, `pièce`, `c.s`, `c.c`) lors du sprint unités/prix (commit `7a1ee78`), mais aucune migration des données existantes n'a été faite : certaines fiches anciennes peuvent encore contenir `tranche`, `botte` ou `piece` (sans accent) en base.
+- [ ] Sprint 2b : remplacer les 4 tables d'unités dupliquées (`baseUnit` dans `FicheTechnique.jsx`/`Ingredients.jsx`, `CONV` dans `IngredientAutocomplete.jsx`/`SousRecettes.jsx`) par un import depuis `conversions.js`.
+- [ ] Sprint 3 : signal visuel sur les lignes incomplètes (quantité 0 ou unité inconnue).
+- [ ] Diagnostic puis correction du matching de prix côté serveur (`matchIngredientPrice()` dans `ia.js`).
+- [ ] Import de fiche (`ImportFicheModal`) : conserver le nom d'origine à l'association au catalogue, revoir l'option par défaut "Créer sans prix".
+- [ ] Aliases : empêcher la création d'alias contenant une quantité, traiter les alias déjà créés en ce sens.
+- [ ] Migration des unités legacy en base, après création d'un environnement isolé.
 
 ### Priorité basse / idées
 - [ ] QR Code allergènes (lien vers Format B en ligne)
@@ -764,6 +799,15 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 - [ ] Vérifier le déclenchement correct du product tour sur mobile (scroll + highlight)
 - [ ] Ajouter `rel="noopener noreferrer"` systématiquement sur tous les liens externes `target="_blank"`
 - [ ] CORS : confirmer que `CORS_ORIGIN` est défini sur Render
+
+### À vérifier, non confirmé
+- [ ] `JWT_SECRET` réellement défini sur Render (une valeur par défaut est codée en dur dans `middleware/auth.js`)
+- [ ] `CORS_ORIGIN` défini sur Render en production
+- [ ] Exécution effective des crons quotidiens (relances/lifecycle) sur le plan gratuit Render
+- [ ] Limite de stockage 512 Mo de MongoDB Atlas M0 — marge restante non vérifiée
+- [ ] Quotas d'usage des appels IA (Anthropic) — aucun suivi/limite applicatif identifié
+- [ ] Route Stripe portal (gestion abonnement côté client)
+- [ ] Règle de purge RGPD des comptes archivés (soft delete) — délai de conservation non vérifié
 
 ---
 
