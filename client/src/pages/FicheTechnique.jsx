@@ -4,7 +4,7 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recha
 import html2pdf from 'html2pdf.js';
 import { api } from '../api.js';
 import { coutIng, coutPortionHT, coutPortionTTC, calculerFoodCost } from '../utils.js';
-import { uniteAVerifier } from '../conversions.js';
+import { uniteAVerifier, famillesIncompatibles } from '../conversions.js';
 import EtapesEditor from '../components/EtapesEditor.jsx';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
@@ -397,7 +397,8 @@ export default function FicheTechnique() {
     const nomRempli = !!(ing.nom || '').trim();
     const quantiteIncomplete = nomRempli && !(parseFloat(ing.quantite) > 0);
     const uniteIncomplete = nomRempli && uniteAVerifier(ing.unite);
-    return { ...ing, ingTva, coutHT, coutTTC, catUnite: cat ? baseUnit(cat.unite) : null, quantiteIncomplete, uniteIncomplete };
+    const familleIncoherente = nomRempli && !!cat && famillesIncompatibles(ing.unite, cat.unite);
+    return { ...ing, ingTva, coutHT, coutTTC, catUnite: cat ? baseUnit(cat.unite) : null, quantiteIncomplete, uniteIncomplete, familleIncoherente, catUniteBrute: cat ? cat.unite : null };
   });
   const totalHTScaled = ingData.reduce((a, i) => a + i.coutHT, 0);
   const totalTTCScaled = ingData.reduce((a, i) => a + i.coutTTC, 0);
@@ -701,14 +702,14 @@ export default function FicheTechnique() {
                       {editMode
                         ? <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                             <select value={ing.unite} onChange={e => updateIngredient(idx, { unite: e.target.value })} style={inputStyle}>{(UNITES.includes(ing.unite) ? UNITES : [...UNITES, ing.unite]).map(u => <option key={u}>{u}</option>)}</select>
-                            {ing.uniteIncomplete && (
-                              <span title="Unité à vérifier — le coût de cette ligne peut être inexact" style={{ cursor: 'help' }}>⚠️</span>
+                            {(ing.uniteIncomplete || ing.familleIncoherente) && (
+                              <span title={ing.uniteIncomplete ? "Unité à vérifier — le coût de cette ligne peut être inexact" : `Unité de la ligne (${ing.unite}) et unité du catalogue (${ing.catUniteBrute}) de familles différentes — le coût peut être faux. Vérifiez le prix dans Ingrédients`} style={{ cursor: 'help' }}>⚠️</span>
                             )}
                           </div>
                         : <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
                             <span style={{ color: T.muted }}>{ing.unite}</span>
-                            {ing.uniteIncomplete && (
-                              <span title="Unité à vérifier — le coût de cette ligne peut être inexact" style={{ cursor: 'help' }}>⚠️</span>
+                            {(ing.uniteIncomplete || ing.familleIncoherente) && (
+                              <span title={ing.uniteIncomplete ? "Unité à vérifier — le coût de cette ligne peut être inexact" : `Unité de la ligne (${ing.unite}) et unité du catalogue (${ing.catUniteBrute}) de familles différentes — le coût peut être faux. Vérifiez le prix dans Ingrédients`} style={{ cursor: 'help' }}>⚠️</span>
                             )}
                           </span>}
                     </td>

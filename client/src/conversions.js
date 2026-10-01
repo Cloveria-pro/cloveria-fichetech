@@ -73,6 +73,32 @@ export function uniteAVerifier(unite) {
   return UNITES_LEGACY_APPROXIMATIVES.includes(u);
 }
 
+const UNITES_MASSE = ['kg', 'g', 'gr', 'mg'];
+const UNITES_VOLUME = ['l', 'ml', 'cl', 'c.c', 'c.s', 'càc', 'càs'];
+const UNITES_PIECE = ['pièce', 'piece', 'unité', 'unite', 'u'];
+
+// Renvoie la famille d'une unité (après normalisation) : 'masse', 'volume', 'piece', ou null
+// (unité vide, inconnue, ou approximative sans famille définie — tranche, botte, pincée, etc.).
+// Ne lève jamais d'exception (s'appuie sur normaliserUnite, qui ne lève jamais non plus).
+export function familleUnite(unite) {
+  const u = normaliserUnite(unite);
+  if (u === '') return null;
+  if (UNITES_MASSE.includes(u)) return 'masse';
+  if (UNITES_VOLUME.includes(u)) return 'volume';
+  if (UNITES_PIECE.includes(u)) return 'piece';
+  return null;
+}
+
+// true seulement si l'une des deux unités est de famille 'piece' et l'autre 'masse' ou 'volume'.
+// false dans tous les autres cas (y compris masse vs volume, ou dès qu'une famille est null).
+export function famillesIncompatibles(uniteA, uniteB) {
+  const fa = familleUnite(uniteA);
+  const fb = familleUnite(uniteB);
+  if (fa === null || fb === null) return false;
+  if (fa === fb) return false;
+  return fa === 'piece' || fb === 'piece';
+}
+
 export function calculerCoutIngredient(quantite, uniteRecette, prixUnitaire) {
   return convertirEnUniteBase(quantite, uniteRecette) * (parseFloat(prixUnitaire) || 0);
 }
