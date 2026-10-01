@@ -7,7 +7,16 @@ import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../db.js';
 
 function normalize(str) {
-  return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  if (typeof str !== 'string') return '';
+  return str
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase()
+    .replace(/[‘’`´]/g, "'")
+    .replace(/œ/g, 'oe')
+    .replace(/æ/g, 'ae')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '');
 }
 
 async function matchIngredientPrice(nom, userId) {
@@ -17,6 +26,7 @@ async function matchIngredientPrice(nom, userId) {
       .find({ $or: [{ user_id: userId }, { user_id: 'demo' }] }, { projection: { _id: 0 } })
       .toArray();
     const normalizedNom = normalize(nom);
+    if (normalizedNom === '') return null;
     return pool.find(i => normalize(i.nom) === normalizedNom) || null;
   } catch {
     return null;
