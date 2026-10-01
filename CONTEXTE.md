@@ -1,6 +1,6 @@
 # CloverIA FicheTech — Contexte projet
 
-> Dernière mise à jour : 2026-10-01 (Sprint 1 — prompts IA alignés sur les 7 unités officielles, commit b556585 ; Sprint 2 — normalisation des unités dans conversions.js, commit c7d7c95 ; Sprint 3 — signal des lignes incomplètes, commit e16f136 ; correctif matching prix IA (apostrophes/ligatures/espaces), commit 66fde6a)
+> Dernière mise à jour : 2026-10-01 (Sprint 1 — prompts IA alignés sur les 7 unités officielles, commit b556585 ; Sprint 2 — normalisation des unités dans conversions.js, commit c7d7c95 ; Sprint 3 — signal des lignes incomplètes, commit e16f136 ; correctif matching prix IA (apostrophes/ligatures/espaces), commit 66fde6a ; Sprint 4 — signal d'incohérence de famille d'unité (pièce vs masse/volume), commit bbdf126)
 
 ---
 
@@ -290,6 +290,8 @@ cloveria-fichetech/
   "updatedAt": "ISO8601"
 }
 ```
+
+> `prixUnitaire` n'a pas d'unité attachée en base. Le coût d'une ligne est toujours `convertirEnUniteBase(quantité, unité de la ligne) × prixUnitaire` — `baseUnit()` ne sert qu'à l'étiquette affichée (`EUR HT / kg`, etc.), jamais au calcul. La signification réelle du prix dépend donc entièrement de l'unité utilisée au moment où il a été saisi ou copié.
 
 ### `historique_prix`
 ```json
@@ -759,8 +761,9 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 | 15 | **`ImportFicheModal` — perte du nom d'origine et ingrédients parasites** : l'association à un ingrédient existant remplace le nom de la ligne par celui du catalogue (la mention d'origine, ex. "(2 gousses)", est perdue) ; l'option par défaut "Créer sans prix" crée un nouvel ingrédient catalogue pour chaque nom à parenthèse non associé manuellement. | Modéré — pollution progressive du catalogue, perte d'information de quantité d'origine. | Vérifier le catalogue après chaque import de fiche IA ; associer manuellement plutôt que laisser "Créer sans prix" par défaut. |
 | 16 | **Aliases : création systématique et portée globale** : un alias est créé à chaque association dans `FicheTechnique.jsx`, y compris quand le nom source contient une quantité (ex. "Ail (2 gousses)" → "Ail") — alias à usage unique, jamais réutilisable pour une autre quantité. La collection `aliases` est globale, **sans `user_id`**, partagée entre tous les utilisateurs. | Faible à modéré — accumulation d'alias inutiles ; un alias créé par un utilisateur s'applique à tous les autres. | Aucun actuellement. |
 | 17 | **`findSimilarInCatalog` (FicheTechnique) et le lookup `ingData` non synchronisés** : deux mécanismes de correspondance différents (l'un tolérant via substring, l'autre strict) peuvent désaccorder — l'avertissement "Ingrédient absent de la base — prix saisi manuellement" peut rester affiché sur une ligne pourtant déjà associée au catalogue. | Faible — trompeur visuellement, sans impact sur le calcul du coût lui-même. | Ignorer l'avertissement si le prix est confirmé correct par ailleurs. |
-| 18 | **`matchIngredientPrice()` ne renvoie que le prix, jamais l'unité du catalogue** : une ligne en `g` associée (par nom) à un ingrédient catalogué en €/pièce est comptée avec l'unité de la ligne, pas celle du catalogue — aucune alerte sur ce décalage de famille (masse/volume/pièce). | Modéré à élevé — coût potentiellement très faux sans aucun signal. | Vérifier la cohérence unité/prix catalogue manuellement pour les ingrédients tarifés à la pièce. |
+| 18 | **[Corrigé partiellement — Sprint 4, commit `bbdf126`] `matchIngredientPrice()` ne renvoie que le prix, jamais l'unité du catalogue** : une ligne en `g` associée (par nom) à un ingrédient catalogué en €/pièce est comptée avec l'unité de la ligne, pas celle du catalogue — aucune alerte sur ce décalage de famille (masse/volume/pièce). **Sprint 4** : un `⚠️` d'unité s'affiche désormais dans `FicheTechnique.jsx` quand la ligne et le catalogue sont de familles incompatibles (pièce contre masse ou volume), via `familleUnite()` et `famillesIncompatibles()` (`conversions.js`) ; l'infobulle indique les deux unités en cause. Ce signal n'est pas compté dans « Total incomplet ». **Limites** : masse contre volume volontairement non signalé (densité proche de 1 pour de nombreux liquides, aucun facteur de densité dans le code) ; absent de `NouvelleRecette.jsx` et `SousRecettes.jsx` (pas de recherche catalogue dans ces écrans) ; la recherche catalogue de `FicheTechnique.jsx` est insensible à la casse mais pas aux ligatures ni aux apostrophes (voir bug #17) — un nom comme « Œufs » face à « Oeufs » au catalogue n'est donc pas contrôlé ; les unités approximatives (`tranche`, `botte`, etc.) n'ont pas de famille et ne déclenchent que le signal « Unité à vérifier ». | Modéré à élevé — coût potentiellement très faux sans aucun signal pour les croisements masse/volume ou pour les écrans non couverts. | Vérifier manuellement pour `NouvelleRecette`/`SousRecettes`, et pour tout croisement masse/volume. |
 | 19 | **Pas de message indiquant qu'un prix de ligne associée au catalogue sera remplacé au rechargement** : le prix saisi dans une fiche technique est bien sauvegardé, mais `enrichIngredients()` le réécrase au prochain chargement avec le prix du catalogue — **comportement intentionnel (décision de Seb), pas un bug en soi**. Mais aucun message n'informe l'utilisateur que ce prix se modifie désormais depuis la page Ingrédients. | Faible — comportement voulu, mais source de confusion pour l'utilisateur qui modifierait le prix au mauvais endroit. | Modifier le prix depuis la page Ingrédients, pas depuis la fiche technique. |
+| 20 | **`syncIngredientsToBase()` (`recettes.js`) crée des ingrédients catalogue avec `unite: ing.unite \|\| 'g'` et prix `0`** : l'étiquette d'unité du catalogue ainsi créée peut ne pas correspondre au prix saisi plus tard par l'utilisateur (ex. ingrédient auto-créé en `g` alors que le restaurateur le tarife naturellement à la pièce). | Faible à modéré — contribue en amont à la création de catalogues avec une famille d'unité potentiellement arbitraire. | Vérifier/corriger l'unité de l'ingrédient créé automatiquement avant de saisir son prix dans la page Ingrédients. |
 
 ---
 
@@ -777,7 +780,7 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 - [x] Sprint 3 : signal visuel sur les lignes incomplètes (quantité 0 ou unité inconnue).
 - [x] Diagnostic puis correction du matching de prix côté serveur (`matchIngredientPrice()` dans `ia.js`).
 - [ ] Message ou champ non modifiable sur le prix d'une ligne associée au catalogue (texte à valider avec Seb).
-- [ ] Vérification de la famille d'unité (masse/volume/pièce) avant d'appliquer un prix catalogue.
+- [x] Vérification de la famille d'unité (masse/volume/pièce) avant d'appliquer un prix catalogue. (Sprint 4, partiel : FicheTechnique uniquement, pièce vs masse/volume)
 - [ ] Vérifier que l'IA convertit bien « cuillère à soupe » en `c.s` ou `ml` (cas observé : huile d'olive sortie à `0 g` sans mention).
 
 ### Priorité moyenne
@@ -792,6 +795,7 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 - [ ] Import de fiche (`ImportFicheModal`) : conserver le nom d'origine à l'association au catalogue, revoir l'option par défaut "Créer sans prix".
 - [ ] Aliases : empêcher la création d'alias contenant une quantité, traiter les alias déjà créés en ce sens.
 - [ ] Migration des unités legacy en base, après création d'un environnement isolé.
+- [ ] Étendre le signal de famille d'unité à `NouvelleRecette.jsx` si besoin.
 
 ### Priorité basse / idées
 - [ ] QR Code allergènes (lien vers Format B en ligne)
