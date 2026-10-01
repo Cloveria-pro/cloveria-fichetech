@@ -2,6 +2,7 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { coutIng } from '../utils.js';
+import { uniteAVerifier } from '../conversions.js';
 import EtapesEditor from '../components/EtapesEditor.jsx';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
 
@@ -225,7 +226,11 @@ export default function NouvelleRecette() {
             </tr>
           </thead>
           <tbody>
-            {form.ingredients.map((ing, idx) => (
+            {form.ingredients.map((ing, idx) => {
+              const nomRempli = !!ing.nom.trim();
+              const quantiteIncomplete = nomRempli && !(parseFloat(ing.quantite) > 0);
+              const uniteIncomplete = nomRempli && uniteAVerifier(ing.unite);
+              return (
               <tr key={idx} style={{ borderBottom: '1px solid #F9F7F4' }}>
                 <td style={{ padding: '0.5rem 0.75rem' }}>
                   <IngredientAutocomplete
@@ -235,12 +240,22 @@ export default function NouvelleRecette() {
                   />
                 </td>
                 <td style={{ padding: '0.5rem 0.75rem' }}>
-                  <input type="number" step="0.001" min="0" value={ing.quantite} onChange={e => updateIngredient(idx, 'quantite', e.target.value)} style={{ ...inputStyle, width: '80px' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <input type="number" step="0.001" min="0" value={ing.quantite} onChange={e => updateIngredient(idx, 'quantite', e.target.value)} style={{ ...inputStyle, width: '80px' }} />
+                    {quantiteIncomplete && (
+                      <span title="Quantité à compléter — le coût de cette ligne est à 0" style={{ cursor: 'help', flexShrink: 0 }}>⚠️</span>
+                    )}
+                  </div>
                 </td>
                 <td style={{ padding: '0.5rem 0.75rem' }}>
-                  <select value={ing.unite} onChange={e => updateIngredient(idx, 'unite', e.target.value)} style={inputStyle}>
-                    {(UNITES.includes(ing.unite) ? UNITES : [...UNITES, ing.unite]).map(u => <option key={u}>{u}</option>)}
-                  </select>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <select value={ing.unite} onChange={e => updateIngredient(idx, 'unite', e.target.value)} style={inputStyle}>
+                      {(UNITES.includes(ing.unite) ? UNITES : [...UNITES, ing.unite]).map(u => <option key={u}>{u}</option>)}
+                    </select>
+                    {uniteIncomplete && (
+                      <span title="Unité à vérifier — le coût de cette ligne peut être inexact" style={{ cursor: 'help', flexShrink: 0 }}>⚠️</span>
+                    )}
+                  </div>
                 </td>
                 <td style={{ padding: '0.5rem 0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -265,7 +280,8 @@ export default function NouvelleRecette() {
                   >x</button>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
           <tfoot>
             <tr style={{ borderTop: '2px solid #F3EFE8' }}>

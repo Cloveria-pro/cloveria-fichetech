@@ -4,6 +4,7 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recha
 import html2pdf from 'html2pdf.js';
 import { api } from '../api.js';
 import { coutIng, coutPortionHT, coutPortionTTC, calculerFoodCost } from '../utils.js';
+import { uniteAVerifier } from '../conversions.js';
 import EtapesEditor from '../components/EtapesEditor.jsx';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
@@ -393,10 +394,16 @@ export default function FicheTechnique() {
     const ingTva = ing.tva ?? cat?.tva ?? 10;
     const coutHT = coutIng(ing) * scaleFactor;
     const coutTTC = coutHT * (1 + ingTva / 100);
-    return { ...ing, ingTva, coutHT, coutTTC, catUnite: cat ? baseUnit(cat.unite) : null };
+    const nomRempli = !!(ing.nom || '').trim();
+    const quantiteIncomplete = nomRempli && !(parseFloat(ing.quantite) > 0);
+    const uniteIncomplete = nomRempli && uniteAVerifier(ing.unite);
+    return { ...ing, ingTva, coutHT, coutTTC, catUnite: cat ? baseUnit(cat.unite) : null, quantiteIncomplete, uniteIncomplete };
   });
   const totalHTScaled = ingData.reduce((a, i) => a + i.coutHT, 0);
   const totalTTCScaled = ingData.reduce((a, i) => a + i.coutTTC, 0);
+  const nbLignesIncompletes = ingData.filter(i =>
+    i.quantiteIncomplete || i.uniteIncomplete || (i.prixUnitaire === 0 && (i.nom || '').trim())
+  ).length;
   const cout = (form.ingredients || []).reduce((acc, i) => acc + coutIng(i), 0);
   const coutPortion = form.portions > 0 ? cout / form.portions : 0;
   const coutScaled = totalHTScaled;
@@ -677,13 +684,33 @@ export default function FicheTechnique() {
                     </td>
                     <td style={{ padding: '0.6rem 0.75rem' }}>
                       {editMode
-                        ? <input type="number" step="0.001" min="0" value={ing.quantite} onChange={e => updateIngredient(idx, { quantite: parseFloat(e.target.value) || 0 })} style={{ ...inputStyle, width: '80px' }} />
-                        : <span style={{ color: scaleFactor !== 1 ? T.gold : T.text, fontWeight: scaleFactor !== 1 ? 600 : 400 }}>{Number.isInteger(qteScaled) ? qteScaled : qteScaled.toFixed(1)}</span>}
+                        ? <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <input type="number" step="0.001" min="0" value={ing.quantite} onChange={e => updateIngredient(idx, { quantite: parseFloat(e.target.value) || 0 })} style={{ ...inputStyle, width: '80px' }} />
+                            {ing.quantiteIncomplete && (
+                              <span title="Quantité à compléter — le coût de cette ligne est à 0" style={{ cursor: 'help' }}>⚠️</span>
+                            )}
+                          </div>
+                        : <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <span style={{ color: scaleFactor !== 1 ? T.gold : T.text, fontWeight: scaleFactor !== 1 ? 600 : 400 }}>{Number.isInteger(qteScaled) ? qteScaled : qteScaled.toFixed(1)}</span>
+                            {ing.quantiteIncomplete && (
+                              <span title="Quantité à compléter — le coût de cette ligne est à 0" style={{ cursor: 'help' }}>⚠️</span>
+                            )}
+                          </span>}
                     </td>
                     <td style={{ padding: '0.6rem 0.75rem' }}>
                       {editMode
-                        ? <select value={ing.unite} onChange={e => updateIngredient(idx, { unite: e.target.value })} style={inputStyle}>{(UNITES.includes(ing.unite) ? UNITES : [...UNITES, ing.unite]).map(u => <option key={u}>{u}</option>)}</select>
-                        : <span style={{ color: T.muted }}>{ing.unite}</span>}
+                        ? <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <select value={ing.unite} onChange={e => updateIngredient(idx, { unite: e.target.value })} style={inputStyle}>{(UNITES.includes(ing.unite) ? UNITES : [...UNITES, ing.unite]).map(u => <option key={u}>{u}</option>)}</select>
+                            {ing.uniteIncomplete && (
+                              <span title="Unité à vérifier — le coût de cette ligne peut être inexact" style={{ cursor: 'help' }}>⚠️</span>
+                            )}
+                          </div>
+                        : <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <span style={{ color: T.muted }}>{ing.unite}</span>
+                            {ing.uniteIncomplete && (
+                              <span title="Unité à vérifier — le coût de cette ligne peut être inexact" style={{ cursor: 'help' }}>⚠️</span>
+                            )}
+                          </span>}
                     </td>
                     <td style={{ padding: '0.6rem 0.75rem' }}>
                       {editMode ? (
@@ -754,6 +781,13 @@ export default function FicheTechnique() {
                 <td style={{ padding: '0.25rem 0.75rem', fontWeight: 700, fontSize: '1.05rem', color: T.green }}>{(totalTTCScaled / couverts).toFixed(2)} EUR</td>
                 {editMode && <td></td>}
               </tr>
+              {nbLignesIncompletes > 0 && (
+                <tr>
+                  <td colSpan={editMode ? 8 : 7} style={{ padding: '0.25rem 0.75rem', textAlign: 'right', color: T.muted, fontSize: '0.85rem', fontWeight: 600 }}>
+                    ⚠️ Total incomplet : {nbLignesIncompletes} ligne(s) à compléter
+                  </td>
+                </tr>
+              )}
             </tfoot>
           </table>
         </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { coutIng } from '../utils.js';
+import { uniteAVerifier } from '../conversions.js';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
 
 const UNITES_SR = ['g', 'ml', 'piece'];
@@ -181,7 +182,11 @@ export default function SousRecettes() {
                   </tr>
                 </thead>
                 <tbody>
-                  {editForm.ingredients.map((ing, idx) => (
+                  {editForm.ingredients.map((ing, idx) => {
+                    const nomRempli = !!(ing.nom || '').trim();
+                    const quantiteIncomplete = nomRempli && !(parseFloat(ing.quantite) > 0);
+                    const uniteIncomplete = nomRempli && uniteAVerifier(ing.unite);
+                    return (
                     <tr key={idx} style={{ borderBottom: '1px solid #F9F7F4' }}>
                       <td style={{ padding: '0.5rem 0.75rem', minWidth: '160px' }}>
                         <IngredientAutocomplete
@@ -195,17 +200,27 @@ export default function SousRecettes() {
                         />
                       </td>
                       <td style={{ padding: '0.5rem 0.75rem' }}>
-                        <input
-                          type="number" step="0.001" min="0"
-                          value={ing.quantite}
-                          onChange={e => updateIng(idx, { quantite: parseFloat(e.target.value) || 0 })}
-                          style={{ ...inputStyle, width: '80px' }}
-                        />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <input
+                            type="number" step="0.001" min="0"
+                            value={ing.quantite}
+                            onChange={e => updateIng(idx, { quantite: parseFloat(e.target.value) || 0 })}
+                            style={{ ...inputStyle, width: '80px' }}
+                          />
+                          {quantiteIncomplete && (
+                            <span title="Quantité à compléter — le coût de cette ligne est à 0" style={{ cursor: 'help' }}>⚠️</span>
+                          )}
+                        </div>
                       </td>
                       <td style={{ padding: '0.5rem 0.75rem' }}>
-                        <select value={ing.unite} onChange={e => updateIng(idx, { unite: e.target.value })} style={{ ...inputStyle, width: 'auto' }}>
-                          {(UNITES_ING.includes(ing.unite) ? UNITES_ING : [...UNITES_ING, ing.unite]).map(u => <option key={u} value={u}>{u}</option>)}
-                        </select>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <select value={ing.unite} onChange={e => updateIng(idx, { unite: e.target.value })} style={{ ...inputStyle, width: 'auto' }}>
+                            {(UNITES_ING.includes(ing.unite) ? UNITES_ING : [...UNITES_ING, ing.unite]).map(u => <option key={u} value={u}>{u}</option>)}
+                          </select>
+                          {uniteIncomplete && (
+                            <span title="Unité à vérifier — le coût de cette ligne peut être inexact" style={{ cursor: 'help' }}>⚠️</span>
+                          )}
+                        </div>
                       </td>
                       <td style={{ padding: '0.5rem 0.75rem' }}>
                         <input
@@ -228,7 +243,8 @@ export default function SousRecettes() {
                         >✕</button>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             )}

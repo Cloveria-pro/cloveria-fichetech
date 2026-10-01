@@ -60,6 +60,19 @@ export function estUniteConnue(unite) {
   return u !== '' && Object.prototype.hasOwnProperty.call(CONVERSIONS_NORMALISEES, u);
 }
 
+// Unités connues mais dont le facteur est une approximation jamais validée métier
+// (voir commentaire "Autres unités courantes" ci-dessus) — à signaler à l'utilisateur.
+const UNITES_LEGACY_APPROXIMATIVES = ['tranche', 'botte', 'pincée', 'gousse', 'feuille', 'sachet', 'bouquet', 'boîte'];
+
+// Indique si une unité mérite un signal "à vérifier" : vide, inconnue, ou legacy approximative.
+// Les 7 unités officielles et leurs variantes reconnues (piece/pièce, unite/unité, casse) renvoient false.
+export function uniteAVerifier(unite) {
+  const u = normaliserUnite(unite);
+  if (u === '') return true;
+  if (!estUniteConnue(unite)) return true;
+  return UNITES_LEGACY_APPROXIMATIVES.includes(u);
+}
+
 export function calculerCoutIngredient(quantite, uniteRecette, prixUnitaire) {
   return convertirEnUniteBase(quantite, uniteRecette) * (parseFloat(prixUnitaire) || 0);
 }
