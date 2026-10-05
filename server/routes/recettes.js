@@ -15,11 +15,21 @@ async function syncIngredientsToBase(ingredients, userId, db) {
     .find({ $or: [{ user_id: userId }, { user_id: 'demo' }] }, { projection: { _id: 0, nom: 1 } })
     .toArray();
   const existingNorms = new Set(existing.map(i => norm(i.nom)));
+  let sousRecetteNorms = new Set();
+  try {
+    const sousRecettes = await db.collection('sous_recettes')
+      .find({ user_id: userId }, { projection: { _id: 0, nom: 1 } })
+      .toArray();
+    sousRecetteNorms = new Set(sousRecettes.map(sr => norm(sr.nom)));
+  } catch {
+    sousRecetteNorms = new Set();
+  }
   const seen = new Set();
   for (const ing of ingredients) {
     if (!ing.nom?.trim()) continue;
     const n = norm(ing.nom);
     if (existingNorms.has(n) || seen.has(n)) continue;
+    if (sousRecetteNorms.has(n)) continue;
     seen.add(n);
     await db.collection('ingredients').insertOne({
       id: uuidv4(),
