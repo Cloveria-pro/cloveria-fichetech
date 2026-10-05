@@ -792,6 +792,11 @@ export default function FicheTechnique() {
             </tfoot>
           </table>
         </div>
+        {editMode && (
+          <p style={{ fontSize: '0.78rem', color: T.muted, marginTop: '0.75rem' }}>
+            Le prix d'un ingrédient du catalogue se modifie dans la page Ingrédients.
+          </p>
+        )}
 
         {/* Analyse financière */}
         <div style={{ marginTop: '1.25rem', borderTop: '1px solid #F3EFE8', paddingTop: '1.25rem' }}>
