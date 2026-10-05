@@ -281,7 +281,7 @@ export default function FicheTechnique() {
       setAliases(prev => [...prev, { from: ing.nom, to: suggestion.nom }]);
     }
     const updatedIngs = form.ingredients.map((i, ii) =>
-      ii === idx ? { ...i, prixUnitaire: suggestion.prixUnitaire, unite: suggestion.unite } : i
+      ii === idx ? { ...i, prixUnitaire: suggestion.prixUnitaire, unite: suggestion.unite, sousRecetteId: null } : i
     );
     const updatedForm = { ...form, ingredients: updatedIngs };
     setForm(updatedForm);
@@ -717,7 +717,7 @@ export default function FicheTechnique() {
                     <td style={{ padding: '0.6rem 0.75rem' }}>
                       {editMode ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <input type="number" step="0.001" value={ing.prixUnitaire} onChange={e => updateIngredient(idx, { prixUnitaire: parseFloat(e.target.value) || 0 })} style={{ ...inputStyle, width: '80px' }} />
+                          <input type="number" step="0.001" value={ing.prixUnitaire} onChange={e => updateIngredient(idx, { prixUnitaire: parseFloat(e.target.value) || 0, sousRecetteId: null })} style={{ ...inputStyle, width: '80px' }} />
                           {ing.prixUnitaire === 0 && ing.nom && (
                             <span title={ing.estSousRecette ? "Prix manquant — ajoutez de nouveau la sous-recette depuis la liste pour copier son prix" : "Prix manquant — allez dans Ingrédients pour l'ajouter"} style={{ cursor: 'help' }}>⚠️</span>
                           )}
