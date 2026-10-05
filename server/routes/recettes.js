@@ -43,11 +43,14 @@ async function syncIngredientsToBase(ingredients, userId, db) {
   }
 }
 
-async function enrichIngredients(ingredients, userId, db) {
-  if (!ingredients || ingredients.length === 0) return ingredients || [];
-  const catalog = await db.collection('ingredients')
+async function chargerCatalogue(userId, db) {
+  return db.collection('ingredients')
     .find({ $or: [{ user_id: userId }, { user_id: 'demo' }] }, PROJ)
     .toArray();
+}
+
+export function enrichirLignesAvecCatalogue(ingredients, catalog) {
+  if (!ingredients || ingredients.length === 0) return ingredients || [];
   return ingredients.map(ing => {
     if (!ing.nom) return ing;
     const found = catalog.find(c => norm(c.nom) === norm(ing.nom));
@@ -59,11 +62,14 @@ async function enrichIngredients(ingredients, userId, db) {
 
 router.get('/', async (req, res) => {
   const db = await getDb();
-  const list = await db.collection('recettes').find({ user_id: req.userId }, PROJ).toArray();
-  const enriched = await Promise.all(list.map(async r => ({
+  const [list, catalog] = await Promise.all([
+    db.collection('recettes').find({ user_id: req.userId }, PROJ).toArray(),
+    chargerCatalogue(req.userId, db),
+  ]);
+  const enriched = list.map(r => ({
     ...r,
-    ingredients: await enrichIngredients(r.ingredients, req.userId, db),
-  })));
+    ingredients: enrichirLignesAvecCatalogue(r.ingredients, catalog),
+  }));
   res.json(enriched);
 });
 
@@ -71,7 +77,8 @@ router.get('/:id', async (req, res) => {
   const db = await getDb();
   const item = await db.collection('recettes').findOne({ id: req.params.id, user_id: req.userId }, PROJ);
   if (!item) return res.status(404).json({ error: 'Introuvable' });
-  res.json({ ...item, ingredients: await enrichIngredients(item.ingredients, req.userId, db) });
+  const catalog = await chargerCatalogue(req.userId, db);
+  res.json({ ...item, ingredients: enrichirLignesAvecCatalogue(item.ingredients, catalog) });
 });
 
 router.post('/', async (req, res) => {
