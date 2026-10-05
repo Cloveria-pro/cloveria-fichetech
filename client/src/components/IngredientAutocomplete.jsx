@@ -40,14 +40,14 @@ export default function IngredientAutocomplete({ value, onChange, catalog, sousR
   const hasSuggestions = catSuggestions.length > 0 || srSuggestions.length > 0;
 
   function select(item) {
-    onChange({ nom: item.nom, prixUnitaire: item.prixUnitaire, unite: item.unite });
+    onChange({ nom: item.nom, prixUnitaire: item.prixUnitaire, unite: item.unite, sousRecetteId: null });
     setQuery(item.nom);
     setOpen(false);
   }
 
   function selectSR(sr) {
     const prixUnitaire = parseFloat(computePrixUnitaireSR(sr).toFixed(5));
-    onChange({ nom: sr.nom, prixUnitaire, unite: sr.unite });
+    onChange({ nom: sr.nom, prixUnitaire, unite: sr.unite, sousRecetteId: sr.id });
     setQuery(sr.nom);
     setOpen(false);
   }
@@ -56,7 +56,7 @@ export default function IngredientAutocomplete({ value, onChange, catalog, sousR
     <div ref={ref} style={{ position: 'relative' }}>
       <input
         value={query}
-        onChange={e => { setQuery(e.target.value); onChange({ nom: e.target.value }); setOpen(true); }}
+        onChange={e => { setQuery(e.target.value); onChange({ nom: e.target.value, sousRecetteId: null }); setOpen(true); }}
         onFocus={() => setOpen(true)}
         style={inputStyle}
         placeholder="Nom ingrédient"
