@@ -733,7 +733,7 @@ export default function FicheTechnique() {
                               : ing.catUnite
                                 ? <>{ing.prixUnitaire} EUR HT&nbsp;/&nbsp;{ing.catUnite}</>
                                 : ing.estSousRecette
-                                  ? <>{ing.prixUnitaire} EUR HT&nbsp;/&nbsp;{baseUnit(ing.unite)} <span title="Sous-recette : prix copié à l'ajout, il ne suit pas les modifications de la sous-recette. Ajoutez-la de nouveau depuis la liste pour le mettre à jour." style={{ cursor: 'help' }}>⚠️</span></>
+                                  ? <>{ing.prixUnitaire} EUR HT&nbsp;/&nbsp;{baseUnit(ing.unite)}</>
                                   : ing.nom
                                     ? <>{ing.prixUnitaire} EUR HT&nbsp;/&nbsp;{baseUnit(ing.unite)} <span title="Ingrédient absent de la base — prix saisi manuellement" style={{ cursor: 'help' }}>⚠️</span></>
                                     : <>{ing.prixUnitaire} EUR HT</>
