@@ -4,7 +4,7 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recha
 import html2pdf from 'html2pdf.js';
 import { api } from '../api.js';
 import { coutIng, coutPortionHT, coutPortionTTC, calculerFoodCost } from '../utils.js';
-import { uniteAVerifier, famillesIncompatibles } from '../conversions.js';
+import { uniteAVerifier, famillesIncompatibles, familleUnite } from '../conversions.js';
 import EtapesEditor from '../components/EtapesEditor.jsx';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
@@ -399,7 +399,9 @@ export default function FicheTechnique() {
     const uniteIncomplete = nomRempli && uniteAVerifier(ing.unite);
     const familleIncoherente = nomRempli && !!cat && famillesIncompatibles(ing.unite, cat.unite);
     const estSousRecette = nomRempli && !cat && !!(sousRecettes || []).find(sr => (sr.nom || '').toLowerCase() === (ing.nom || '').toLowerCase());
-    return { ...ing, ingTva, coutHT, coutTTC, catUnite: cat ? baseUnit(cat.unite) : null, quantiteIncomplete, uniteIncomplete, familleIncoherente, catUniteBrute: cat ? cat.unite : null, estSousRecette };
+    const srSuivie = ing.sousRecetteId ? (sousRecettes || []).find(sr => sr.id === ing.sousRecetteId) : null;
+    const ligneSuivie = nomRempli && !!ing.sousRecetteId && !!srSuivie && familleUnite(ing.unite) !== null && familleUnite(ing.unite) === familleUnite(srSuivie.unite);
+    return { ...ing, ingTva, coutHT, coutTTC, catUnite: cat ? baseUnit(cat.unite) : null, quantiteIncomplete, uniteIncomplete, familleIncoherente, catUniteBrute: cat ? cat.unite : null, estSousRecette, ligneSuivie };
   });
   const totalHTScaled = ingData.reduce((a, i) => a + i.coutHT, 0);
   const totalTTCScaled = ingData.reduce((a, i) => a + i.coutTTC, 0);
@@ -674,7 +676,7 @@ export default function FicheTechnique() {
             </thead>
             <tbody>
               {ingData.map((ing, idx) => {
-                const suggestion = ing.prixUnitaire === 0 && ing.nom ? findSimilarInCatalog(ing.nom, catalog, aliases) : null;
+                const suggestion = ing.prixUnitaire === 0 && ing.nom && !ing.ligneSuivie ? findSimilarInCatalog(ing.nom, catalog, aliases) : null;
                 const qteScaled = ing.quantite * scaleFactor;
                 return (
                   <React.Fragment key={idx}>
@@ -703,13 +705,13 @@ export default function FicheTechnique() {
                       {editMode
                         ? <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                             <select value={ing.unite} onChange={e => updateIngredient(idx, { unite: e.target.value })} style={inputStyle}>{(UNITES.includes(ing.unite) ? UNITES : [...UNITES, ing.unite]).map(u => <option key={u}>{u}</option>)}</select>
-                            {(ing.uniteIncomplete || ing.familleIncoherente) && (
+                            {(ing.uniteIncomplete || ing.familleIncoherente) && !ing.ligneSuivie && (
                               <span title={ing.uniteIncomplete ? "Unité à vérifier — le coût de cette ligne peut être inexact" : `Unité de la ligne (${ing.unite}) et unité du catalogue (${ing.catUniteBrute}) de familles différentes — le coût peut être faux. Vérifiez le prix dans Ingrédients`} style={{ cursor: 'help' }}>⚠️</span>
                             )}
                           </div>
                         : <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
                             <span style={{ color: T.muted }}>{ing.unite}</span>
-                            {(ing.uniteIncomplete || ing.familleIncoherente) && (
+                            {(ing.uniteIncomplete || ing.familleIncoherente) && !ing.ligneSuivie && (
                               <span title={ing.uniteIncomplete ? "Unité à vérifier — le coût de cette ligne peut être inexact" : `Unité de la ligne (${ing.unite}) et unité du catalogue (${ing.catUniteBrute}) de familles différentes — le coût peut être faux. Vérifiez le prix dans Ingrédients`} style={{ cursor: 'help' }}>⚠️</span>
                             )}
                           </span>}
@@ -717,22 +719,24 @@ export default function FicheTechnique() {
                     <td style={{ padding: '0.6rem 0.75rem' }}>
                       {editMode ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <input type="number" step="0.001" value={ing.prixUnitaire} onChange={e => updateIngredient(idx, { prixUnitaire: parseFloat(e.target.value) || 0, sousRecetteId: null })} style={{ ...inputStyle, width: '80px' }} />
+                          <input type="number" step="0.001" value={ing.prixUnitaire} onChange={e => updateIngredient(idx, { prixUnitaire: parseFloat(e.target.value) || 0, sousRecetteId: null })} style={{ ...inputStyle, width: '80px' }} disabled={ing.ligneSuivie} title={ing.ligneSuivie ? "Prix de la sous-recette : il se met à jour automatiquement" : undefined} />
                           {ing.prixUnitaire === 0 && ing.nom && (
-                            <span title={ing.estSousRecette ? "Prix manquant — ajoutez de nouveau la sous-recette depuis la liste pour copier son prix" : "Prix manquant — allez dans Ingrédients pour l'ajouter"} style={{ cursor: 'help' }}>⚠️</span>
+                            <span title={ing.ligneSuivie ? "Prix manquant — la sous-recette n'a pas de prix : complétez les prix de ses ingrédients" : ing.estSousRecette ? "Prix manquant — ajoutez de nouveau la sous-recette depuis la liste pour copier son prix" : "Prix manquant — allez dans Ingrédients pour l'ajouter"} style={{ cursor: 'help' }}>⚠️</span>
                           )}
                         </div>
                       ) : (
                         <span style={{ color: T.muted }}>
                           {ing.prixUnitaire === 0 && ing.nom
-                            ? <>{ing.prixUnitaire} EUR HT <span title={ing.estSousRecette ? "Prix manquant — ajoutez de nouveau la sous-recette depuis la liste pour copier son prix" : "Prix manquant — allez dans Ingrédients pour l'ajouter"} style={{ cursor: 'help' }}>⚠️</span></>
-                            : ing.catUnite
-                              ? <>{ing.prixUnitaire} EUR HT&nbsp;/&nbsp;{ing.catUnite}</>
-                              : ing.estSousRecette
-                                ? <>{ing.prixUnitaire} EUR HT&nbsp;/&nbsp;{baseUnit(ing.unite)} <span title="Sous-recette : prix copié à l'ajout, il ne suit pas les modifications de la sous-recette. Ajoutez-la de nouveau depuis la liste pour le mettre à jour." style={{ cursor: 'help' }}>⚠️</span></>
-                                : ing.nom
-                                  ? <>{ing.prixUnitaire} EUR HT&nbsp;/&nbsp;{baseUnit(ing.unite)} <span title="Ingrédient absent de la base — prix saisi manuellement" style={{ cursor: 'help' }}>⚠️</span></>
-                                  : <>{ing.prixUnitaire} EUR HT</>
+                            ? <>{ing.prixUnitaire} EUR HT <span title={ing.ligneSuivie ? "Prix manquant — la sous-recette n'a pas de prix : complétez les prix de ses ingrédients" : ing.estSousRecette ? "Prix manquant — ajoutez de nouveau la sous-recette depuis la liste pour copier son prix" : "Prix manquant — allez dans Ingrédients pour l'ajouter"} style={{ cursor: 'help' }}>⚠️</span></>
+                            : ing.ligneSuivie
+                              ? <>{ing.prixUnitaire} EUR HT&nbsp;/&nbsp;{baseUnit(ing.unite)}</>
+                              : ing.catUnite
+                                ? <>{ing.prixUnitaire} EUR HT&nbsp;/&nbsp;{ing.catUnite}</>
+                                : ing.estSousRecette
+                                  ? <>{ing.prixUnitaire} EUR HT&nbsp;/&nbsp;{baseUnit(ing.unite)} <span title="Sous-recette : prix copié à l'ajout, il ne suit pas les modifications de la sous-recette. Ajoutez-la de nouveau depuis la liste pour le mettre à jour." style={{ cursor: 'help' }}>⚠️</span></>
+                                  : ing.nom
+                                    ? <>{ing.prixUnitaire} EUR HT&nbsp;/&nbsp;{baseUnit(ing.unite)} <span title="Ingrédient absent de la base — prix saisi manuellement" style={{ cursor: 'help' }}>⚠️</span></>
+                                    : <>{ing.prixUnitaire} EUR HT</>
                           }
                         </span>
                       )}
