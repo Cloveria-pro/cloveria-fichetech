@@ -22,6 +22,14 @@ function computeCoutUnitaire(coutTotal, quantiteProduite, unite) {
   return qBase > 0 ? coutTotal / qBase : 0;
 }
 
+// Le coût unitaire est exprimé par unité de base (kg, L, pièce), jamais dans l'unité saisie (g, ml...).
+function labelUniteBase(unite) {
+  if (unite === 'g' || unite === 'kg') return 'kg';
+  if (unite === 'ml' || unite === 'L') return 'L';
+  if (unite === 'piece' || unite === 'pièce') return 'pièce';
+  return unite;
+}
+
 const EMPTY_ING = { nom: '', quantite: 0, unite: 'g', prixUnitaire: 0, tva: 10 };
 const EMPTY_FORM = { nom: '', quantiteProduite: 1000, unite: 'g', ingredients: [] };
 
@@ -262,7 +270,7 @@ export default function SousRecettes() {
                   Coût unitaire
                 </div>
                 <div style={{ fontSize: '1.1rem', fontWeight: 700, color: T.text }}>
-                  {formCoutUnitaire.toFixed(5)} EUR/{editForm.unite}
+                  {formCoutUnitaire.toFixed(5)} EUR/{labelUniteBase(editForm.unite)}
                 </div>
               </div>
               <div style={{ background: '#F8F6F1', borderRadius: '8px', padding: '0.75rem 1rem', minWidth: '140px' }}>
@@ -330,7 +338,7 @@ export default function SousRecettes() {
                     <span style={{ color: T.muted, fontSize: '0.8rem', marginLeft: '4px' }}>EUR</span>
                   </td>
                   <td style={{ ...tdStyle, color: T.muted, fontSize: '0.82rem' }}>
-                    {cu.toFixed(5)} EUR/{sr.unite}
+                    {cu.toFixed(5)} EUR/{labelUniteBase(sr.unite)}
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>
                     <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>

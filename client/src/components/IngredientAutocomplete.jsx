@@ -17,6 +17,14 @@ function computePrixUnitaireSR(sr) {
   return qBase > 0 ? coutTotal / qBase : 0;
 }
 
+// Le prix unitaire est exprimé par unité de base (kg, L, pièce), jamais dans l'unité saisie (g, ml...).
+function labelUniteBase(unite) {
+  if (unite === 'g' || unite === 'kg') return 'kg';
+  if (unite === 'ml' || unite === 'L') return 'L';
+  if (unite === 'piece' || unite === 'pièce') return 'pièce';
+  return unite;
+}
+
 export default function IngredientAutocomplete({ value, onChange, catalog, sousRecettes = [] }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState(value);
@@ -89,7 +97,7 @@ export default function IngredientAutocomplete({ value, onChange, catalog, sousR
                   <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '1px 5px', borderRadius: '3px', background: 'rgba(201,168,76,0.15)', color: '#8B6914', border: '1px solid rgba(201,168,76,0.3)', whiteSpace: 'nowrap' }}>Prépa.</span>
                   <span style={{ color: '#1C2B1E', fontWeight: 500 }}>{sr.nom}</span>
                 </div>
-                <span style={{ color: '#6B7280', fontSize: '0.75rem' }}>{pu.toFixed(4)} EUR/{sr.unite}</span>
+                <span style={{ color: '#6B7280', fontSize: '0.75rem' }}>{pu.toFixed(4)} EUR/{labelUniteBase(sr.unite)}</span>
               </div>
             );
           })}
