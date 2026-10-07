@@ -146,12 +146,16 @@ cloveria-fichetech/
 │   │   ├── documents.js            # GET/POST/DELETE — archive factures fournisseurs
 │   │   ├── agenda.js               # CRUD rappels/événements/notes
 │   │   └── onboarding.js           # inject-example / skip-example (pack démarrage)
+│   ├── lib/
+│   │   ├── conversions.js          # copie de client/src/conversions.js (voir Sprint 9)
+│   │   └── prixSousRecette.js      # calculerPrixUnitaireSousRecette, memeFamilleUnite (Sprint 9)
 │   ├── emails/
 │   │   ├── verification.js         # envoyerConfirmationEmail, envoyerResetEmail (Resend)
 │   │   ├── relances.js             # envoyerRelance (essai), envoyerLifecycle (onboarding)
 │   │   └── notifications.js        # notifierNouveauClient, notifierSuppressionCompte (interne)
 │   ├── scripts/
-│   │   └── change-demo-password.js # utilitaire ponctuel reset mdp démo
+│   │   ├── change-demo-password.js # utilitaire ponctuel reset mdp démo
+│   │   └── verifier-conversions.js # test de cohérence server/lib/conversions.js vs client/src/conversions.js (Sprint 9)
 │   └── data/                       # JSON de seed (insérés si collection vide au démarrage)
 │       ├── users.json, ingredients.json, recettes.json
 │       ├── cartes.json, parametres.json, historique_prix.json
@@ -260,7 +264,7 @@ cloveria-fichetech/
   "description": "string",
   "description_commerciale": "string",
   "allergenes": ["gluten", "lait"],
-  "ingredients": [{ "nom", "quantite", "unite", "prixUnitaire", "tva" }],
+  "ingredients": [{ "nom", "quantite", "unite", "prixUnitaire", "tva", "sousRecetteId" }],
   "etapes": ["string"],
   "prixVentePratiqueTTC": 18.50,
   "_source": "example|undefined",
@@ -268,6 +272,8 @@ cloveria-fichetech/
   "updatedAt": "ISO8601"
 }
 ```
+
+> `sousRecetteId` (string|null) (Sprint 8) : identifiant de la sous-recette quand la ligne est choisie depuis la liste « Prépa. » ; effacé (null) si la ligne est ensuite saisie à la main, associée à un ingrédient du catalogue ou si son prix est modifié à la main ; le serveur recalcule alors le prix depuis la sous-recette (Sprint 12). Les lignes antérieures au Sprint 8 n'ont pas ce champ.
 
 > `_source: 'example'` identifie les fiches injectées par le pack démarrage — exclues des compteurs CRM (`{ _source: { $ne: 'example' } }`).
 
@@ -773,7 +779,7 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 | 7 | **Bouton "Modifier" masqué** (Sprint D) : si un rapport n'a que `extractedData` (brut IA, jamais validé) et pas de `validatedData`, le bouton d'édition n'apparaît pas. | Mineur — cas rare (import interrompu avant validation). | Aucun depuis l'UI. |
 | 8 | **Pas de lien scan source sur anciens rapports** (Sprint E) : les rapports importés avant le déploiement de Sprint E ne portent pas `sourceDocumentId`. Le bloc "Document source" n'apparaît pas pour ces rapports. | Faible — informatif uniquement. | Aucun — limitation rétroactive. |
 | 9 | **Fichiers base64 lourds sur mobile Safari** (Sprint E) : les images de prévisualisation embarquent le base64 complet en mémoire. Fichiers > 5 Mo peuvent causer des crashs sur mobile Safari. | Faible — usage Desktop majoritaire. | Éviter d'importer des scans > 5 Mo. |
-| 10 | **[Corrigé — partiellement] Incohérence unité/prix ingrédients** (catalogue vs fiche technique) — commit `7a1ee78`. Unités officielles désormais : `g`, `kg`, `ml`, `L`, `pièce`, `c.s`, `c.c`. `botte`/`tranche` ne sont plus proposées pour les nouvelles lignes mais restent affichées pour les anciennes fiches (valeurs legacy préservées, non migrées). **Ce correctif ne couvrait que le frontend** — les prompts IA côté serveur n'étaient pas alignés (voir Sprint 1 ci-dessous). <br>**Sprint 1** (commit `b556585`) : les prompts `/structurer` et `/analyser-fiche` (`server/routes/ia.js`) sont désormais alignés sur les 7 unités officielles (`g`, `kg`, `ml`, `L`, `pièce`, `c.s`, `c.c`). Pour `pincée`, `gousse`, `feuille`, `tranche`, `sachet`, `botte` : aucune conversion inventée — la mention reste dans le nom (ex. "Ail (2 gousses)"), quantité à `0` (`/structurer`) ou `null` avec `incertain: true` (`/analyser-fiche`). <br>**Sprint 2** (commit `c7d7c95`) : `conversions.js` normalise désormais l'unité avant recherche (espaces, minuscules, point final supprimé) et ajoute l'alias `gr`. Exporte `estUniteConnue()` (pas encore utilisée ailleurs). Une unité toujours inconnue après normalisation retombe toujours sur le facteur `1`. | N/A — corrigé pour la partie frontend + prompts IA ; voir bugs #11-17 pour les points encore ouverts. | — |
+| 10 | **[Corrigé — partiellement] Incohérence unité/prix ingrédients** (catalogue vs fiche technique) — commit `7a1ee78`. Unités officielles désormais : `g`, `kg`, `ml`, `L`, `pièce`, `c.s`, `c.c`. `botte`/`tranche` ne sont plus proposées pour les nouvelles lignes mais restent affichées pour les anciennes fiches (valeurs legacy préservées, non migrées). **Ce correctif ne couvrait que le frontend** — les prompts IA côté serveur n'étaient pas alignés (voir Sprint 1 ci-dessous). <br>**Sprint 1** (commit `b556585`) : les prompts `/structurer` et `/analyser-fiche` (`server/routes/ia.js`) sont désormais alignés sur les 7 unités officielles (`g`, `kg`, `ml`, `L`, `pièce`, `c.s`, `c.c`). Pour `pincée`, `gousse`, `feuille`, `tranche`, `sachet`, `botte` : aucune conversion inventée — la mention reste dans le nom (ex. "Ail (2 gousses)"), quantité à `0` (`/structurer`) ou `null` avec `incertain: true` (`/analyser-fiche`). <br>**Sprint 2** (commit `c7d7c95`) : `conversions.js` normalise désormais l'unité avant recherche (espaces, minuscules, point final supprimé) et ajoute l'alias `gr`. Exporte `estUniteConnue()` (pas encore utilisée ailleurs). Une unité toujours inconnue après normalisation retombe toujours sur le facteur `1`. | N/A — corrigé pour la partie frontend + prompts IA ; voir bugs #11-27 pour les points encore ouverts. | — |
 | 11 | **[Corrigé — Sprint 3, commit `e16f136`] Ligne à quantité 0 associée au catalogue sans signal visuel** : une ligne de fiche avec `quantite: 0` mais `prixUnitaire` renseigné via association catalogue affiche `0,00 EUR` sans avertissement — le `⚠️` de `FicheTechnique.jsx` ne couvre que `prixUnitaire === 0`, jamais une quantité nulle. **Sprint 3** : un `⚠️` « Quantité à compléter » a été ajouté à côté de la quantité dans `FicheTechnique.jsx`, `NouvelleRecette.jsx` et `SousRecettes.jsx`, et une ligne « ⚠️ Total incomplet : N ligne(s) à compléter » s'affiche désormais sous les totaux de `FicheTechnique.jsx` dès qu'au moins une ligne est concernée. | N/A — corrigé (Sprint 3). | — |
 | 12 | **Unité inconnue = facteur 1 silencieux** dans `convertirEnUniteBase()` (`conversions.js`). Après normalisation (Sprint 2), une unité toujours non reconnue (ex. `"carton"`) n'empêche aucun calcul — elle est traitée comme si elle valait déjà l'unité de référence (kg/L/pièce), sans erreur ni avertissement. **Sprint 3** : les unités vides, inconnues ou approximatives (`tranche`, `botte`, `pincée`, `gousse`, `feuille`, `sachet`, `bouquet`, `boîte`) sont désormais signalées visuellement via `uniteAVerifier()` (`conversions.js`) dans `FicheTechnique.jsx`, `NouvelleRecette.jsx` et `SousRecettes.jsx`. Le calcul lui-même n'a pas changé : une unité inconnue retombe toujours sur le facteur `1` dans `convertirEnUniteBase()`. | Modéré — un écart d'unité non couvert peut fausser silencieusement un coût ; le signal visuel aide à le repérer mais ne corrige pas le calcul. | Vérifier les lignes marquées `⚠️ Unité à vérifier`. |
 | 13 | **4 tables d'unités codées en dur hors `conversions.js`** : `baseUnit()` dans `FicheTechnique.jsx` et `Ingredients.jsx` (dupliquée à l'identique), `CONV` dans `IngredientAutocomplete.jsx` et `SousRecettes.jsx`. Elles ne bénéficient pas de la normalisation ajoutée en Sprint 2 (casse, espaces, point final). **Depuis le Sprint 9** (`ee73ccd`), une 3ᵉ copie existe côté serveur, `server/lib/conversions.js` — nécessaire car Render n'autorise aucun import hors de `server/` ; synchronisée manuellement et vérifiée par `node server/scripts/verifier-conversions.js` (non automatique). **Depuis le Sprint 12** (`f8ffb88`), la règle de prix de `sous_recettes.js` (le catalogue écrase toujours) est également dupliquée dans `prixLigneSousRecette` (`recettes.js`) — 2 copies à garder alignées. | Modéré — incohérence potentielle entre l'affichage/calcul de ces endroits et le reste de l'application pour une unité mal formatée ou une règle modifiée d'un seul côté. | Aucun — contournement = toujours saisir les unités dans leur forme canonique exacte, et relancer le test de cohérence après toute modification de `conversions.js`. |
@@ -806,7 +812,7 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 - [ ] Import/export CSV des ingrédients
 - [x] Sprint 3 : signal visuel sur les lignes incomplètes (quantité 0 ou unité inconnue).
 - [x] Diagnostic puis correction du matching de prix côté serveur (`matchIngredientPrice()` dans `ia.js`).
-- [ ] Message ou champ non modifiable sur le prix d'une ligne associée au catalogue (texte à valider avec Seb).
+- [x] Message ou champ non modifiable sur le prix d'une ligne associée au catalogue (texte à valider avec Seb). (message : Sprint 5 ; champ grisé pour les lignes de sous-recette suivies : Sprint 14 ; reste modifiable pour les lignes du catalogue, voir bug #19)
 - [x] Vérification de la famille d'unité (masse/volume/pièce) avant d'appliquer un prix catalogue. (Sprint 4, partiel : FicheTechnique uniquement, pièce vs masse/volume)
 - [ ] Vérifier que l'IA convertit bien « cuillère à soupe » en `c.s` ou `ml` (cas observé : huile d'olive sortie à `0 g` sans mention).
 
