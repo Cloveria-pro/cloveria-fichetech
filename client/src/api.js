@@ -125,6 +125,7 @@ export const api = {
   },
   stripe: {
     createCheckoutSession: () => request('/stripe/create-checkout-session', { method: 'POST' }),
+    createPortalSession: () => request('/stripe/create-portal-session', { method: 'POST' }),
   },
   onboarding: {
     injectExample: () => request('/onboarding/inject-example', { method: 'POST' }),

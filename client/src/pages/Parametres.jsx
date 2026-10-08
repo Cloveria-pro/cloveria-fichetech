@@ -1,4 +1,5 @@
 ﻿import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api, API_URL, authHeaders } from '../api.js';
 
 const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280', orange: '#D97706', red: '#DC2626' };
@@ -45,6 +46,20 @@ export default function Parametres() {
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteError, setDeleteError] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalError, setPortalError] = useState('');
+
+  async function openPortal() {
+    setPortalLoading(true);
+    setPortalError('');
+    try {
+      const { url } = await api.stripe.createPortalSession();
+      window.location.href = url;
+    } catch {
+      setPortalError("Impossible d'ouvrir la gestion d'abonnement pour le moment. Réessayez dans un instant ou écrivez-nous à contact@cloveria.fr.");
+      setPortalLoading(false);
+    }
+  }
 
   useEffect(() => {
     Promise.all([
@@ -75,6 +90,37 @@ export default function Parametres() {
 
   const cible = form.foodCostCible;
   const indicator = getIndicator(cible, profil?.typeEtablissement);
+
+  let abonnementBody = null;
+  if (profil?.subscriptionStatus === 'lifetime') {
+    abonnementBody = <p style={{ fontSize: '0.875rem', color: T.text }}>Accès à vie · aucun abonnement à gérer.</p>;
+  } else if (profil?.betaAccess === true) {
+    abonnementBody = <p style={{ fontSize: '0.875rem', color: T.text }}>Accès bêta · aucun abonnement à gérer.</p>;
+  } else if (profil?.hasStripeCustomer) {
+    abonnementBody = (
+      <div>
+        <p style={{ fontSize: '0.875rem', color: T.text, marginBottom: '0.75rem' }}>
+          {profil.subscriptionStatus === 'active' ? 'Abonnement CloverIA actif · 39 €/mois' : 'Abonnement CloverIA'}
+        </p>
+        {portalError && <p style={{ fontSize: '0.8rem', color: T.red, marginBottom: '0.75rem' }}>{portalError}</p>}
+        <button
+          onClick={openPortal}
+          disabled={portalLoading}
+          style={{ padding: '0.6rem 1.25rem', background: T.green, color: '#fff', border: 'none', borderRadius: '7px', fontWeight: 700, fontSize: '0.85rem', cursor: portalLoading ? 'default' : 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+        >
+          {portalLoading ? 'Redirection...' : 'Gérer mon abonnement'}
+        </button>
+        <p style={{ fontSize: '0.75rem', color: T.muted, marginTop: '0.5rem' }}>Mettre à jour votre carte, télécharger vos factures ou résilier.</p>
+      </div>
+    );
+  } else if (profil?.subscriptionStatus === 'trial') {
+    abonnementBody = (
+      <p style={{ fontSize: '0.875rem', color: T.text }}>
+        Essai gratuit en cours · jusqu'au {new Date(profil.trialEndDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}{' '}
+        <Link to="/abonnement" style={{ color: T.green, fontWeight: 600, textDecoration: 'none' }}>S'abonner</Link>
+      </p>
+    );
+  }
 
   if (loading) return <p style={{ color: T.muted }}>Chargement...</p>;
 
@@ -178,6 +224,14 @@ export default function Parametres() {
         {saved && (
           <div style={{ textAlign: 'right', paddingRight: '0.25rem' }}>
             <span style={{ fontSize: '0.82rem', color: T.green, fontWeight: 600 }}>Sauvegardé ✓</span>
+          </div>
+        )}
+
+        {/* Mon abonnement */}
+        {abonnementBody && (
+          <div style={{ ...card, padding: '1.5rem' }}>
+            <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, color: T.text, marginBottom: '1.25rem' }}>Mon abonnement</h3>
+            {abonnementBody}
           </div>
         )}
 

@@ -184,4 +184,27 @@ router.post('/create-checkout-session', async (req, res) => {
   }
 });
 
+// ── Route protégée : portail client Stripe (gestion abonnement) ───────────
+router.post('/create-portal-session', async (req, res) => {
+  try {
+    const db = await getDb();
+    const user = await db.collection('users').findOne({ id: req.userId }, PROJ);
+    if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+    if (!user.stripeCustomerId) {
+      return res.status(400).json({ error: 'Aucun abonnement Stripe associé à ce compte.' });
+    }
+
+    const stripe = getStripe();
+    const session = await stripe.billingPortal.sessions.create({
+      customer: user.stripeCustomerId,
+      return_url: `${process.env.APP_URL || 'https://app.cloveria-pro.fr'}/parametres`,
+    });
+
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error('[Stripe] create-portal-session error:', err.message);
+    res.status(500).json({ error: 'Impossible de créer la session du portail. Réessayez plus tard.' });
+  }
+});
+
 export default router;

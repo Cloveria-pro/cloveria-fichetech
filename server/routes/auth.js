@@ -42,6 +42,12 @@ function makeToken(user) {
   return jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
 }
 
+// Construit la réponse de GET /profil : jamais l'identifiant Stripe brut, seulement un booléen dérivé.
+export function buildProfilResponse(user) {
+  const { stripeCustomerId, stripeSubscriptionId, ...profil } = user;
+  return { ...profil, hasStripeCustomer: !!stripeCustomerId };
+}
+
 
 router.post('/register', async (req, res) => {
   const { email, password, etablissement } = req.body;
@@ -222,7 +228,7 @@ router.get('/profil', authMiddleware, async (req, res) => {
   const db = await getDb();
   const user = await db.collection('users').findOne({ id: req.userId }, PROJ_SAFE);
   if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
-  res.json(user);
+  res.json(buildProfilResponse(user));
 });
 
 router.put('/profil', authMiddleware, async (req, res) => {

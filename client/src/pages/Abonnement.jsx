@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 
@@ -18,6 +18,25 @@ const FEATURES = [
 export default function Abonnement() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [profil, setProfil] = useState(null);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalError, setPortalError] = useState('');
+
+  useEffect(() => {
+    api.profil.get().then(setProfil).catch(() => {});
+  }, []);
+
+  async function handleManageSubscription() {
+    setPortalLoading(true);
+    setPortalError('');
+    try {
+      const { url } = await api.stripe.createPortalSession();
+      window.location.href = url;
+    } catch {
+      setPortalError("Impossible d'ouvrir la gestion d'abonnement pour le moment. Réessayez dans un instant ou écrivez-nous à contact@cloveria.fr.");
+      setPortalLoading(false);
+    }
+  }
 
   async function handleSubscribe() {
     setLoading(true);
@@ -101,6 +120,24 @@ export default function Abonnement() {
             >
               {loading ? 'Redirection vers le paiement...' : "S'abonner pour 39 €/mois"}
             </button>
+
+            {portalError && (
+              <div style={{ marginTop: '0.75rem', padding: '0.65rem 0.9rem', background: '#FEE2E2', border: '1px solid #FCA5A5', borderRadius: '8px', fontSize: '0.875rem', color: '#991B1B' }}>
+                {portalError}
+              </div>
+            )}
+
+            {profil?.hasStripeCustomer && (
+              <p style={{ textAlign: 'center', marginTop: '0.75rem' }}>
+                <button
+                  onClick={handleManageSubscription}
+                  disabled={portalLoading}
+                  style={{ background: 'none', border: 'none', padding: 0, fontSize: '0.8rem', color: T.muted, textDecoration: 'underline', cursor: portalLoading ? 'default' : 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  {portalLoading ? 'Redirection...' : 'Vous avez déjà un abonnement ? Gérer mon abonnement'}
+                </button>
+              </p>
+            )}
           </div>
         </div>
 
