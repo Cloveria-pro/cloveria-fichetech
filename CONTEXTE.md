@@ -1,6 +1,6 @@
 # CloverIA FicheTech — Contexte projet
 
-> Dernière mise à jour : 2026-10-08 (Sprint 1 — prompts IA alignés sur les 7 unités officielles, commit b556585 ; Sprint 2 — normalisation des unités dans conversions.js, commit c7d7c95 ; Sprint 3 — signal des lignes incomplètes, commit e16f136 ; correctif matching prix IA (apostrophes/ligatures/espaces), commit 66fde6a ; Sprint 4 — signal d'incohérence de famille d'unité (pièce vs masse/volume), commit bbdf126 ; Sprint 5 — message d'information sur le prix d'un ingrédient du catalogue en mode édition, commit aa40d5a ; Sprint 6 — reconnaissance d'une ligne issue d'une sous-recette et avertissements adaptés, commit 32e3804 ; Sprint 7 — fin des ingrédients catalogue fantômes créés pour un nom de sous-recette, commit 3b670d0 ; Sprint 8 — identifiant de sous-recette stocké dans la ligne, commit 255cb1b ; Sprint 9 — préparation serveur du calcul de prix d'une sous-recette, commit ee73ccd ; Sprint 10 — effacement de l'identifiant de sous-recette sur association catalogue/prix modifié à la main, commit fe90bbc ; Sprint 11 — catalogue chargé une seule fois par appel au lieu d'une fois par recette, commit e138634 ; Sprint 12 — prix d'une ligne suivie recalculé depuis sa sous-recette, commit f8ffb88 ; Sprint 13 — libellé du coût unitaire des sous-recettes corrigé (EUR/kg, EUR/L, EUR/pièce), commit c8240ec ; Sprint 14 — affichage d'une ligne suivie comme un ingrédient (prix verrouillé, étiquette cohérente), commit ab36acd ; Sprint 15 — suppression de l'avertissement trompeur des anciennes lignes de sous-recette, commit 193780e ; 2026-10-08 — audit de pré-lancement : S1 écritures multi-tenant, commit e3eb40e ; S2a webhook Stripe, commit b9bd046 ; S3 suppression de la bibliothèque xlsx, commit 7fd5c94)
+> Dernière mise à jour : 2026-10-08 (Sprint 1 — prompts IA alignés sur les 7 unités officielles, commit b556585 ; Sprint 2 — normalisation des unités dans conversions.js, commit c7d7c95 ; Sprint 3 — signal des lignes incomplètes, commit e16f136 ; correctif matching prix IA (apostrophes/ligatures/espaces), commit 66fde6a ; Sprint 4 — signal d'incohérence de famille d'unité (pièce vs masse/volume), commit bbdf126 ; Sprint 5 — message d'information sur le prix d'un ingrédient du catalogue en mode édition, commit aa40d5a ; Sprint 6 — reconnaissance d'une ligne issue d'une sous-recette et avertissements adaptés, commit 32e3804 ; Sprint 7 — fin des ingrédients catalogue fantômes créés pour un nom de sous-recette, commit 3b670d0 ; Sprint 8 — identifiant de sous-recette stocké dans la ligne, commit 255cb1b ; Sprint 9 — préparation serveur du calcul de prix d'une sous-recette, commit ee73ccd ; Sprint 10 — effacement de l'identifiant de sous-recette sur association catalogue/prix modifié à la main, commit fe90bbc ; Sprint 11 — catalogue chargé une seule fois par appel au lieu d'une fois par recette, commit e138634 ; Sprint 12 — prix d'une ligne suivie recalculé depuis sa sous-recette, commit f8ffb88 ; Sprint 13 — libellé du coût unitaire des sous-recettes corrigé (EUR/kg, EUR/L, EUR/pièce), commit c8240ec ; Sprint 14 — affichage d'une ligne suivie comme un ingrédient (prix verrouillé, étiquette cohérente), commit ab36acd ; Sprint 15 — suppression de l'avertissement trompeur des anciennes lignes de sous-recette, commit 193780e ; 2026-10-08 — audit de pré-lancement : S1 écritures multi-tenant, commit e3eb40e ; S2a webhook Stripe, commit b9bd046 ; S3 suppression de la bibliothèque xlsx, commit 7fd5c94 ; S4 fin du repli sur les ingrédients demo, commit 61fc55e)
 
 ---
 
@@ -36,7 +36,7 @@ CloverIA FicheTech est un **assistant chef hybride** pour restaurateurs indépen
 ## État actuel du projet
 
 - V1 en **production** sur `app.cloveria-pro.fr`
-- 3 bêta-testeurs en cours
+- 1 bêta-testeur actif ; 2 comptes bêta (betaAccess) créés mais inutilisés
 - Google Search Console en attente de validation DNS
 
 ---
@@ -476,7 +476,7 @@ Les routes `/api/admin/*` requièrent le header `X-Admin-Key`.
 - Intercepteur `fetch` global dans `main.jsx` : 401 → déconnexion automatique + redirect `/login`
 - `lastLoginAt` mis à jour à chaque connexion réussie (non-bloquant)
 - `lastSeenAt` mis à jour via middleware auth sur chaque requête (throttle 5 min, 1 seule op MongoDB)
-- Isolation stricte par `user_id` — les ingrédients `demo` sont visibles par tous les utilisateurs
+- Isolation stricte par `user_id` — le compte `demo` n'est plus un repli de lecture pour les autres utilisateurs (Sprint S4, commit `61fc55e`)
 
 ### CRM Admin
 
@@ -713,11 +713,11 @@ const db = await getDb();                     // singleton Promise, réutilisé
 // Données privées
 db.collection('recettes').find({ user_id: req.userId })
 
-// Ingrédients : user voit les siens + ceux du compte demo
-db.collection('ingredients').find({ $or: [{ user_id: req.userId }, { user_id: 'demo' }] })
+// Ingrédients : isolation stricte, aucun repli sur un autre compte
+db.collection('ingredients').find({ user_id: req.userId })
 ```
 
-> **Décision produit en attente (notée le 2026-10-08, non tranchée)** : `GET /api/ingredients` (`server/routes/ingredients.js`) filtre strictement sur `{ user_id: req.userId }`, **sans** le repli `demo` décrit ci-dessus — alors que `recettes.js`, `sous_recettes.js` et `ia.js` utilisent bien le prix des ingrédients `demo` pour enrichir les fiches. La page Ingrédients ne montre donc pas les ingrédients démo utilisés ailleurs pour le calcul des coûts. Ce pattern n'est pas modifié tant que Seb n'a pas tranché si ce filtre est intentionnel ou non.
+> **Décision prise le 2026-10-08 (Seb)** : isolation stricte, aucun repli sur le compte demo (Sprint S4, commit `61fc55e`). `GET /api/ingredients` (`server/routes/ingredients.js`) était déjà strict sur `{ user_id: req.userId }` avant ce sprint ; `recettes.js`, `sous_recettes.js` et `ia.js`, qui utilisaient un repli `$or` avec `user_id: 'demo'`, filtrent désormais eux aussi strictement sur `{ user_id: req.userId }`. Le compte demo lui-même reste inchangé : son `user_id` vaut `'demo'`, donc ce filtre continue de lui renvoyer ses propres données.
 
 ### Sync prix bidirectionnelle — règle impérative
 `PUT /api/recettes/:id/prix` est le seul point d'entrée pour modifier `prixVentePratiqueTTC`.  
@@ -776,6 +776,7 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 - **S1** (`e3eb40e`) : la route `DELETE /api/auth/delete-test-account` (publique, sans jeton) a été supprimée. Dans les `POST /` de `recettes.js`, `ingredients.js`, `cartes.js`, `sous_recettes.js`, `id` et `user_id` sont désormais placés **après** `...req.body`, pour qu'un corps de requête ne puisse plus les écraser (ex. imposer `user_id: 'demo'`). Le corps de la requête est toujours spreadé en entier — des champs parasites non attendus restent possibles, hors scope de ce correctif.
 - **S2a** (`b9bd046`) : le webhook Stripe est monté avec `express.raw({ type: 'application/json' })` **avant** `express.json()` global (le corps brut est désormais disponible pour la vérification de signature). Si `STRIPE_WEBHOOK_SECRET` est absent, la route répond `500 { error: 'Webhook non configuré' }` au lieu de faire confiance à un corps non vérifié. Un `console.error` a été ajouté quand un événement valide ne trouve aucun utilisateur correspondant. Vérifié par un test de signature invalide (→ 400) et de secret absent (→ 500) ; **non vérifié par un vrai paiement** — la valeur du secret configurée sur Render n'est pas confirmée identique à celle de Stripe.
 - **S3** (`7fd5c94`) : la bibliothèque `xlsx` (vulnérabilité élevée sans correctif disponible) a été supprimée ; l'import `.xlsx`/`.xls` dans `POST /api/ia/analyser-ventes` est désactivé. CSV, PDF et images restent acceptés. Les textes de `MenuEngineering.jsx` (formats acceptés, message d'erreur) ont été mis à jour en conséquence. `npm audit` côté serveur : 8 → 7 vulnérabilités. **Reste ouvert** : un fichier rejeté par `multer` (ex. `.xlsx` envoyé malgré tout) renvoie une erreur `500` faute de middleware d'erreur dédié — le client bloque déjà ces fichiers avant l'envoi, donc sans impact pour un usage normal de l'interface.
+- **S4** (`61fc55e`) : suppression du repli `demo` à 4 endroits : `ia.js` (`matchIngredientPrice`), `recettes.js` (`syncIngredientsToBase` et `chargerCatalogue`), `sous_recettes.js` (`enrichIngredients`). Isolation stricte sur `{ user_id: req.userId }` pour la résolution des prix d'ingrédients. **Effets connus** : les prix déjà enregistrés dans les lignes de fiches restent affichés mais ne suivent plus le catalogue demo ; les nouvelles fiches créées par IA affichent `0` / `⚠️ Prix manquant` pour un ingrédient absent du catalogue de l'utilisateur ; `syncIngredientsToBase` peut créer une entrée à prix `0` dupliquant un nom qui n'existait que côté demo. **À vérifier, non confirmé** : une sous-recette dont un ingrédient n'existe plus que dans le catalogue `demo` pourrait voir son prix tomber à `0` si une entrée à prix `0` est créée dans le catalogue de l'utilisateur (la règle « le catalogue écrase toujours » des sous-recettes).
 
 ### Reste ouvert
 - **S2b** (non fait) : ajouter `client_reference_id` + `metadata` dans `create-checkout-session` pour fiabiliser la recherche d'utilisateur au webhook ; ajouter les handlers `customer.subscription.updated` et `invoice.payment_succeeded` — et ajouter ces 2 événements à l'écoute de l'endpoint Stripe « CloverIA Webhook Live », qui n'en écoute aujourd'hui que 3 ; route de portail client Stripe absente (pas de résiliation self-service).
@@ -787,6 +788,7 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 - Le cron quotidien (relances/lifecycle, 9h00) n'a pas de rattrapage si le service Render dort à cette heure-là.
 - `.catch(() => {})` silencieux (sans log) sur l'archivage des documents générés par les routes IA et sur `syncIngredientsToBase()`.
 - Variables Render non documentées ici : `DEMO_PASSWORD`, `NODE_ENV` — aucune des deux n'est référencée dans le code serveur (recherche sans résultat dans `server/`, hors `node_modules`). Leur existence et leur usage réel sur Render restent à vérifier directement sur le tableau de bord ; rien n'est supposé sur leur rôle ici.
+- `aliases.js` : collection globale sans `user_id` (bug #16), à traiter pour respecter l'isolation stricte voulue par Seb (décision du 2026-10-08).
 
 ---
 
@@ -798,7 +800,7 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 | 2 | **`vin` absent du scan sulfites** : risquerait de matcher dans "vinaigre". Seuls "vinaigre balsamique" et "vinaigre de vin" déclenchent sulfites. | Mineur — faux négatif sur les recettes avec du vin. | Activer manuellement "sulfites". |
 | 3 | **Allergènes détectés en editMode non sauvegardés immédiatement** : le scan dans EtapesEditor met à jour `form.allergenes` mais la sauvegarde MongoDB n'arrive qu'au clic "Sauvegarder". En mode lecture, le toggle badge sauvegarde immédiatement. | Mineur — risque de perte si fermeture sans sauvegarde. | Toujours cliquer "Sauvegarder" après avoir modifié les étapes. |
 | 4 | **Render cold start** : backend en plan gratuit, peut mettre 30-60 s à répondre après inactivité. | Gênant en démo — première requête lente. | Aucun — limitation plan gratuit Render. |
-| 5 | **Isolation données démo** : les ingrédients du compte `demo` sont visibles par tous les utilisateurs connectés (comportement voulu mais à revoir si multi-tenant). | Faible — aucun risque de fuite de données utilisateur. | — |
+| 5 | **[Corrigé — S4, commit `61fc55e`] Isolation données démo** : les ingrédients du compte `demo` étaient visibles par tous les utilisateurs connectés (comportement voulu à l'origine, mais revu pour une isolation stricte). | N/A — corrigé. | — |
 | 6 | **Quadrants BCG non recalculés en édition** (Sprint D) : modifier les quantités depuis la vue consultation met à jour `validatedData` mais ne relance pas l'algorithme BCG. Les quadrants affichés restent ceux du dernier import complet. | Mineur — incohérence visuelle si les quantités éditées changeraient de catégorie. | Réimporter le fichier pour recalculer. |
 | 7 | **Bouton "Modifier" masqué** (Sprint D) : si un rapport n'a que `extractedData` (brut IA, jamais validé) et pas de `validatedData`, le bouton d'édition n'apparaît pas. | Mineur — cas rare (import interrompu avant validation). | Aucun depuis l'UI. |
 | 8 | **Pas de lien scan source sur anciens rapports** (Sprint E) : les rapports importés avant le déploiement de Sprint E ne portent pas `sourceDocumentId`. Le bloc "Document source" n'apparaît pas pour ces rapports. | Faible — informatif uniquement. | Aucun — limitation rétroactive. |
