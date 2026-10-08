@@ -1,6 +1,6 @@
 # CloverIA FicheTech — Contexte projet
 
-> Dernière mise à jour : 2026-10-06 (Sprint 1 — prompts IA alignés sur les 7 unités officielles, commit b556585 ; Sprint 2 — normalisation des unités dans conversions.js, commit c7d7c95 ; Sprint 3 — signal des lignes incomplètes, commit e16f136 ; correctif matching prix IA (apostrophes/ligatures/espaces), commit 66fde6a ; Sprint 4 — signal d'incohérence de famille d'unité (pièce vs masse/volume), commit bbdf126 ; Sprint 5 — message d'information sur le prix d'un ingrédient du catalogue en mode édition, commit aa40d5a ; Sprint 6 — reconnaissance d'une ligne issue d'une sous-recette et avertissements adaptés, commit 32e3804 ; Sprint 7 — fin des ingrédients catalogue fantômes créés pour un nom de sous-recette, commit 3b670d0 ; Sprint 8 — identifiant de sous-recette stocké dans la ligne, commit 255cb1b ; Sprint 9 — préparation serveur du calcul de prix d'une sous-recette, commit ee73ccd ; Sprint 10 — effacement de l'identifiant de sous-recette sur association catalogue/prix modifié à la main, commit fe90bbc ; Sprint 11 — catalogue chargé une seule fois par appel au lieu d'une fois par recette, commit e138634 ; Sprint 12 — prix d'une ligne suivie recalculé depuis sa sous-recette, commit f8ffb88 ; Sprint 13 — libellé du coût unitaire des sous-recettes corrigé (EUR/kg, EUR/L, EUR/pièce), commit c8240ec ; Sprint 14 — affichage d'une ligne suivie comme un ingrédient (prix verrouillé, étiquette cohérente), commit ab36acd ; Sprint 15 — suppression de l'avertissement trompeur des anciennes lignes de sous-recette, commit 193780e)
+> Dernière mise à jour : 2026-10-08 (Sprint 1 — prompts IA alignés sur les 7 unités officielles, commit b556585 ; Sprint 2 — normalisation des unités dans conversions.js, commit c7d7c95 ; Sprint 3 — signal des lignes incomplètes, commit e16f136 ; correctif matching prix IA (apostrophes/ligatures/espaces), commit 66fde6a ; Sprint 4 — signal d'incohérence de famille d'unité (pièce vs masse/volume), commit bbdf126 ; Sprint 5 — message d'information sur le prix d'un ingrédient du catalogue en mode édition, commit aa40d5a ; Sprint 6 — reconnaissance d'une ligne issue d'une sous-recette et avertissements adaptés, commit 32e3804 ; Sprint 7 — fin des ingrédients catalogue fantômes créés pour un nom de sous-recette, commit 3b670d0 ; Sprint 8 — identifiant de sous-recette stocké dans la ligne, commit 255cb1b ; Sprint 9 — préparation serveur du calcul de prix d'une sous-recette, commit ee73ccd ; Sprint 10 — effacement de l'identifiant de sous-recette sur association catalogue/prix modifié à la main, commit fe90bbc ; Sprint 11 — catalogue chargé une seule fois par appel au lieu d'une fois par recette, commit e138634 ; Sprint 12 — prix d'une ligne suivie recalculé depuis sa sous-recette, commit f8ffb88 ; Sprint 13 — libellé du coût unitaire des sous-recettes corrigé (EUR/kg, EUR/L, EUR/pièce), commit c8240ec ; Sprint 14 — affichage d'une ligne suivie comme un ingrédient (prix verrouillé, étiquette cohérente), commit ab36acd ; Sprint 15 — suppression de l'avertissement trompeur des anciennes lignes de sous-recette, commit 193780e ; 2026-10-08 — audit de pré-lancement : S1 écritures multi-tenant, commit e3eb40e ; S2a webhook Stripe, commit b9bd046 ; S3 suppression de la bibliothèque xlsx, commit 7fd5c94)
 
 ---
 
@@ -460,6 +460,8 @@ Les routes `/api/admin/*` requièrent le header `X-Admin-Key`.
 | POST | `/api/stripe/create-checkout-session` | Crée session Stripe Checkout |
 | POST | `/api/stripe/webhook` | Webhook Stripe (activation/désactivation) |
 
+> Côté client, seule `POST /create-checkout-session` est appelée — il n'existe pas de route de portail client Stripe (pas de résiliation/gestion d'abonnement self-service). `DELETE /api/auth/delete-test-account` a existé puis a été supprimée (Sprint S1, `e3eb40e`) — elle n'apparaît plus ci-dessus.
+
 ---
 
 ## Fonctionnalités implémentées
@@ -715,6 +717,8 @@ db.collection('recettes').find({ user_id: req.userId })
 db.collection('ingredients').find({ $or: [{ user_id: req.userId }, { user_id: 'demo' }] })
 ```
 
+> **Décision produit en attente (notée le 2026-10-08, non tranchée)** : `GET /api/ingredients` (`server/routes/ingredients.js`) filtre strictement sur `{ user_id: req.userId }`, **sans** le repli `demo` décrit ci-dessus — alors que `recettes.js`, `sous_recettes.js` et `ia.js` utilisent bien le prix des ingrédients `demo` pour enrichir les fiches. La page Ingrédients ne montre donc pas les ingrédients démo utilisés ailleurs pour le calcul des coûts. Ce pattern n'est pas modifié tant que Seb n'a pas tranché si ce filtre est intentionnel ou non.
+
 ### Sync prix bidirectionnelle — règle impérative
 `PUT /api/recettes/:id/prix` est le seul point d'entrée pour modifier `prixVentePratiqueTTC`.  
 Il met à jour la recette ET parcourt toutes les cartes de l'utilisateur pour y synchroniser `prixVente`.  
@@ -766,6 +770,26 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 
 ---
 
+## Audit de pré-lancement (2026-10-08)
+
+### Corrigé
+- **S1** (`e3eb40e`) : la route `DELETE /api/auth/delete-test-account` (publique, sans jeton) a été supprimée. Dans les `POST /` de `recettes.js`, `ingredients.js`, `cartes.js`, `sous_recettes.js`, `id` et `user_id` sont désormais placés **après** `...req.body`, pour qu'un corps de requête ne puisse plus les écraser (ex. imposer `user_id: 'demo'`). Le corps de la requête est toujours spreadé en entier — des champs parasites non attendus restent possibles, hors scope de ce correctif.
+- **S2a** (`b9bd046`) : le webhook Stripe est monté avec `express.raw({ type: 'application/json' })` **avant** `express.json()` global (le corps brut est désormais disponible pour la vérification de signature). Si `STRIPE_WEBHOOK_SECRET` est absent, la route répond `500 { error: 'Webhook non configuré' }` au lieu de faire confiance à un corps non vérifié. Un `console.error` a été ajouté quand un événement valide ne trouve aucun utilisateur correspondant. Vérifié par un test de signature invalide (→ 400) et de secret absent (→ 500) ; **non vérifié par un vrai paiement** — la valeur du secret configurée sur Render n'est pas confirmée identique à celle de Stripe.
+- **S3** (`7fd5c94`) : la bibliothèque `xlsx` (vulnérabilité élevée sans correctif disponible) a été supprimée ; l'import `.xlsx`/`.xls` dans `POST /api/ia/analyser-ventes` est désactivé. CSV, PDF et images restent acceptés. Les textes de `MenuEngineering.jsx` (formats acceptés, message d'erreur) ont été mis à jour en conséquence. `npm audit` côté serveur : 8 → 7 vulnérabilités. **Reste ouvert** : un fichier rejeté par `multer` (ex. `.xlsx` envoyé malgré tout) renvoie une erreur `500` faute de middleware d'erreur dédié — le client bloque déjà ces fichiers avant l'envoi, donc sans impact pour un usage normal de l'interface.
+
+### Reste ouvert
+- **S2b** (non fait) : ajouter `client_reference_id` + `metadata` dans `create-checkout-session` pour fiabiliser la recherche d'utilisateur au webhook ; ajouter les handlers `customer.subscription.updated` et `invoice.payment_succeeded` — et ajouter ces 2 événements à l'écoute de l'endpoint Stripe « CloverIA Webhook Live », qui n'en écoute aujourd'hui que 3 ; route de portail client Stripe absente (pas de résiliation self-service).
+- **Test réel d'un paiement** (39 € puis remboursement) à faire avant d'accepter un client payant : aucun paiement n'a jamais été reçu sur Stripe à ce jour (historique des webhooks vide, vérifié le 2026-10-08).
+- Pas de rate-limit sur `/login` et `/register` ; pas de `helmet` ; pas de `app.set('trust proxy')` ; `JWT_SECRET` avec valeur par défaut codée en dur ; comparaison non constante dans le temps de `ADMIN_SECRET`.
+- Pas de quota par utilisateur sur les appels IA ; les erreurs Anthropic sont renvoyées brutes en `500` (crédit épuisé, modèle retiré, délai dépassé non distingués) ; les documents base64 stockés par les routes IA n'ont pas de purge (risque vis-à-vis du quota MongoDB Atlas M0).
+- Aucun index MongoDB sur `user_id` (seul `users.id` est indexé) ; le champ `photo` est renvoyé en entier dans `GET /api/recettes` (liste, pas seulement le détail) ; pas de middleware de compression des réponses.
+- Dépendances : `npm audit` côté serveur signale `proxy-addr` (critique), `qs`, `uuid`, et `nodemailer` (élevé) ; côté client, `dompurify` et `react-router` (modérés). `nodemailer` et les variables Render `EMAIL_USER`/`EMAIL_PASS` sont obsolètes (remplacés par Resend). Aucun champ `engines` déclaré dans les `package.json`.
+- Le cron quotidien (relances/lifecycle, 9h00) n'a pas de rattrapage si le service Render dort à cette heure-là.
+- `.catch(() => {})` silencieux (sans log) sur l'archivage des documents générés par les routes IA et sur `syncIngredientsToBase()`.
+- Variables Render non documentées ici : `DEMO_PASSWORD`, `NODE_ENV` — aucune des deux n'est référencée dans le code serveur (recherche sans résultat dans `server/`, hors `node_modules`). Leur existence et leur usage réel sur Render restent à vérifier directement sur le tableau de bord ; rien n'est supposé sur leur rôle ici.
+
+---
+
 ## Bugs connus
 
 | # | Description | Impact | Contournement |
@@ -797,6 +821,8 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 | 25 | **Infobulle du champ prix désactivé (`disabled`) potentiellement invisible** : le `title` HTML d'un `<input disabled>` peut ne pas s'afficher au survol selon le navigateur/la plateforme (comportement natif variable). | Faible — information redondante avec l'étiquette d'unité affichée en lecture. | Se fier à l'étiquette affichée en lecture plutôt qu'à l'infobulle en édition. |
 | 26 | **`IngredientAutocomplete` non alimenté en sous-recettes dans `NouvelleRecette.jsx`** : la prop `sousRecettes` n'est pas passée depuis `NouvelleRecette.jsx`, donc aucune sous-recette ne peut y être choisie ni suivie lors de la création d'une fiche. | Modéré — une sous-recette ne peut être liée qu'après création, depuis `FicheTechnique.jsx`. | Créer la fiche puis ajouter les lignes de sous-recette depuis `FicheTechnique.jsx` en mode édition. |
 | 27 | **Liste de suggestions `IngredientAutocomplete` à la largeur du champ nom** : les noms longs de catalogue ou de sous-recette sont coupés visuellement dans le menu déroulant. | Faible — cosmétique. | Élargir la fenêtre ou vérifier le nom complet dans le catalogue/la liste Sous-recettes. |
+| 28 | **[À vérifier] Marge unitaire Menu Engineering potentiellement mélangeant TTC et HT** : la marge unitaire semble calculée avec un prix de vente TTC et un coût matière HT — **non confirmé dans le code**. | À déterminer — dépend de la confirmation. | Vérifier le calcul avant de communiquer les marges affichées comme fiables. |
+| 29 | **[À vérifier] Message "Urgent, vous perdez de l'argent à chaque vente" sur marge négative** : un plat sans prix de vente est affiché avec ce message et une marge négative — **comportement et déclenchement exact non confirmés dans le code**. | À déterminer — dépend de la confirmation. | Vérifier si ce message s'affiche à tort pour un plat simplement sans prix renseigné, plutôt qu'à marge réellement négative. |
 
 ---
 
