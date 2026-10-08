@@ -6,7 +6,7 @@ const PROJ = { projection: { _id: 0 } };
 
 router.get('/', async (req, res) => {
   const db = await getDb();
-  const items = await db.collection('aliases').find({}, PROJ).toArray();
+  const items = await db.collection('aliases').find({ user_id: req.userId }, PROJ).toArray();
   res.json(items);
 });
 
@@ -15,8 +15,8 @@ router.post('/', async (req, res) => {
   if (!from?.trim() || !to?.trim()) return res.status(400).json({ error: 'from et to requis' });
   const db = await getDb();
   await db.collection('aliases').replaceOne(
-    { from: from.trim() },
-    { from: from.trim(), to: to.trim() },
+    { from: from.trim(), user_id: req.userId },
+    { from: from.trim(), to: to.trim(), user_id: req.userId },
     { upsert: true }
   );
   res.json({ from: from.trim(), to: to.trim() });
