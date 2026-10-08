@@ -9,6 +9,41 @@ function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY);
 }
 
+// Statut Stripe (customer.subscription.*) -> statut interne. null = aucun changement (statut non mappé).
+export function mapStripeSubscriptionStatus(stripeStatus) {
+  if (stripeStatus === 'active' || stripeStatus === 'trialing') return 'active';
+  if (stripeStatus === 'past_due') return 'past_due';
+  if (stripeStatus === 'canceled' || stripeStatus === 'unpaid' || stripeStatus === 'incomplete_expired') return 'cancelled';
+  return null;
+}
+
+// Décide si un événement doit être appliqué à cet utilisateur : jamais pour un compte lifetime,
+// jamais si l'événement est plus ancien que le dernier déjà appliqué (rejeu/livraison en retard).
+export function shouldApplyStripeEvent(user, eventCreated) {
+  if (!user) return false;
+  if (user.subscriptionStatus === 'lifetime') return false;
+  if (user.stripeLastEventAt != null && eventCreated < user.stripeLastEventAt) return false;
+  return true;
+}
+
+// Recherche l'utilisateur dans cet ordre : identifiant explicite (client_reference_id / metadata.userId),
+// puis stripeCustomerId, puis (si fourni) email en dernier recours.
+async function findUser(col, { userId, customerId, email } = {}) {
+  if (userId) {
+    const user = await col.findOne({ id: userId }, PROJ);
+    if (user) return user;
+  }
+  if (customerId) {
+    const user = await col.findOne({ stripeCustomerId: customerId }, PROJ);
+    if (user) return user;
+  }
+  if (email) {
+    const user = await col.findOne({ email: email.toLowerCase() }, PROJ);
+    if (user) return user;
+  }
+  return null;
+}
+
 // ── Webhook public (monté avant authMiddleware dans index.js) ──────────────
 export async function stripeWebhook(req, res) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -34,15 +69,19 @@ export async function stripeWebhook(req, res) {
     const customerId = session.customer;
     const subscriptionId = session.subscription;
     const email = session.customer_email || session.customer_details?.email;
-    const query = customerId ? { stripeCustomerId: customerId } : { email: email?.toLowerCase() };
-    const user = await col.findOne(query, PROJ);
+    const user = await findUser(col, { userId: session.client_reference_id, customerId, email });
     if (user) {
-      await col.replaceOne({ id: user.id }, {
-        ...user,
-        subscriptionStatus: 'active',
-        stripeCustomerId: customerId || user.stripeCustomerId,
-        stripeSubscriptionId: subscriptionId || user.stripeSubscriptionId,
-      });
+      if (!shouldApplyStripeEvent(user, event.created)) {
+        if (user.subscriptionStatus === 'lifetime') console.error('[StripeWebhook] checkout.session.completed : compte lifetime, ignoré');
+      } else {
+        await col.replaceOne({ id: user.id }, {
+          ...user,
+          subscriptionStatus: 'active',
+          stripeCustomerId: customerId || user.stripeCustomerId,
+          stripeSubscriptionId: subscriptionId || user.stripeSubscriptionId,
+          stripeLastEventAt: event.created,
+        });
+      }
     } else {
       console.error('[StripeWebhook] checkout.session.completed : aucun utilisateur correspondant trouvé');
     }
@@ -50,21 +89,70 @@ export async function stripeWebhook(req, res) {
 
   if (event.type === 'customer.subscription.deleted') {
     const sub = event.data.object;
-    const user = await col.findOne({ stripeCustomerId: sub.customer }, PROJ);
+    const user = await findUser(col, { userId: sub.metadata?.userId, customerId: sub.customer });
     if (user) {
-      await col.replaceOne({ id: user.id }, { ...user, subscriptionStatus: 'cancelled' });
+      if (!shouldApplyStripeEvent(user, event.created)) {
+        if (user.subscriptionStatus === 'lifetime') console.error('[StripeWebhook] customer.subscription.deleted : compte lifetime, ignoré');
+      } else {
+        await col.replaceOne({ id: user.id }, {
+          ...user,
+          subscriptionStatus: 'cancelled',
+          stripeCustomerId: sub.customer || user.stripeCustomerId,
+          stripeLastEventAt: event.created,
+        });
+      }
     } else {
       console.error('[StripeWebhook] customer.subscription.deleted : aucun utilisateur correspondant trouvé');
     }
   }
 
+  if (event.type === 'customer.subscription.updated') {
+    const sub = event.data.object;
+    const user = await findUser(col, { userId: sub.metadata?.userId, customerId: sub.customer });
+    if (user) {
+      if (!shouldApplyStripeEvent(user, event.created)) {
+        if (user.subscriptionStatus === 'lifetime') console.error('[StripeWebhook] customer.subscription.updated : compte lifetime, ignoré');
+      } else {
+        const mapped = mapStripeSubscriptionStatus(sub.status);
+        if (mapped) {
+          await col.replaceOne({ id: user.id }, {
+            ...user,
+            subscriptionStatus: mapped,
+            stripeCustomerId: sub.customer || user.stripeCustomerId,
+            stripeLastEventAt: event.created,
+          });
+        }
+      }
+    } else {
+      console.error('[StripeWebhook] customer.subscription.updated : aucun utilisateur correspondant trouvé');
+    }
+  }
+
   if (event.type === 'invoice.payment_failed') {
     const invoice = event.data.object;
-    const user = await col.findOne({ stripeCustomerId: invoice.customer }, PROJ);
+    const user = await findUser(col, { customerId: invoice.customer });
     if (user) {
-      await col.replaceOne({ id: user.id }, { ...user, subscriptionStatus: 'past_due' });
+      if (!shouldApplyStripeEvent(user, event.created)) {
+        if (user.subscriptionStatus === 'lifetime') console.error('[StripeWebhook] invoice.payment_failed : compte lifetime, ignoré');
+      } else {
+        await col.replaceOne({ id: user.id }, { ...user, subscriptionStatus: 'past_due', stripeLastEventAt: event.created });
+      }
     } else {
       console.error('[StripeWebhook] invoice.payment_failed : aucun utilisateur correspondant trouvé');
+    }
+  }
+
+  if (event.type === 'invoice.payment_succeeded') {
+    const invoice = event.data.object;
+    const user = await findUser(col, { customerId: invoice.customer });
+    if (user) {
+      if (!shouldApplyStripeEvent(user, event.created)) {
+        if (user.subscriptionStatus === 'lifetime') console.error('[StripeWebhook] invoice.payment_succeeded : compte lifetime, ignoré');
+      } else if (user.subscriptionStatus === 'past_due') {
+        await col.replaceOne({ id: user.id }, { ...user, subscriptionStatus: 'active', stripeLastEventAt: event.created });
+      }
+    } else {
+      console.error('[StripeWebhook] invoice.payment_succeeded : aucun utilisateur correspondant trouvé');
     }
   }
 
@@ -86,6 +174,8 @@ router.post('/create-checkout-session', async (req, res) => {
       line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
       success_url: 'https://app.cloveria-pro.fr/abonnement-confirme',
       cancel_url: 'https://app.cloveria-pro.fr/abonnement',
+      client_reference_id: user.id,
+      subscription_data: { metadata: { userId: user.id } },
     });
 
     res.json({ url: session.url });
