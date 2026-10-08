@@ -12,18 +12,16 @@ function getStripe() {
 // ── Webhook public (monté avant authMiddleware dans index.js) ──────────────
 export async function stripeWebhook(req, res) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  let event;
+  if (!webhookSecret) {
+    return res.status(500).json({ error: 'Webhook non configuré' });
+  }
 
-  if (webhookSecret) {
-    const sig = req.headers['stripe-signature'];
-    try {
-      event = getStripe().webhooks.constructEvent(req.body, sig, webhookSecret);
-    } catch (err) {
-      return res.status(400).json({ error: `Webhook: ${err.message}` });
-    }
-  } else {
-    // Sans signature : utiliser le body JSON parsé
-    event = req.body;
+  const sig = req.headers['stripe-signature'];
+  let event;
+  try {
+    event = getStripe().webhooks.constructEvent(req.body, sig, webhookSecret);
+  } catch (err) {
+    return res.status(400).json({ error: `Webhook: ${err.message}` });
   }
 
   if (!event?.type) return res.status(400).json({ error: 'Événement invalide' });
@@ -45,6 +43,8 @@ export async function stripeWebhook(req, res) {
         stripeCustomerId: customerId || user.stripeCustomerId,
         stripeSubscriptionId: subscriptionId || user.stripeSubscriptionId,
       });
+    } else {
+      console.error('[StripeWebhook] checkout.session.completed : aucun utilisateur correspondant trouvé');
     }
   }
 
@@ -53,6 +53,8 @@ export async function stripeWebhook(req, res) {
     const user = await col.findOne({ stripeCustomerId: sub.customer }, PROJ);
     if (user) {
       await col.replaceOne({ id: user.id }, { ...user, subscriptionStatus: 'cancelled' });
+    } else {
+      console.error('[StripeWebhook] customer.subscription.deleted : aucun utilisateur correspondant trouvé');
     }
   }
 
@@ -61,6 +63,8 @@ export async function stripeWebhook(req, res) {
     const user = await col.findOne({ stripeCustomerId: invoice.customer }, PROJ);
     if (user) {
       await col.replaceOne({ id: user.id }, { ...user, subscriptionStatus: 'past_due' });
+    } else {
+      console.error('[StripeWebhook] invoice.payment_failed : aucun utilisateur correspondant trouvé');
     }
   }
 

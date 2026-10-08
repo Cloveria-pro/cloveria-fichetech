@@ -30,13 +30,13 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : '*',
   credentials: true,
 }));
+app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), stripeWebhook);
 app.use(express.json());
 
 // ── Routes publiques ────────────────────────────────────────────────────────
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
-app.post('/api/stripe/webhook', stripeWebhook);
 
 
 // ── Routes protégées ────────────────────────────────────────────────────────
