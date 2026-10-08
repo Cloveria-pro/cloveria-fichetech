@@ -121,19 +121,6 @@ router.post('/login', async (req, res) => {
   });
 });
 
-router.delete('/delete-test-account', async (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ error: 'Email requis' });
-  const lower = email.toLowerCase();
-  if (!lower.includes('test') && !lower.includes('beuce') && !lower.includes('chez')) {
-    return res.status(403).json({ error: 'Suppression non autorisée pour cet email' });
-  }
-  const db = await getDb();
-  const result = await db.collection('users').deleteOne({ email: lower.trim() });
-  if (result.deletedCount === 0) return res.status(404).json({ error: 'Compte introuvable' });
-  res.json({ success: true, deleted: lower.trim() });
-});
-
 router.post('/forgot-password', forgotPasswordRateLimit, async (req, res) => {
   const { email } = req.body;
   const NEUTRAL = { message: 'Si cet email existe, un lien de réinitialisation a été envoyé.' };

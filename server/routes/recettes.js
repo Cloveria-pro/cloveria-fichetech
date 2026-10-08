@@ -115,7 +115,7 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   const db = await getDb();
-  const item = { id: uuidv4(), user_id: req.userId, ...req.body, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+  const item = { ...req.body, id: uuidv4(), user_id: req.userId, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
   await db.collection('recettes').insertOne(item);
   delete item._id;
   syncIngredientsToBase(item.ingredients, req.userId, db).catch(() => {});

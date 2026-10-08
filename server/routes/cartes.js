@@ -45,7 +45,7 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   const db = await getDb();
-  const item = { id: uuidv4(), user_id: req.userId, ...req.body, createdAt: new Date().toISOString() };
+  const item = { ...req.body, id: uuidv4(), user_id: req.userId, createdAt: new Date().toISOString() };
   await db.collection('cartes').insertOne(item);
   delete item._id;
   res.status(201).json(item);
