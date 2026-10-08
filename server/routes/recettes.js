@@ -13,7 +13,7 @@ function norm(str) {
 async function syncIngredientsToBase(ingredients, userId, db) {
   if (!ingredients || ingredients.length === 0) return;
   const existing = await db.collection('ingredients')
-    .find({ $or: [{ user_id: userId }, { user_id: 'demo' }] }, { projection: { _id: 0, nom: 1 } })
+    .find({ user_id: userId }, { projection: { _id: 0, nom: 1 } })
     .toArray();
   const existingNorms = new Set(existing.map(i => norm(i.nom)));
   let sousRecetteNorms = new Set();
@@ -46,7 +46,7 @@ async function syncIngredientsToBase(ingredients, userId, db) {
 
 async function chargerCatalogue(userId, db) {
   return db.collection('ingredients')
-    .find({ $or: [{ user_id: userId }, { user_id: 'demo' }] }, PROJ)
+    .find({ user_id: userId }, PROJ)
     .toArray();
 }
 

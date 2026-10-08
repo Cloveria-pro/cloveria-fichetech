@@ -22,7 +22,7 @@ async function matchIngredientPrice(nom, userId) {
   try {
     const db = await getDb();
     const pool = await db.collection('ingredients')
-      .find({ $or: [{ user_id: userId }, { user_id: 'demo' }] }, { projection: { _id: 0 } })
+      .find({ user_id: userId }, { projection: { _id: 0 } })
       .toArray();
     const normalizedNom = normalize(nom);
     if (normalizedNom === '') return null;

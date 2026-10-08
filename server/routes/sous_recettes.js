@@ -12,7 +12,7 @@ function norm(str) {
 async function enrichIngredients(ingredients, userId, db) {
   if (!ingredients || ingredients.length === 0) return ingredients || [];
   const catalog = await db.collection('ingredients')
-    .find({ $or: [{ user_id: userId }, { user_id: 'demo' }] }, PROJ)
+    .find({ user_id: userId }, PROJ)
     .toArray();
   return ingredients.map(ing => {
     if (!ing.nom) return ing;
