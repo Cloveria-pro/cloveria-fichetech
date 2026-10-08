@@ -2,7 +2,6 @@ import '../env.js';
 import express from 'express';
 import multer from 'multer';
 import Anthropic from '@anthropic-ai/sdk';
-import XLSX from 'xlsx';
 import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../db.js';
 
@@ -41,11 +40,9 @@ const uploadVentes = multer({
   fileFilter: (_, file, cb) => {
     const ok = [
       'text/csv', 'text/plain', 'application/csv',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel',
       'application/pdf',
       'image/jpeg', 'image/jpg', 'image/png', 'image/webp',
-    ].includes(file.mimetype) || /\.(csv|xlsx|xls|pdf|jpg|jpeg|png|webp)$/i.test(file.originalname);
+    ].includes(file.mimetype) || /\.(csv|pdf|jpg|jpeg|png|webp)$/i.test(file.originalname);
     cb(ok ? null : new Error('Format non supporté'), ok);
   },
 });
@@ -109,19 +106,7 @@ router.post('/analyser-ventes', uploadVentes.single('ventes'), async (req, res) 
       : { type: 'image', source: { type: 'base64', media_type: req.file.mimetype || 'image/jpeg', data: base64 } };
     messageContent = [fileBlock, { type: 'text', text: 'Analyse ce document de ventes et retourne le JSON.' }];
   } else {
-    const isExcel = [
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel',
-    ].includes(req.file.mimetype) || /\.(xlsx|xls)$/i.test(req.file.originalname);
-
-    let textContent;
-    if (isExcel) {
-      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      textContent = XLSX.utils.sheet_to_csv(firstSheet);
-    } else {
-      textContent = req.file.buffer.toString('utf-8');
-    }
+    let textContent = req.file.buffer.toString('utf-8');
     if (textContent.length > 10000) textContent = textContent.substring(0, 10000) + '\n[... tronqué]';
     messageContent = `Analyse ce fichier de ventes :\n\n${textContent}`;
   }

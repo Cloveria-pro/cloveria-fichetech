@@ -618,8 +618,8 @@ export default function MenuEngineering() {
 
   function handleFile(f) {
     if (!f) return;
-    const ok = f.name.match(/\.(csv|xlsx|xls|pdf|jpg|jpeg|png|webp)$/i);
-    if (!ok) return alert('Format non supporté. Utilisez CSV, Excel, PDF ou image (JPG, PNG).');
+    const ok = f.name.match(/\.(csv|pdf|jpg|jpeg|png|webp)$/i);
+    if (!ok) return alert("Format non supporté. Utilisez CSV, PDF ou image (JPG, PNG). Si votre export est un fichier Excel, enregistrez-le d'abord au format CSV.");
     setFile(f);
     setColonnes([]);
   }
@@ -938,7 +938,7 @@ export default function MenuEngineering() {
                   transition: 'all 0.15s',
                 }}
               >
-                <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls,.pdf,.jpg,.jpeg,.png,.webp" style={{ display: 'none' }}
+                <input ref={fileInputRef} type="file" accept=".csv,.pdf,.jpg,.jpeg,.png,.webp" style={{ display: 'none' }}
                   onChange={e => handleFile(e.target.files[0])} />
                 <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }}
                   onChange={e => handleFile(e.target.files[0])} />
@@ -954,7 +954,7 @@ export default function MenuEngineering() {
                 ) : (
                   <>
                     <div style={{ fontWeight: 700, color: T.text, fontSize: '0.95rem' }}>Déposez votre export de ventes ici</div>
-                    <div style={{ color: T.muted, fontSize: '0.82rem', marginTop: '6px' }}>CSV, Excel, PDF, JPG, PNG · Max 10 Mo</div>
+                    <div style={{ color: T.muted, fontSize: '0.82rem', marginTop: '6px' }}>CSV, PDF, JPG, PNG · Max 10 Mo</div>
                     {!isMobile && <div style={{ color: T.gold, fontSize: '0.78rem', marginTop: '4px', fontWeight: 600 }}>ou cliquez pour parcourir</div>}
                   </>
                 )}
@@ -971,7 +971,7 @@ export default function MenuEngineering() {
               )}
 
               <div style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.2)', borderRadius: '10px', padding: '0.875rem 1.25rem', fontSize: '0.8rem', color: '#78350F', lineHeight: 1.55 }}>
-                <strong>Formats acceptés :</strong> export CSV ou Excel depuis votre caisse (Lightspeed, Zelty, Cashpad, L'Addition, Trivec…), ou PDF / image de rapport de ventes. Le fichier doit contenir au minimum les noms des plats et les quantités vendues.
+                <strong>Formats acceptés :</strong> export CSV depuis votre caisse (Lightspeed, Zelty, Cashpad, L'Addition, Trivec…), ou PDF / image de rapport de ventes. Le fichier doit contenir au minimum les noms des plats et les quantités vendues.
               </div>
 
               {colonnes.length > 0 && (
