@@ -42,9 +42,20 @@ function makeToken(user) {
   return jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
 }
 
-// Construit la réponse de GET /profil : jamais l'identifiant Stripe brut, seulement un booléen dérivé.
+// Construit la réponse de GET/PUT /profil : jamais les champs sensibles (mot de passe, jetons, hash,
+// identifiant Stripe brut) — seulement un booléen dérivé pour Stripe. Tous les autres champs sont conservés.
 export function buildProfilResponse(user) {
-  const { stripeCustomerId, stripeSubscriptionId, ...profil } = user;
+  const {
+    password_hash,
+    emailVerificationToken,
+    emailVerificationExpiry,
+    emailVerificationSentAt,
+    passwordResetToken,
+    passwordResetExpiry,
+    stripeCustomerId,
+    stripeSubscriptionId,
+    ...profil
+  } = user;
   return { ...profil, hasStripeCustomer: !!stripeCustomerId };
 }
 
@@ -254,8 +265,7 @@ router.put('/profil', authMiddleware, async (req, res) => {
     await paramCol.replaceOne({ user_id: req.userId }, newParams, { upsert: true });
   }
 
-  const { password_hash, ...profile } = updated;
-  res.json(profile);
+  res.json(buildProfilResponse(updated));
 });
 
 router.delete('/account', authMiddleware, async (req, res) => {
