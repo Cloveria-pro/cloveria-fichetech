@@ -58,6 +58,41 @@ const QUOTA_DEPASSE = {
   code: 'quota_ia_atteint',
 };
 
+// ── Délai et tentatives du client Anthropic ─────────────────────────────────
+const IA_TIMEOUT_MS = 90000;
+const IA_MAX_RETRIES = 0;
+
+// ── Erreurs Anthropic : jamais le message brut renvoyé au client ───────────
+const TEXTE_IA_INDISPONIBLE = "Le service d'analyse est momentanément indisponible ou très sollicité. Réessayez dans quelques instants.";
+const TEXTE_IA_CONFIGURATION = "Cette fonction est momentanément indisponible. Réessayez plus tard ou écrivez-nous à contact@cloveria.fr.";
+const TEXTE_IA_DEFAUT = "Une erreur est survenue. Réessayez dans un instant ou écrivez-nous à contact@cloveria.fr.";
+
+// Fonction pure : transforme une erreur Anthropic (ou autre) en réponse sûre, sans jamais exposer err.message.
+export function messageErreurIA(err) {
+  const status = err?.status;
+  const type = err?.error?.type;
+  const name = err?.name;
+  const message = (err?.message || '').toLowerCase();
+
+  const estIndisponible =
+    status === 429 || status === 529 || (typeof status === 'number' && status >= 500) ||
+    type === 'rate_limit_error' || type === 'overloaded_error' || type === 'api_error' ||
+    name === 'APIConnectionTimeoutError' || name === 'APIConnectionError';
+  if (estIndisponible) {
+    return { httpStatus: 503, body: { error: TEXTE_IA_INDISPONIBLE, code: 'ia_indisponible' } };
+  }
+
+  const estConfiguration =
+    status === 401 || status === 403 || status === 404 ||
+    type === 'authentication_error' || type === 'permission_error' || type === 'not_found_error' ||
+    (status === 400 && message.includes('credit balance'));
+  if (estConfiguration) {
+    return { httpStatus: 503, body: { error: TEXTE_IA_CONFIGURATION, code: 'ia_indisponible' } };
+  }
+
+  return { httpStatus: 500, body: { error: TEXTE_IA_DEFAUT, code: 'ia_erreur' } };
+}
+
 function normalize(str) {
   if (typeof str !== 'string') return '';
   return str
@@ -109,7 +144,7 @@ const upload = multer({
   },
 });
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: IA_TIMEOUT_MS, maxRetries: IA_MAX_RETRIES });
 
 const VENTES_SYSTEM = `Tu es un expert en restauration et analyse de données de ventes POS (point de vente). Analyse ce fichier de ventes et identifie la structure des données.
 
@@ -144,8 +179,15 @@ RÈGLES ABSOLUES :
 router.post('/analyser-ventes', uploadVentes.single('ventes'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Fichier manquant' });
 
-  const db = await getDb();
-  if (!(await reserverQuota(db, req.userId, POIDS_ANALYSER_FICHIER))) {
+  let quotaOk;
+  try {
+    const db = await getDb();
+    quotaOk = await reserverQuota(db, req.userId, POIDS_ANALYSER_FICHIER);
+  } catch (err) {
+    console.error('[IA] analyser-ventes (réservation quota) :', err?.message);
+    return res.status(503).json({ error: TEXTE_IA_INDISPONIBLE, code: 'ia_indisponible' });
+  }
+  if (!quotaOk) {
     return res.status(429).json(QUOTA_DEPASSE);
   }
 
@@ -196,17 +238,26 @@ router.post('/analyser-ventes', uploadVentes.single('ventes'), async (req, res) 
     }).catch(() => {});
     res.json({ ...parsed, nomFichier: req.file.originalname, sourceDocumentId });
   } catch (err) {
-    console.error('IA analyser-ventes error:', err.message);
+    const { httpStatus, body } = messageErreurIA(err);
+    const prefixe = body.error === TEXTE_IA_CONFIGURATION ? '[IA][ALERTE]' : '[IA]';
+    console.error(`${prefixe} analyser-ventes :`, err?.status, err?.error?.type, err?.message);
     remettreQuota(req.userId, POIDS_ANALYSER_FICHIER);
-    res.status(500).json({ error: err.message });
+    res.status(httpStatus).json(body);
   }
 });
 
 router.post('/analyser-fiche', upload.single('fiche'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Fichier manquant' });
 
-  const db = await getDb();
-  if (!(await reserverQuota(db, req.userId, POIDS_ANALYSER_FICHIER))) {
+  let quotaOk;
+  try {
+    const db = await getDb();
+    quotaOk = await reserverQuota(db, req.userId, POIDS_ANALYSER_FICHIER);
+  } catch (err) {
+    console.error('[IA] analyser-fiche (réservation quota) :', err?.message);
+    return res.status(503).json({ error: TEXTE_IA_INDISPONIBLE, code: 'ia_indisponible' });
+  }
+  if (!quotaOk) {
     return res.status(429).json(QUOTA_DEPASSE);
   }
 
@@ -266,17 +317,26 @@ RÈGLES ABSOLUES :
     }).catch(() => {});
     res.json(result);
   } catch (err) {
-    console.error('IA analyser-fiche error:', err.message);
+    const { httpStatus, body } = messageErreurIA(err);
+    const prefixe = body.error === TEXTE_IA_CONFIGURATION ? '[IA][ALERTE]' : '[IA]';
+    console.error(`${prefixe} analyser-fiche :`, err?.status, err?.error?.type, err?.message);
     remettreQuota(req.userId, POIDS_ANALYSER_FICHIER);
-    res.status(500).json({ error: err.message });
+    res.status(httpStatus).json(body);
   }
 });
 
 router.post('/analyser-facture', upload.single('facture'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Fichier manquant' });
 
-  const db = await getDb();
-  if (!(await reserverQuota(db, req.userId, POIDS_ANALYSER_FICHIER))) {
+  let quotaOk;
+  try {
+    const db = await getDb();
+    quotaOk = await reserverQuota(db, req.userId, POIDS_ANALYSER_FICHIER);
+  } catch (err) {
+    console.error('[IA] analyser-facture (réservation quota) :', err?.message);
+    return res.status(503).json({ error: TEXTE_IA_INDISPONIBLE, code: 'ia_indisponible' });
+  }
+  if (!quotaOk) {
     return res.status(429).json(QUOTA_DEPASSE);
   }
 
@@ -319,9 +379,11 @@ router.post('/analyser-facture', upload.single('facture'), async (req, res) => {
     }).catch(() => {});
     res.json(result);
   } catch (err) {
-    console.error('IA error:', err.message);
+    const { httpStatus, body } = messageErreurIA(err);
+    const prefixe = body.error === TEXTE_IA_CONFIGURATION ? '[IA][ALERTE]' : '[IA]';
+    console.error(`${prefixe} analyser-facture :`, err?.status, err?.error?.type, err?.message);
     remettreQuota(req.userId, POIDS_ANALYSER_FICHIER);
-    res.status(500).json({ error: err.message });
+    res.status(httpStatus).json(body);
   }
 });
 
@@ -329,8 +391,15 @@ router.post('/structurer', async (req, res) => {
   const { description } = req.body;
   if (!description?.trim()) return res.status(400).json({ error: 'Description manquante' });
 
-  const db = await getDb();
-  if (!(await reserverQuota(db, req.userId, POIDS_STRUCTURER))) {
+  let quotaOk;
+  try {
+    const db = await getDb();
+    quotaOk = await reserverQuota(db, req.userId, POIDS_STRUCTURER);
+  } catch (err) {
+    console.error('[IA] structurer (réservation quota) :', err?.message);
+    return res.status(503).json({ error: TEXTE_IA_INDISPONIBLE, code: 'ia_indisponible' });
+  }
+  if (!quotaOk) {
     return res.status(429).json(QUOTA_DEPASSE);
   }
 
@@ -392,9 +461,11 @@ Pour les ingrédients, utilise les noms français courants et professionnels. In
 
     res.json(result);
   } catch (err) {
-    console.error('IA structurer error:', err.message);
+    const { httpStatus, body } = messageErreurIA(err);
+    const prefixe = body.error === TEXTE_IA_CONFIGURATION ? '[IA][ALERTE]' : '[IA]';
+    console.error(`${prefixe} structurer :`, err?.status, err?.error?.type, err?.message);
     remettreQuota(req.userId, POIDS_STRUCTURER);
-    res.status(500).json({ error: err.message });
+    res.status(httpStatus).json(body);
   }
 });
 
@@ -402,8 +473,15 @@ router.post('/description-commerciale', async (req, res) => {
   const { nom, ingredients, portions } = req.body;
   if (!nom) return res.status(400).json({ error: 'nom requis' });
 
-  const db = await getDb();
-  if (!(await reserverQuota(db, req.userId, POIDS_DESCRIPTION_COMMERCIALE))) {
+  let quotaOk;
+  try {
+    const db = await getDb();
+    quotaOk = await reserverQuota(db, req.userId, POIDS_DESCRIPTION_COMMERCIALE);
+  } catch (err) {
+    console.error('[IA] description-commerciale (réservation quota) :', err?.message);
+    return res.status(503).json({ error: TEXTE_IA_INDISPONIBLE, code: 'ia_indisponible' });
+  }
+  if (!quotaOk) {
     return res.status(429).json(QUOTA_DEPASSE);
   }
 
@@ -436,9 +514,11 @@ Exemples :
     if (!jsonMatch) return res.status(422).json({ error: 'Réponse IA invalide', raw: text });
     res.json(JSON.parse(jsonMatch[0]));
   } catch (err) {
-    console.error('IA desc-commerciale error:', err.message);
+    const { httpStatus, body } = messageErreurIA(err);
+    const prefixe = body.error === TEXTE_IA_CONFIGURATION ? '[IA][ALERTE]' : '[IA]';
+    console.error(`${prefixe} description-commerciale :`, err?.status, err?.error?.type, err?.message);
     remettreQuota(req.userId, POIDS_DESCRIPTION_COMMERCIALE);
-    res.status(500).json({ error: err.message });
+    res.status(httpStatus).json(body);
   }
 });
 

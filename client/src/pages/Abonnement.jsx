@@ -135,15 +135,22 @@ export default function Abonnement() {
             )}
 
             {estPastDue ? (
-              <p style={{ textAlign: 'center', marginTop: '1.25rem' }}>
-                <button
-                  onClick={handleManageSubscription}
-                  disabled={portalLoading}
-                  style={{ background: 'none', border: 'none', padding: 0, fontSize: '0.8rem', color: T.muted, textDecoration: 'underline', cursor: portalLoading ? 'default' : 'pointer', fontFamily: "'DM Sans', sans-serif" }}
-                >
-                  {portalLoading ? 'Redirection...' : 'Mettre à jour mon moyen de paiement'}
-                </button>
-              </p>
+              <button
+                onClick={handleManageSubscription}
+                disabled={portalLoading}
+                style={{
+                  marginTop: '1.25rem', width: '100%', padding: '0.875rem',
+                  background: portalLoading ? '#4a8a6a' : T.green, color: '#fff',
+                  border: 'none', borderRadius: '10px', fontWeight: 700,
+                  fontSize: '1rem', cursor: portalLoading ? 'default' : 'pointer',
+                  fontFamily: "'DM Sans', sans-serif", transition: 'background 0.15s',
+                  minHeight: '48px',
+                }}
+                onMouseEnter={e => { if (!portalLoading) e.currentTarget.style.background = '#1e4d38'; }}
+                onMouseLeave={e => { if (!portalLoading) e.currentTarget.style.background = T.green; }}
+              >
+                {portalLoading ? 'Redirection...' : 'Mettre à jour mon moyen de paiement'}
+              </button>
             ) : profil?.hasStripeCustomer && (
               <p style={{ textAlign: 'center', marginTop: '0.75rem' }}>
                 <button

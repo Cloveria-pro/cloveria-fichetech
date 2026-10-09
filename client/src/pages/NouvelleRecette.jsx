@@ -94,7 +94,8 @@ export default function NouvelleRecette() {
         etapes: Array.isArray(data.etapes) ? data.etapes : (data.etapes ? [data.etapes] : f.etapes),
       }));
     } catch (err) {
-      alert(err?.code === 'quota_ia_atteint' ? err.message : "Erreur lors de l'appel à l'IA.");
+      const codesAvecMessage = ['quota_ia_atteint', 'ia_indisponible', 'ia_erreur'];
+      alert(codesAvecMessage.includes(err?.code) ? err.message : "Erreur lors de l'appel à l'IA.");
     } finally {
       setIaLoading(false);
     }

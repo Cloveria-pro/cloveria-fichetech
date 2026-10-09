@@ -3,6 +3,7 @@ import './env.js';
 import express from 'express';
 import cors from 'cors';
 import cron from 'node-cron';
+import multer from 'multer';
 import { getDb } from './db.js';
 import { envoyerRelance, envoyerLifecycle } from './emails/relances.js';
 import recettesRouter from './routes/recettes.js';
@@ -55,6 +56,34 @@ app.use('/api/ventes', ventesRouter);
 app.use('/api/documents', documentsRouter);
 app.use('/api/agenda', agendaRouter);
 app.use('/api/onboarding', onboardingRouter);
+
+// ── Middleware d'erreurs (toujours en dernier) ──────────────────────────────
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'Ce fichier est trop volumineux (10 Mo maximum).' });
+    }
+    return res.status(400).json({ error: 'Format non supporté' });
+  }
+  if (err?.message === 'Format non supporté') {
+    return res.status(400).json({ error: 'Format non supporté' });
+  }
+
+  const statut = err?.status || err?.statusCode;
+  if (typeof statut === 'number' && statut >= 400 && statut <= 499) {
+    return res.status(statut).json({ error: 'Requête invalide.' });
+  }
+
+  console.error('[Erreur non gérée]', err?.message);
+  res.status(500).json({ error: 'Une erreur est survenue. Réessayez dans un instant ou écrivez-nous à contact@cloveria.fr.' });
+});
+
+// Journalise sans jamais arrêter le processus (évite qu'un rejet non géré ne coupe le service entier).
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection]', reason?.message || reason);
+});
 
 // ── Emails de relance essai ─────────────────────────────────────────────────
 async function sendTrialEmails() {
