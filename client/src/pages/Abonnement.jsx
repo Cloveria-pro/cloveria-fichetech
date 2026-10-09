@@ -38,6 +38,9 @@ export default function Abonnement() {
     }
   }
 
+  const abonnementTermine = !!profil?.hasStripeCustomer;
+  const estPastDue = profil?.subscriptionStatus === 'past_due';
+
   async function handleSubscribe() {
     setLoading(true);
     setError('');
@@ -65,10 +68,14 @@ export default function Abonnement() {
         {/* Titre */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.75rem', fontWeight: 700, color: T.text, marginBottom: '0.75rem', lineHeight: 1.2 }}>
-            Votre période d'essai est terminée
+            {abonnementTermine ? "Votre abonnement n'est plus actif" : "Votre période d'essai est terminée"}
           </h1>
           <p style={{ color: T.muted, fontSize: '0.9375rem', lineHeight: 1.6 }}>
-            Abonnez-vous pour continuer à utiliser CloverIA FicheTech et accéder à toutes vos données.
+            {abonnementTermine
+              ? (estPastDue
+                  ? "Le dernier paiement n'a pas abouti. Mettez à jour votre carte pour retrouver votre accès."
+                  : "Votre abonnement est terminé. Vous pouvez en reprendre un à tout moment.")
+              : "Abonnez-vous pour continuer à utiliser CloverIA FicheTech et accéder à toutes vos données."}
           </p>
         </div>
 
@@ -98,13 +105,13 @@ export default function Abonnement() {
               ))}
             </ul>
 
-            {error && (
+            {!estPastDue && error && (
               <div style={{ marginTop: '1rem', padding: '0.65rem 0.9rem', background: '#FEE2E2', border: '1px solid #FCA5A5', borderRadius: '8px', fontSize: '0.875rem', color: '#991B1B' }}>
                 {error}
               </div>
             )}
 
-            <button
+            {!estPastDue && <button
               onClick={handleSubscribe}
               disabled={loading}
               style={{
@@ -119,7 +126,7 @@ export default function Abonnement() {
               onMouseLeave={e => { if (!loading) e.currentTarget.style.background = T.green; }}
             >
               {loading ? 'Redirection vers le paiement...' : "S'abonner pour 39 €/mois"}
-            </button>
+            </button>}
 
             {portalError && (
               <div style={{ marginTop: '0.75rem', padding: '0.65rem 0.9rem', background: '#FEE2E2', border: '1px solid #FCA5A5', borderRadius: '8px', fontSize: '0.875rem', color: '#991B1B' }}>
@@ -127,7 +134,17 @@ export default function Abonnement() {
               </div>
             )}
 
-            {profil?.hasStripeCustomer && (
+            {estPastDue ? (
+              <p style={{ textAlign: 'center', marginTop: '1.25rem' }}>
+                <button
+                  onClick={handleManageSubscription}
+                  disabled={portalLoading}
+                  style={{ background: 'none', border: 'none', padding: 0, fontSize: '0.8rem', color: T.muted, textDecoration: 'underline', cursor: portalLoading ? 'default' : 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  {portalLoading ? 'Redirection...' : 'Mettre à jour mon moyen de paiement'}
+                </button>
+              </p>
+            ) : profil?.hasStripeCustomer && (
               <p style={{ textAlign: 'center', marginTop: '0.75rem' }}>
                 <button
                   onClick={handleManageSubscription}

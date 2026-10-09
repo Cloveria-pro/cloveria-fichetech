@@ -4,6 +4,13 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 const CHECKOUT_URL = 'https://app.cloveria-pro.fr/abonnement';
 
+// Date de fin du délai de grâce (pastDueSince + 7 jours), au format "12 octobre 2026" (fr-FR).
+export function dateFinDelaiGrace(pastDueSinceISO) {
+  const debut = new Date(pastDueSinceISO);
+  const fin = new Date(debut.getTime() + 7 * 24 * 60 * 60 * 1000);
+  return fin.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
 function layout(contenu) {
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -237,5 +244,30 @@ export async function envoyerRelance(user, jour) {
     to: user.email,
     subject: tpl.subject,
     html: tpl.html(user.prenom),
+  });
+}
+
+export async function envoyerPastDue(user) {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('[PastDue] RESEND_API_KEY manquant, email non envoyé');
+    return;
+  }
+
+  const salutation = user.prenom ? `Bonjour ${user.prenom},` : 'Bonjour,';
+  const dateFin = dateFinDelaiGrace(user.pastDueSince);
+  const url = `${process.env.APP_URL || 'https://app.cloveria-pro.fr'}/parametres`;
+
+  const html = layout(`
+    <p>${salutation}</p>
+    <p>Le dernier paiement de votre abonnement CloverIA n'a pas pu être débité. Votre accès reste actif pendant 7 jours, jusqu'au ${dateFin}, pour vous laisser le temps de régulariser.</p>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:24px 0;"><a href="${url}" target="_blank" style="background-color:#2D6A4F;color:#ffffff !important;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:16px;display:inline-block;mso-padding-alt:0;font-family:Arial,sans-serif;">Mettre à jour mon moyen de paiement</a></td></tr></table>
+    <p>Passé ce délai sans régularisation, l'accès sera suspendu. Une question ? Écrivez-nous à contact@cloveria.fr.</p>
+  `);
+
+  await resend.emails.send({
+    from: 'CloverIA <contact@cloveria.fr>',
+    to: user.email,
+    subject: "Votre paiement CloverIA n'a pas abouti",
+    html,
   });
 }

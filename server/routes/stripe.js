@@ -1,6 +1,7 @@
 import express from 'express';
 import Stripe from 'stripe';
 import { getDb } from '../db.js';
+import { envoyerPastDue } from '../emails/relances.js';
 
 const router = express.Router();
 const PROJ = { projection: { _id: 0 } };
@@ -24,6 +25,17 @@ export function shouldApplyStripeEvent(user, eventCreated) {
   if (user.subscriptionStatus === 'lifetime') return false;
   if (user.stripeLastEventAt != null && eventCreated < user.stripeLastEventAt) return false;
   return true;
+}
+
+// Champs à écrire pour un passage en 'past_due' : conserve la date du premier échec de l'épisode
+// (ne la réinitialise pas si un épisode est déjà en cours), et indique s'il s'agit du premier échec.
+export function champsPastDue(user, maintenant = new Date()) {
+  const premierEpisode = !user?.pastDueSince;
+  return {
+    subscriptionStatus: 'past_due',
+    pastDueSince: user?.pastDueSince || maintenant.toISOString(),
+    premierEpisode,
+  };
 }
 
 // Recherche l'utilisateur dans cet ordre : identifiant explicite (client_reference_id / metadata.userId),
@@ -80,6 +92,7 @@ export async function stripeWebhook(req, res) {
           stripeCustomerId: customerId || user.stripeCustomerId,
           stripeSubscriptionId: subscriptionId || user.stripeSubscriptionId,
           stripeLastEventAt: event.created,
+          pastDueSince: null,
         });
       }
     } else {
@@ -114,12 +127,27 @@ export async function stripeWebhook(req, res) {
         if (user.subscriptionStatus === 'lifetime') console.error('[StripeWebhook] customer.subscription.updated : compte lifetime, ignoré');
       } else {
         const mapped = mapStripeSubscriptionStatus(sub.status);
-        if (mapped) {
+        if (mapped === 'past_due') {
+          const { subscriptionStatus, pastDueSince, premierEpisode } = champsPastDue(user);
+          await col.replaceOne({ id: user.id }, {
+            ...user,
+            subscriptionStatus,
+            pastDueSince,
+            stripeCustomerId: sub.customer || user.stripeCustomerId,
+            stripeLastEventAt: event.created,
+          });
+          if (premierEpisode) {
+            envoyerPastDue({ ...user, pastDueSince }).catch(() => {
+              console.error('[StripeWebhook] envoi e-mail past_due : échec (customer.subscription.updated)');
+            });
+          }
+        } else if (mapped) {
           await col.replaceOne({ id: user.id }, {
             ...user,
             subscriptionStatus: mapped,
             stripeCustomerId: sub.customer || user.stripeCustomerId,
             stripeLastEventAt: event.created,
+            ...(mapped === 'active' ? { pastDueSince: null } : {}),
           });
         }
       }
@@ -135,7 +163,13 @@ export async function stripeWebhook(req, res) {
       if (!shouldApplyStripeEvent(user, event.created)) {
         if (user.subscriptionStatus === 'lifetime') console.error('[StripeWebhook] invoice.payment_failed : compte lifetime, ignoré');
       } else {
-        await col.replaceOne({ id: user.id }, { ...user, subscriptionStatus: 'past_due', stripeLastEventAt: event.created });
+        const { subscriptionStatus, pastDueSince, premierEpisode } = champsPastDue(user);
+        await col.replaceOne({ id: user.id }, { ...user, subscriptionStatus, pastDueSince, stripeLastEventAt: event.created });
+        if (premierEpisode) {
+          envoyerPastDue({ ...user, pastDueSince }).catch(() => {
+            console.error('[StripeWebhook] envoi e-mail past_due : échec (invoice.payment_failed)');
+          });
+        }
       }
     } else {
       console.error('[StripeWebhook] invoice.payment_failed : aucun utilisateur correspondant trouvé');
@@ -149,7 +183,7 @@ export async function stripeWebhook(req, res) {
       if (!shouldApplyStripeEvent(user, event.created)) {
         if (user.subscriptionStatus === 'lifetime') console.error('[StripeWebhook] invoice.payment_succeeded : compte lifetime, ignoré');
       } else if (user.subscriptionStatus === 'past_due') {
-        await col.replaceOne({ id: user.id }, { ...user, subscriptionStatus: 'active', stripeLastEventAt: event.created });
+        await col.replaceOne({ id: user.id }, { ...user, subscriptionStatus: 'active', stripeLastEventAt: event.created, pastDueSince: null });
       }
     } else {
       console.error('[StripeWebhook] invoice.payment_succeeded : aucun utilisateur correspondant trouvé');
