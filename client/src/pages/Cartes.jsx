@@ -254,7 +254,9 @@ function DescriptionEditor({ recette, onSaved }) {
       setValue(desc);
       const updated = await api.recettes.update(recette.id, { ...recette, description_commerciale: desc });
       onSaved?.(updated);
-    } catch {}
+    } catch (err) {
+      if (err?.code === 'quota_ia_atteint') alert(err.message);
+    }
     finally { setIaLoading(false); }
   }
 

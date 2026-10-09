@@ -5,6 +5,59 @@ import Anthropic from '@anthropic-ai/sdk';
 import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../db.js';
 
+// ── Quota IA mensuel par utilisateur ────────────────────────────────────────
+// Limite et poids : constantes nommées, modifiables facilement.
+const QUOTA_IA_LIMITE = 300;
+const POIDS_DESCRIPTION_COMMERCIALE = 1;
+const POIDS_STRUCTURER = 2;
+const POIDS_ANALYSER_FICHIER = 3; // analyser-facture, analyser-fiche, analyser-ventes
+
+// Fenêtre courante au format "AAAA-MM", calculée en UTC.
+export function fenetreQuotaIA(date = new Date()) {
+  const annee = date.getUTCFullYear();
+  const mois = String(date.getUTCMonth() + 1).padStart(2, '0');
+  return `${annee}-${mois}`;
+}
+
+// Décision pure : autorise si le compteur de la fenêtre courante + le poids ne dépasse pas la limite.
+// Une fenêtre différente de la fenêtre courante (ou absente) est traitée comme un compteur à zéro.
+export function decisionQuotaIA({ iaCallsWindow, iaCallsCount } = {}, poids, fenetreCourante, limite = QUOTA_IA_LIMITE) {
+  const compteurActuel = iaCallsWindow === fenetreCourante ? (iaCallsCount || 0) : 0;
+  return compteurActuel + poids <= limite;
+}
+
+// Réserve atomiquement `poids` points de quota pour cet utilisateur. Retourne true si accordé.
+export async function reserverQuota(db, userId, poids) {
+  const fenetre = fenetreQuotaIA();
+  const col = db.collection('users');
+
+  // (a) Réinitialise le compteur si la fenêtre stockée n'est plus la fenêtre courante.
+  await col.updateOne(
+    { id: userId, iaCallsWindow: { $ne: fenetre } },
+    { $set: { iaCallsWindow: fenetre, iaCallsCount: 0 } }
+  );
+
+  // (b) Incrément atomique, seulement si le compteur + poids reste sous la limite.
+  const result = await col.findOneAndUpdate(
+    { id: userId, iaCallsWindow: fenetre, iaCallsCount: { $lte: QUOTA_IA_LIMITE - poids } },
+    { $inc: { iaCallsCount: poids } }
+  );
+  return !!result;
+}
+
+// Remboursement au mieux (sans bloquer la réponse d'erreur) si l'appel Anthropic échoue après réservation.
+async function remettreQuota(userId, poids) {
+  try {
+    const db = await getDb();
+    await db.collection('users').updateOne({ id: userId }, { $inc: { iaCallsCount: -poids } });
+  } catch { /* au mieux, sans impact sur la réponse déjà envoyée */ }
+}
+
+const QUOTA_DEPASSE = {
+  error: "Vous avez atteint votre limite d'utilisation de l'IA pour ce mois. Elle se renouvelle le 1er du mois prochain. Besoin de plus ? Écrivez-nous à contact@cloveria.fr.",
+  code: 'quota_ia_atteint',
+};
+
 function normalize(str) {
   if (typeof str !== 'string') return '';
   return str
@@ -91,6 +144,11 @@ RÈGLES ABSOLUES :
 router.post('/analyser-ventes', uploadVentes.single('ventes'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Fichier manquant' });
 
+  const db = await getDb();
+  if (!(await reserverQuota(db, req.userId, POIDS_ANALYSER_FICHIER))) {
+    return res.status(429).json(QUOTA_DEPASSE);
+  }
+
   const fileBase64 = req.file.buffer.toString('base64');
 
   const VISUAL_MIMES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
@@ -139,12 +197,18 @@ router.post('/analyser-ventes', uploadVentes.single('ventes'), async (req, res) 
     res.json({ ...parsed, nomFichier: req.file.originalname, sourceDocumentId });
   } catch (err) {
     console.error('IA analyser-ventes error:', err.message);
+    remettreQuota(req.userId, POIDS_ANALYSER_FICHIER);
     res.status(500).json({ error: err.message });
   }
 });
 
 router.post('/analyser-fiche', upload.single('fiche'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Fichier manquant' });
+
+  const db = await getDb();
+  if (!(await reserverQuota(db, req.userId, POIDS_ANALYSER_FICHIER))) {
+    return res.status(429).json(QUOTA_DEPASSE);
+  }
 
   const base64 = req.file.buffer.toString('base64');
   const isPDF = req.file.mimetype === 'application/pdf';
@@ -203,12 +267,18 @@ RÈGLES ABSOLUES :
     res.json(result);
   } catch (err) {
     console.error('IA analyser-fiche error:', err.message);
+    remettreQuota(req.userId, POIDS_ANALYSER_FICHIER);
     res.status(500).json({ error: err.message });
   }
 });
 
 router.post('/analyser-facture', upload.single('facture'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Fichier manquant' });
+
+  const db = await getDb();
+  if (!(await reserverQuota(db, req.userId, POIDS_ANALYSER_FICHIER))) {
+    return res.status(429).json(QUOTA_DEPASSE);
+  }
 
   const base64 = req.file.buffer.toString('base64');
   const isPDF = req.file.mimetype === 'application/pdf';
@@ -250,6 +320,7 @@ router.post('/analyser-facture', upload.single('facture'), async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error('IA error:', err.message);
+    remettreQuota(req.userId, POIDS_ANALYSER_FICHIER);
     res.status(500).json({ error: err.message });
   }
 });
@@ -257,6 +328,11 @@ router.post('/analyser-facture', upload.single('facture'), async (req, res) => {
 router.post('/structurer', async (req, res) => {
   const { description } = req.body;
   if (!description?.trim()) return res.status(400).json({ error: 'Description manquante' });
+
+  const db = await getDb();
+  if (!(await reserverQuota(db, req.userId, POIDS_STRUCTURER))) {
+    return res.status(429).json(QUOTA_DEPASSE);
+  }
 
   try {
     const message = await client.messages.create({
@@ -317,6 +393,7 @@ Pour les ingrédients, utilise les noms français courants et professionnels. In
     res.json(result);
   } catch (err) {
     console.error('IA structurer error:', err.message);
+    remettreQuota(req.userId, POIDS_STRUCTURER);
     res.status(500).json({ error: err.message });
   }
 });
@@ -324,6 +401,11 @@ Pour les ingrédients, utilise les noms français courants et professionnels. In
 router.post('/description-commerciale', async (req, res) => {
   const { nom, ingredients, portions } = req.body;
   if (!nom) return res.status(400).json({ error: 'nom requis' });
+
+  const db = await getDb();
+  if (!(await reserverQuota(db, req.userId, POIDS_DESCRIPTION_COMMERCIALE))) {
+    return res.status(429).json(QUOTA_DEPASSE);
+  }
 
   const ingList = (ingredients || []).map(i => i.nom).filter(Boolean).join(', ');
 
@@ -355,6 +437,7 @@ Exemples :
     res.json(JSON.parse(jsonMatch[0]));
   } catch (err) {
     console.error('IA desc-commerciale error:', err.message);
+    remettreQuota(req.userId, POIDS_DESCRIPTION_COMMERCIALE);
     res.status(500).json({ error: err.message });
   }
 });

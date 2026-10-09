@@ -20,7 +20,9 @@ async function request(path, options = {}) {
       window.dispatchEvent(new CustomEvent('trial_expired', { detail: body }));
       throw new Error('trial_expired');
     }
-    throw new Error(body?.error || body?.message || 'Erreur de communication');
+    const err = new Error(body?.error || body?.message || 'Erreur de communication');
+    err.code = body?.code;
+    throw err;
   }
   return body;
 }
@@ -71,7 +73,7 @@ export const api = {
       body: formData,
     }).then(async res => {
       const body = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(body?.error || 'Erreur serveur');
+      if (!res.ok) { const err = new Error(body?.error || 'Erreur serveur'); err.code = body?.code; throw err; }
       return body;
     }),
     analyserVentes: (formData) => fetch(`${API_URL}/ia/analyser-ventes`, {
@@ -80,7 +82,7 @@ export const api = {
       body: formData,
     }).then(async res => {
       const body = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(body?.error || 'Erreur serveur');
+      if (!res.ok) { const err = new Error(body?.error || 'Erreur serveur'); err.code = body?.code; throw err; }
       return body;
     }),
   },

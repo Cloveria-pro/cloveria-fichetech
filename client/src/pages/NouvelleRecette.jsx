@@ -93,8 +93,8 @@ export default function NouvelleRecette() {
           : f.ingredients,
         etapes: Array.isArray(data.etapes) ? data.etapes : (data.etapes ? [data.etapes] : f.etapes),
       }));
-    } catch {
-      alert("Erreur lors de l'appel à l'IA.");
+    } catch (err) {
+      alert(err?.code === 'quota_ia_atteint' ? err.message : "Erreur lors de l'appel à l'IA.");
     } finally {
       setIaLoading(false);
     }
