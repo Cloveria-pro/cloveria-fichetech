@@ -20,7 +20,8 @@ export async function checkAccess(req, res, next) {
     { projection: { _id: 0, betaAccess: 1, subscriptionStatus: 1, trialEndDate: 1, trialStartDate: 1, pastDueSince: 1, deleted: 1, disabled: 1 } }
   );
 
-  if (!user) return next();
+  // Aucun document correspondant (compte effacé) → accès refusé, pas d'accès libre par défaut.
+  if (!user) return res.status(403).json({ error: 'account_disabled' });
 
   // Compte supprimé ou désactivé → accès coupé immédiatement, avant toute autre vérification.
   if (user.deleted === true || user.disabled === true) {

@@ -8,6 +8,7 @@ import { authMiddleware } from '../middleware/auth.js';
 import { envoyerConfirmationEmail, envoyerResetEmail } from '../emails/verification.js';
 import { notifierNouveauClient, notifierSuppressionCompte } from '../emails/notifications.js';
 import { annulerAbonnementStripe } from './stripe.js';
+import { effacerDonneesUtilisateur } from '../lib/effacerUtilisateur.js';
 
 const router = express.Router();
 
@@ -277,11 +278,10 @@ router.delete('/account', authMiddleware, async (req, res) => {
   const col = db.collection('users');
   const user = await col.findOne({ id: req.userId }, PROJ);
   if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+  if (!user.password_hash) return res.status(401).json({ error: 'Mot de passe incorrect' });
 
   const match = await bcrypt.compare(password, user.password_hash);
   if (!match) return res.status(401).json({ error: 'Mot de passe incorrect' });
-
-  if (user.deleted) return res.json({ success: true });
 
   try {
     await annulerAbonnementStripe(user);
@@ -290,11 +290,15 @@ router.delete('/account', authMiddleware, async (req, res) => {
     return res.status(503).json({ error: "La suppression de votre compte n'a pas pu aboutir. Réessayez dans un instant ou écrivez-nous à contact@cloveria.fr." });
   }
 
-  await col.updateOne(
-    { id: user.id },
-    { $set: { deleted: true, deletedAt: new Date().toISOString(), disabled: true, updated_at: new Date().toISOString() } }
-  );
-  notifierSuppressionCompte({ email: user.email, etablissement: user.etablissement, id: user.id });
+  const { email, etablissement, id } = user;
+  try {
+    await effacerDonneesUtilisateur(db, id);
+  } catch (err) {
+    console.error('[Account] effacement des données à la suppression : échec', err?.collection || 'inconnue');
+    return res.status(503).json({ error: "La suppression de votre compte n'a pas pu aboutir. Réessayez dans un instant ou écrivez-nous à contact@cloveria.fr." });
+  }
+
+  notifierSuppressionCompte({ email, etablissement, id });
   res.json({ success: true });
 });
 
