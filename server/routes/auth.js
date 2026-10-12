@@ -7,6 +7,7 @@ import { getDb } from '../db.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { envoyerConfirmationEmail, envoyerResetEmail } from '../emails/verification.js';
 import { notifierNouveauClient, notifierSuppressionCompte } from '../emails/notifications.js';
+import { annulerAbonnementStripe } from './stripe.js';
 
 const router = express.Router();
 
@@ -281,6 +282,14 @@ router.delete('/account', authMiddleware, async (req, res) => {
   if (!match) return res.status(401).json({ error: 'Mot de passe incorrect' });
 
   if (user.deleted) return res.json({ success: true });
+
+  try {
+    await annulerAbonnementStripe(user);
+  } catch {
+    console.error('[Account] annulation Stripe à la suppression : échec');
+    return res.status(503).json({ error: "La suppression de votre compte n'a pas pu aboutir. Réessayez dans un instant ou écrivez-nous à contact@cloveria.fr." });
+  }
+
   await col.updateOne(
     { id: user.id },
     { $set: { deleted: true, deletedAt: new Date().toISOString(), disabled: true, updated_at: new Date().toISOString() } }

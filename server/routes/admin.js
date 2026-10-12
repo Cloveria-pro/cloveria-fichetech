@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import { getDb } from '../db.js';
 import { notifierSuppressionCompte } from '../emails/notifications.js';
+import { annulerAbonnementStripe } from './stripe.js';
 
 const router = express.Router();
 
@@ -130,9 +131,17 @@ router.patch('/users/:id/disable', adminAuth, async (req, res) => {
 router.delete('/users/:id', adminAuth, async (req, res) => {
   try {
     const db = await getDb();
-    const user = await db.collection('users').findOne({ id: req.params.id }, { projection: { _id: 0, id: 1, email: 1, etablissement: 1, deleted: 1 } });
+    const user = await db.collection('users').findOne({ id: req.params.id }, { projection: { _id: 0, id: 1, email: 1, etablissement: 1, deleted: 1, stripeSubscriptionId: 1 } });
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
     if (user.deleted) return res.json({ success: true, archived: user.email });
+
+    try {
+      await annulerAbonnementStripe(user);
+    } catch {
+      console.error('[Admin] annulation Stripe à l\'archivage : échec');
+      return res.status(503).json({ error: "Impossible d'annuler l'abonnement Stripe. Le compte n'a pas été archivé." });
+    }
+
     await db.collection('users').updateOne(
       { id: user.id },
       { $set: { deleted: true, deletedAt: new Date().toISOString(), disabled: true, updated_at: new Date().toISOString() } }

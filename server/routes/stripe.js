@@ -18,13 +18,46 @@ export function mapStripeSubscriptionStatus(stripeStatus) {
   return null;
 }
 
-// Décide si un événement doit être appliqué à cet utilisateur : jamais pour un compte lifetime,
-// jamais si l'événement est plus ancien que le dernier déjà appliqué (rejeu/livraison en retard).
+// Décide si un événement doit être appliqué à cet utilisateur : jamais pour un compte supprimé,
+// jamais pour un compte lifetime, jamais si l'événement est plus ancien que le dernier déjà
+// appliqué (rejeu/livraison en retard).
 export function shouldApplyStripeEvent(user, eventCreated) {
   if (!user) return false;
+  if (user.deleted) return false;
   if (user.subscriptionStatus === 'lifetime') return false;
   if (user.stripeLastEventAt != null && eventCreated < user.stripeLastEventAt) return false;
   return true;
+}
+
+// Annule immédiatement l'abonnement Stripe d'un utilisateur. Ne fait rien si aucun abonnement
+// n'est associé. Relit d'abord l'abonnement : introuvable (resource_missing) ou déjà 'canceled'
+// est traité comme un succès, sans appeler cancel. Toute autre erreur est relancée (stripe_cancel_failed)
+// sans jamais exposer err.message au client ; seul le code/type est journalisé, jamais de donnée personnelle.
+export async function annulerAbonnementStripe(user, stripe = getStripe()) {
+  if (!user?.stripeSubscriptionId) return;
+
+  const estResourceMissing = (err) => err?.code === 'resource_missing' || err?.raw?.code === 'resource_missing';
+
+  let subscription;
+  try {
+    subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+  } catch (err) {
+    if (estResourceMissing(err)) return;
+    console.error('[Stripe] annulerAbonnementStripe (retrieve) : échec', err?.code || err?.type || 'erreur inconnue');
+    throw new Error('stripe_cancel_failed');
+  }
+
+  if (subscription.status === 'canceled') return;
+
+  try {
+    await stripe.subscriptions.cancel(user.stripeSubscriptionId);
+  } catch (err) {
+    // Filet de sécurité : si l'abonnement a été annulé entre le retrieve et le cancel, on le traite comme un succès.
+    const dejaAnnule = estResourceMissing(err) || /already.*cancel|no such subscription/i.test(err?.message || '');
+    if (dejaAnnule) return;
+    console.error('[Stripe] annulerAbonnementStripe (cancel) : échec', err?.code || err?.type || 'erreur inconnue');
+    throw new Error('stripe_cancel_failed');
+  }
 }
 
 // Champs à écrire pour un passage en 'past_due' : conserve la date du premier échec de l'épisode
@@ -84,7 +117,8 @@ export async function stripeWebhook(req, res) {
     const user = await findUser(col, { userId: session.client_reference_id, customerId, email });
     if (user) {
       if (!shouldApplyStripeEvent(user, event.created)) {
-        if (user.subscriptionStatus === 'lifetime') console.error('[StripeWebhook] checkout.session.completed : compte lifetime, ignoré');
+        if (user.deleted) console.log('[StripeWebhook] checkout.session.completed : compte supprimé, ignoré');
+        else if (user.subscriptionStatus === 'lifetime') console.error('[StripeWebhook] checkout.session.completed : compte lifetime, ignoré');
       } else {
         await col.replaceOne({ id: user.id }, {
           ...user,
@@ -105,7 +139,8 @@ export async function stripeWebhook(req, res) {
     const user = await findUser(col, { userId: sub.metadata?.userId, customerId: sub.customer });
     if (user) {
       if (!shouldApplyStripeEvent(user, event.created)) {
-        if (user.subscriptionStatus === 'lifetime') console.error('[StripeWebhook] customer.subscription.deleted : compte lifetime, ignoré');
+        if (user.deleted) console.log('[StripeWebhook] customer.subscription.deleted : compte supprimé, ignoré');
+        else if (user.subscriptionStatus === 'lifetime') console.error('[StripeWebhook] customer.subscription.deleted : compte lifetime, ignoré');
       } else {
         await col.replaceOne({ id: user.id }, {
           ...user,
@@ -124,7 +159,8 @@ export async function stripeWebhook(req, res) {
     const user = await findUser(col, { userId: sub.metadata?.userId, customerId: sub.customer });
     if (user) {
       if (!shouldApplyStripeEvent(user, event.created)) {
-        if (user.subscriptionStatus === 'lifetime') console.error('[StripeWebhook] customer.subscription.updated : compte lifetime, ignoré');
+        if (user.deleted) console.log('[StripeWebhook] customer.subscription.updated : compte supprimé, ignoré');
+        else if (user.subscriptionStatus === 'lifetime') console.error('[StripeWebhook] customer.subscription.updated : compte lifetime, ignoré');
       } else {
         const mapped = mapStripeSubscriptionStatus(sub.status);
         if (mapped === 'past_due') {
@@ -161,7 +197,8 @@ export async function stripeWebhook(req, res) {
     const user = await findUser(col, { customerId: invoice.customer });
     if (user) {
       if (!shouldApplyStripeEvent(user, event.created)) {
-        if (user.subscriptionStatus === 'lifetime') console.error('[StripeWebhook] invoice.payment_failed : compte lifetime, ignoré');
+        if (user.deleted) console.log('[StripeWebhook] invoice.payment_failed : compte supprimé, ignoré');
+        else if (user.subscriptionStatus === 'lifetime') console.error('[StripeWebhook] invoice.payment_failed : compte lifetime, ignoré');
       } else {
         const { subscriptionStatus, pastDueSince, premierEpisode } = champsPastDue(user);
         await col.replaceOne({ id: user.id }, { ...user, subscriptionStatus, pastDueSince, stripeLastEventAt: event.created });
@@ -181,7 +218,8 @@ export async function stripeWebhook(req, res) {
     const user = await findUser(col, { customerId: invoice.customer });
     if (user) {
       if (!shouldApplyStripeEvent(user, event.created)) {
-        if (user.subscriptionStatus === 'lifetime') console.error('[StripeWebhook] invoice.payment_succeeded : compte lifetime, ignoré');
+        if (user.deleted) console.log('[StripeWebhook] invoice.payment_succeeded : compte supprimé, ignoré');
+        else if (user.subscriptionStatus === 'lifetime') console.error('[StripeWebhook] invoice.payment_succeeded : compte lifetime, ignoré');
       } else if (user.subscriptionStatus === 'past_due') {
         await col.replaceOne({ id: user.id }, { ...user, subscriptionStatus: 'active', stripeLastEventAt: event.created, pastDueSince: null });
       }
