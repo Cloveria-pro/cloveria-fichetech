@@ -129,6 +129,7 @@ export default function App() {
     const newUser = { ...user, emailVerified: true };
     localStorage.setItem('user', JSON.stringify(newUser));
     setUser(newUser);
+    navigate('/');
   }
 
   // Auth pages (no sidebar)
@@ -173,6 +174,7 @@ export default function App() {
             setUser(newUser);
           }} />
         } />
+        <Route path="/verify-email" element={<VerifyEmail userEmail={user?.email} onVerified={handleVerified} />} />
         <Route path="/cgu" element={<CGU />} />
         <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
         <Route path="/mentions-legales" element={<MentionsLegales />} />
@@ -301,6 +303,7 @@ export default function App() {
       <main style={mainStyle}>
         <Suspense fallback={<div />}>
         <Routes>
+          <Route path="/verify-email" element={<VerifyEmail userEmail={user?.email} onVerified={handleVerified} />} />
           <Route path="/" element={<Dashboard />} />
           <Route path="/fiches-techniques" element={<Recettes />} />
           <Route path="/fiches-techniques/nouvelle" element={<NouvelleRecette />} />
@@ -321,6 +324,7 @@ export default function App() {
           <Route path="/mentions-legales" element={<MentionsLegales />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="/register" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         </Suspense>
       </main>
