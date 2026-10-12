@@ -1,6 +1,6 @@
 # CloverIA FicheTech — Contexte projet
 
-> Dernière mise à jour : 2026-10-12 (Sprint 1 — prompts IA alignés sur les 7 unités officielles, commit b556585 ; Sprint 2 — normalisation des unités dans conversions.js, commit c7d7c95 ; Sprint 3 — signal des lignes incomplètes, commit e16f136 ; correctif matching prix IA (apostrophes/ligatures/espaces), commit 66fde6a ; Sprint 4 — signal d'incohérence de famille d'unité (pièce vs masse/volume), commit bbdf126 ; Sprint 5 — message d'information sur le prix d'un ingrédient du catalogue en mode édition, commit aa40d5a ; Sprint 6 — reconnaissance d'une ligne issue d'une sous-recette et avertissements adaptés, commit 32e3804 ; Sprint 7 — fin des ingrédients catalogue fantômes créés pour un nom de sous-recette, commit 3b670d0 ; Sprint 8 — identifiant de sous-recette stocké dans la ligne, commit 255cb1b ; Sprint 9 — préparation serveur du calcul de prix d'une sous-recette, commit ee73ccd ; Sprint 10 — effacement de l'identifiant de sous-recette sur association catalogue/prix modifié à la main, commit fe90bbc ; Sprint 11 — catalogue chargé une seule fois par appel au lieu d'une fois par recette, commit e138634 ; Sprint 12 — prix d'une ligne suivie recalculé depuis sa sous-recette, commit f8ffb88 ; Sprint 13 — libellé du coût unitaire des sous-recettes corrigé (EUR/kg, EUR/L, EUR/pièce), commit c8240ec ; Sprint 14 — affichage d'une ligne suivie comme un ingrédient (prix verrouillé, étiquette cohérente), commit ab36acd ; Sprint 15 — suppression de l'avertissement trompeur des anciennes lignes de sous-recette, commit 193780e ; 2026-10-08 — audit de pré-lancement : S1 écritures multi-tenant, commit e3eb40e ; S2a webhook Stripe, commit b9bd046 ; S3 suppression de la bibliothèque xlsx, commit 7fd5c94 ; S4 fin du repli sur les ingrédients demo, commit 61fc55e ; 2026-10-09 — S5 alias par utilisateur (d640173) ; S2b Stripe identifiant utilisateur et handlers (84e4833) ; S2c portail client (2e85441) ; S6 réponses de profil sans jetons (b3faf40) ; S7 quota IA (d1ba0fe) ; S2d délai de grâce 7 jours (594c521) ; S8 erreurs IA et finitions (056b95e) ; 2026-10-12 — test réel d'un paiement de bout en bout réussi (voir « Audit de pré-lancement »), plan Render payant 7 $/mois)
+> Dernière mise à jour : 2026-10-12 (Sprint 1 — prompts IA alignés sur les 7 unités officielles, commit b556585 ; Sprint 2 — normalisation des unités dans conversions.js, commit c7d7c95 ; Sprint 3 — signal des lignes incomplètes, commit e16f136 ; correctif matching prix IA (apostrophes/ligatures/espaces), commit 66fde6a ; Sprint 4 — signal d'incohérence de famille d'unité (pièce vs masse/volume), commit bbdf126 ; Sprint 5 — message d'information sur le prix d'un ingrédient du catalogue en mode édition, commit aa40d5a ; Sprint 6 — reconnaissance d'une ligne issue d'une sous-recette et avertissements adaptés, commit 32e3804 ; Sprint 7 — fin des ingrédients catalogue fantômes créés pour un nom de sous-recette, commit 3b670d0 ; Sprint 8 — identifiant de sous-recette stocké dans la ligne, commit 255cb1b ; Sprint 9 — préparation serveur du calcul de prix d'une sous-recette, commit ee73ccd ; Sprint 10 — effacement de l'identifiant de sous-recette sur association catalogue/prix modifié à la main, commit fe90bbc ; Sprint 11 — catalogue chargé une seule fois par appel au lieu d'une fois par recette, commit e138634 ; Sprint 12 — prix d'une ligne suivie recalculé depuis sa sous-recette, commit f8ffb88 ; Sprint 13 — libellé du coût unitaire des sous-recettes corrigé (EUR/kg, EUR/L, EUR/pièce), commit c8240ec ; Sprint 14 — affichage d'une ligne suivie comme un ingrédient (prix verrouillé, étiquette cohérente), commit ab36acd ; Sprint 15 — suppression de l'avertissement trompeur des anciennes lignes de sous-recette, commit 193780e ; 2026-10-08 — audit de pré-lancement : S1 écritures multi-tenant, commit e3eb40e ; S2a webhook Stripe, commit b9bd046 ; S3 suppression de la bibliothèque xlsx, commit 7fd5c94 ; S4 fin du repli sur les ingrédients demo, commit 61fc55e ; 2026-10-09 — S5 alias par utilisateur (d640173) ; S2b Stripe identifiant utilisateur et handlers (84e4833) ; S2c portail client (2e85441) ; S6 réponses de profil sans jetons (b3faf40) ; S7 quota IA (d1ba0fe) ; S2d délai de grâce 7 jours (594c521) ; S8 erreurs IA et finitions (056b95e) ; 2026-10-12 — test réel d'un paiement de bout en bout réussi (voir « Audit de pré-lancement »), plan Render payant 7 $/mois ; audit de cohérence CONTEXTE.md ↔ code : corrections de documentation)
 
 ---
 
@@ -72,7 +72,7 @@ Créé automatiquement au démarrage du serveur si absent (`user_id: "demo"`). C
 - Express 4.18
 - **MongoDB Atlas M0**, driver natif `mongodb` v6 (pas Mongoose), base : `cloveria`
 - Auth : `jsonwebtoken` (JWT 7j) + `bcryptjs`, `req.userId` injecté par middleware
-- IA : `@anthropic-ai/sdk`, modèle `claude-sonnet-4-6`
+- IA : `@anthropic-ai/sdk`, modèles `claude-sonnet-4-6` (analyser-ventes, analyser-fiche, structurer) et `claude-haiku-4-5-20251001` (analyser-facture, description-commerciale)
 - Upload : `multer` (mémoire, 10 Mo max, JPEG/PNG/WebP/PDF)
 - IDs : `uuid` v4 pour toutes les entités
 - Emails : **Resend uniquement** (`resend` package) — nodemailer non utilisé
@@ -106,11 +106,12 @@ npm run dev           # lance les deux en parallèle (concurrently)
 | `PORT` | Non | Défaut : `3001` |
 | `CORS_ORIGIN` | Non | Origines autorisées, séparées par virgule (défaut : `*`) |
 | `RESEND_API_KEY` | Oui (prod) | Clé API Resend — emails transactionnels et relances |
-| `APP_URL` | Non | URL de l'app (défaut : `https://app.cloveria-pro.fr`) — utilisé dans les liens des emails |
+| `RESEND_FROM_EMAIL` | Non | Expéditeur des e-mails Resend (`notifications.js`, `verification.js`) — défaut : `CloverIA <contact@cloveria.fr>` |
+| `APP_URL` | Non | URL de l'app (défaut : `https://app.cloveria-pro.fr`) — utilisée dans les liens des emails, et aussi comme `return_url` du portail client Stripe (`stripe.js`) |
 | `ADMIN_SECRET` | Oui (prod) | Clé secrète pour l'accès à la route `/api/admin` (header `X-Admin-Key`) |
 | `INTERNAL_NOTIFICATION_EMAIL` | Non | Email interne pour notifications nouveau client / suppression compte (défaut : `contact@cloveria.fr`) |
 | `STRIPE_SECRET_KEY` | Oui (prod) | Clé secrète Stripe (`sk_live_...` ou `sk_test_...`) |
-| `STRIPE_PUBLISHABLE_KEY` | Oui (prod) | Clé publique Stripe (exposée côté client via l'API) |
+| `STRIPE_PUBLISHABLE_KEY` | Oui (prod) | Clé publique Stripe — non lue par le serveur (usage côté client non vérifié) |
 | `STRIPE_PRICE_ID` | Oui (prod) | ID du prix Stripe pour l'abonnement 39 €/mois |
 | `STRIPE_WEBHOOK_SECRET` | Oui (prod) | Secret de signature des webhooks Stripe (`whsec_...`) |
 | ~~`EMAIL_USER`~~ | — | Obsolète — remplacé par Resend |
@@ -138,7 +139,7 @@ cloveria-fichetech/
 │   │   ├── ingredients.js          # CRUD
 │   │   ├── cartes.js               # CRUD
 │   │   ├── parametres.js           # GET/PUT (1 doc par user)
-│   │   ├── ia.js                   # /structurer, /description-commerciale, /analyser-fiche, /analyser-ventes
+│   │   ├── ia.js                   # /structurer, /description-commerciale, /analyser-fiche, /analyser-facture, /analyser-ventes
 │   │   ├── aliases.js              # GET/POST (upsert) — mapping noms ingrédients
 │   │   ├── historique_prix.js      # GET/POST/DELETE — horodatage ISO 8601 complet
 │   │   ├── sous_recettes.js        # CRUD sous-recettes (préparations de base réutilisables)
@@ -410,12 +411,32 @@ cloveria-fichetech/
 
 > Stocké automatiquement à chaque appel `POST /api/ia/analyser-fiche` — le fichier complet (image/PDF) est écrit en base à chaque analyse, indépendamment de toute sauvegarde de fiche ultérieure par l'utilisateur. Absente du reste de cette documentation jusqu'ici.
 
+### `documents_factures`
+```json
+{
+  "id": "uuid",
+  "user_id": "uuid",
+  "nomFichier": "string",
+  "fileBase64": "string",
+  "fileMimeType": "string",
+  "dateImport": "ISO8601",
+  "statut": "validé",
+  "fournisseur": "string|null",
+  "dateFacture": "string|null",
+  "moisFacture": "string|null",
+  "anneeFacture": "string|null",
+  "categorieAchat": "string|null",
+  "ingredientsLies": ["string"]
+}
+```
+
+> Stocké automatiquement à chaque appel `POST /api/ia/analyser-facture` (`server/routes/ia.js`). `ingredientsLies` est la liste des noms de produits extraits par l'IA (`result.produits[].nom`). Accessible via `GET /api/documents/factures` et `GET /api/documents/factures/:id/file` (`server/routes/documents.js`).
+
 ---
 
 ## Routes API
 
-Toutes les routes sauf `/api/auth/*`, `/api/admin/*` et `/api/health` requièrent `Authorization: Bearer <token>`.  
-Les routes `/api/admin/*` requièrent le header `X-Admin-Key`.
+Toutes les routes requièrent `Authorization: Bearer <token>`, sauf `/api/health`, `/api/admin/*` (header `X-Admin-Key`), `/api/stripe/webhook` (signature Stripe) et, sous `/api/auth`, `register`, `login`, `forgot-password`, `reset-password`, `verify-email` (publiques) ; `resend-verification`, `GET`/`PUT /profil` et `DELETE /account` exigent bien un Bearer.
 
 | Méthode | Route | Description |
 |---|---|---|
@@ -450,6 +471,7 @@ Les routes `/api/admin/*` requièrent le header `X-Admin-Key`.
 | POST | `/api/ia/structurer` | Description libre → fiche complète (JSON) |
 | POST | `/api/ia/description-commerciale` | Génère `description_commerciale` pour fiche existante |
 | POST | `/api/ia/analyser-fiche` | Image/PDF fiche → JSON structuré (multipart) |
+| POST | `/api/ia/analyser-facture` | Scan de facture fournisseur (image/PDF) → données structurées (multipart) |
 | POST | `/api/ia/analyser-ventes` | Fichier ventes → données menu engineering (multipart) |
 | GET/POST/DELETE | `/api/historique-prix` | Historique prix ingrédients |
 | GET/POST | `/api/aliases` | Mapping noms ingrédients (upsert) |
@@ -457,8 +479,9 @@ Les routes `/api/admin/*` requièrent le header `X-Admin-Key`.
 | GET/POST/PUT/DELETE | `/api/ventes` | Rapports de ventes Menu Engineering |
 | GET | `/api/ventes/dates?month=` | Dates distinctes avec imports pour un mois (YYYY-MM) |
 | GET | `/api/ventes/by-date?date=` | Rapports d'une date donnée (YYYY-MM-DD) |
-| GET/POST/DELETE | `/api/documents/:type/:id?` | Archive documents (factures fournisseurs, scans ventes) |
+| GET | `/api/documents/:type` | Liste des documents archivés (`type` = `factures`\|`fiches`\|`ventes`) |
 | GET | `/api/documents/:type/:id/file` | Fichier brut base64 d'un document (`{ base64, mimeType, nomFichier }`) |
+| DELETE | `/api/documents/:type/:id` | Supprime un document archivé |
 | GET/POST/PUT/DELETE | `/api/agenda/:id?` | CRUD rappels/événements/notes |
 | POST | `/api/onboarding/inject-example` | Injecte le pack démarrage exemple |
 | POST | `/api/onboarding/skip-example` | Passe le pack exemple |
@@ -469,6 +492,8 @@ Les routes `/api/admin/*` requièrent le header `X-Admin-Key`.
 > `DELETE /api/auth/delete-test-account` a existé puis a été supprimée (Sprint S1, `e3eb40e`) — elle n'apparaît plus ci-dessus. Depuis le Sprint S2c (`2e85441`), le portail client Stripe existe (`create-portal-session` ci-dessus) — la page `Abonnement.jsx` et la section « Mon abonnement » de `Parametres.jsx` y renvoient.
 >
 > Depuis le Sprint S7, les routes `/api/ia/*` répondent `429 { code: 'quota_ia_atteint' }` au-delà du quota mensuel, et `503`/`500` avec `code: 'ia_indisponible'`/`'ia_erreur'` en cas d'erreur Anthropic (Sprint S8) — jamais le message brut d'Anthropic.
+>
+> `server/routes/documents.js` n'a pas de route `POST` : les documents (`documents_factures`, `documents_fiches`, `documents_ventes`) sont créés directement par les routes `/api/ia/analyser-*` (`server/routes/ia.js`), jamais via `/api/documents/*`.
 
 ---
 
@@ -571,6 +596,7 @@ Anti-doublon : chaque clé envoyée est pushée dans `user.lifecycleEmailsSent`.
 - **Comparaison fournisseurs** par ingrédient
 - **Enrichissement automatique** : `prixUnitaire` des ingrédients de recette est résolu depuis le catalog (matching normalisé accents)
 - **Système d'aliases** : association mémorisée entre noms différents d'un même ingrédient
+- **Scan de facture fournisseur par IA** : `POST /api/ia/analyser-facture`
 
 ### Cartes
 - CRUD cartes avec sections par catégorie
@@ -627,11 +653,11 @@ Anti-doublon : chaque clé envoyée est pushée dans `user.lifecycleEmailsSent`.
 ### Pack démarrage exemple
 Proposé à la fin de l'onboarding (choix UX : "Explorer avec des exemples" ou "Partir de zéro").  
 Si accepté, injecte via `POST /api/onboarding/inject-example` :
-- ~15 ingrédients (À vérifier — nombre exact dans `data/example_pack.json`)
-- ~3 fiches techniques (À vérifier)
-- ~2 sous-recettes (À vérifier)
-- ~1 carte (À vérifier)
-- Éléments d'organisation / agenda (À vérifier)
+- 15 ingrédients (`server/data/example_pack.json`)
+- 3 fiches techniques
+- 2 sous-recettes
+- 1 carte
+- 3 éléments d'agenda
 
 Tous les éléments injectés ont `_source: 'example'` pour être exclus des compteurs CRM et des critères d'activation.  
 Choix mémorisé dans `user.examplePackChoice` (`'example'` ou `'skip'`).
@@ -746,7 +772,7 @@ Il est passé en `key` à `<EditeurCarte key={...}>` pour forcer son remontage e
 
 ### checkAccess — middleware d'accès
 Appliqué sur toutes les routes protégées sauf `/auth/*` et `/stripe/*`.  
-Ordre des vérifications : `trialStartDate` absent → accès libre (anciens comptes) | `betaAccess: true` | `subscriptionStatus: 'active'` | `subscriptionStatus: 'lifetime'` | `trial` non expiré → sinon 403 `trial_expired`.
+Ordre des vérifications : `trialStartDate` absent → accès libre (anciens comptes) | `betaAccess: true` | `subscriptionStatus: 'active'` | `'lifetime'` | `'past_due'` avec `pastDueSince` de moins de 7 jours (`delaiDeGraceActif`, Sprint S2d) | `trial` non expiré → sinon 403 `trial_expired`.
 
 ### SAFE_PROJECTION (admin)
 ```js
@@ -774,7 +800,7 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 - **Index MongoDB sur `users.id`** (Sprint 1) : index créé sur Atlas — `checkAccess` et `updateLastSeen` font un lookup par `id` sur chaque requête. Plus de full scan.
 
 ### Recommandations non appliquées
-- **CORS** : vérifier que `CORS_ORIGIN` est défini sur Render (sinon `*` en production).
+- ~~**CORS** : vérifier que `CORS_ORIGIN` est défini sur Render (sinon `*` en production).~~ confirmé par Seb le 2026-10-01 (voir « À vérifier, non confirmé »)
 
 ---
 
@@ -782,7 +808,7 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 
 ### Corrigé
 - **S1** (`e3eb40e`) : la route `DELETE /api/auth/delete-test-account` (publique, sans jeton) a été supprimée. Dans les `POST /` de `recettes.js`, `ingredients.js`, `cartes.js`, `sous_recettes.js`, `id` et `user_id` sont désormais placés **après** `...req.body`, pour qu'un corps de requête ne puisse plus les écraser (ex. imposer `user_id: 'demo'`). Le corps de la requête est toujours spreadé en entier — des champs parasites non attendus restent possibles, hors scope de ce correctif.
-- **S2a** (`b9bd046`) : le webhook Stripe est monté avec `express.raw({ type: 'application/json' })` **avant** `express.json()` global (le corps brut est désormais disponible pour la vérification de signature). Si `STRIPE_WEBHOOK_SECRET` est absent, la route répond `500 { error: 'Webhook non configuré' }` au lieu de faire confiance à un corps non vérifié. Un `console.error` a été ajouté quand un événement valide ne trouve aucun utilisateur correspondant. Vérifié par un test de signature invalide (→ 400) et de secret absent (→ 500) ; **non vérifié par un vrai paiement** — la valeur du secret configurée sur Render n'est pas confirmée identique à celle de Stripe — [confirmé le 2026-10-09 par le test réel : livraisons en 200, le secret correspond].
+- **S2a** (`b9bd046`) : le webhook Stripe est monté avec `express.raw({ type: 'application/json' })` **avant** `express.json()` global (le corps brut est désormais disponible pour la vérification de signature). Si `STRIPE_WEBHOOK_SECRET` est absent, la route répond `500 { error: 'Webhook non configuré' }` au lieu de faire confiance à un corps non vérifié. Un `console.error` a été ajouté quand un événement valide ne trouve aucun utilisateur correspondant. Vérifié par un test de signature invalide (→ 400) et de secret absent (→ 500), puis par le test réel du 2026-10-09 : livraisons en 200, le secret configuré sur Render correspond à celui de Stripe.
 - **S3** (`7fd5c94`) : la bibliothèque `xlsx` (vulnérabilité élevée sans correctif disponible) a été supprimée ; l'import `.xlsx`/`.xls` dans `POST /api/ia/analyser-ventes` est désactivé. CSV, PDF et images restent acceptés. Les textes de `MenuEngineering.jsx` (formats acceptés, message d'erreur) ont été mis à jour en conséquence. `npm audit` côté serveur : 8 → 7 vulnérabilités. **Reste ouvert** : un fichier rejeté par `multer` (ex. `.xlsx` envoyé malgré tout) renvoie une erreur `500` faute de middleware d'erreur dédié — le client bloque déjà ces fichiers avant l'envoi, donc sans impact pour un usage normal de l'interface — [corrigé par S8, 056b95e : le middleware d'erreurs renvoie désormais 400 avec un message clair].
 - **S4** (`61fc55e`) : suppression du repli `demo` à 4 endroits : `ia.js` (`matchIngredientPrice`), `recettes.js` (`syncIngredientsToBase` et `chargerCatalogue`), `sous_recettes.js` (`enrichIngredients`). Isolation stricte sur `{ user_id: req.userId }` pour la résolution des prix d'ingrédients. **Effets connus** : les prix déjà enregistrés dans les lignes de fiches restent affichés mais ne suivent plus le catalogue demo ; les nouvelles fiches créées par IA affichent `0` / `⚠️ Prix manquant` pour un ingrédient absent du catalogue de l'utilisateur ; `syncIngredientsToBase` peut créer une entrée à prix `0` dupliquant un nom qui n'existait que côté demo. **À vérifier, non confirmé** : une sous-recette dont un ingrédient n'existe plus que dans le catalogue `demo` pourrait voir son prix tomber à `0` si une entrée à prix `0` est créée dans le catalogue de l'utilisateur (la règle « le catalogue écrase toujours » des sous-recettes).
 - **S5** (`d640173`) : `aliases.js` filtre désormais `GET /` sur `{ user_id: req.userId }` et `POST /` enregistre `user_id` dans l'upsert (`{ from, user_id }`). Les alias créés avant ce correctif, sans `user_id`, sont devenus invisibles pour tous les utilisateurs (non supprimés, toujours en base). Aucun index créé sur `aliases` ; aucune validation de longueur ajoutée.
@@ -790,7 +816,7 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 - **S2c** (`2e85441`) : ajout de `POST /api/stripe/create-portal-session` ; section « Mon abonnement » dans `Parametres.jsx` ; lien de gestion d'abonnement dans `Abonnement.jsx` ; `GET /profil` renvoie désormais `hasStripeCustomer` et plus `stripeCustomerId`/`stripeSubscriptionId`. Portail client Stripe configuré dans le tableau de bord (factures, informations client, moyens de paiement, annulation à la fin de la période, motif de résiliation demandé, abonnements désactivés dans le portail).
 - **S6** (`b3faf40`) : `buildProfilResponse()` retire désormais de `GET` et `PUT /profil` : `password_hash`, `emailVerificationToken`/`Expiry`/`SentAt`, `passwordResetToken`/`Expiry`, `stripeCustomerId`, `stripeSubscriptionId` — ces champs restent écrits en base, seule la réponse change. `PUT /profil` utilise une liste blanche (`ALLOWED`) : `subscriptionStatus`, `betaAccess`, `trialEndDate`, `emailVerified`, `email` ne sont pas modifiables par l'utilisateur via cette route.
 - **S7** (`d1ba0fe`) : quota IA mensuel par utilisateur, 300 points par fenêtre (`description-commerciale` = 1, `structurer` = 2, `analyser-facture`/`fiche`/`ventes` = 3), fenêtre au format `AAAA-MM` calculée en UTC, champs `iaCallsCount` et `iaCallsWindow` sur `users`, réservation atomique avant chaque appel Anthropic, remboursement si l'appel échoue, réponse `429` avec `code: 'quota_ia_atteint'`. Aucune exception pour le compte `demo`. **La limite de 300 est une valeur de départ, à recaler avec la consommation réelle.** Un incrément de compteur peut être écrasé en cas d'écriture simultanée du document utilisateur (`PUT /profil`, webhooks Stripe) — risque faible, noté.
-- **S2d** (`594c521`) : délai de grâce de 7 jours après un premier échec de paiement — champ `pastDueSince` posé dans `invoice.payment_failed` et `customer.subscription.updated` (statut `past_due`), effacé au retour à `'active'` ; `checkAccess` laisse passer un compte `past_due` pendant 7 jours (lecture seule, aucune écriture) ; `'cancelled'` reste sans délai ; e-mail de prévenance `envoyerPastDue()` (`relances.js`), envoyé une seule fois par épisode ; page `Abonnement.jsx` adaptée pour un compte avec `hasStripeCustomer`. **Limite** : le câblage des événements et l'envoi réel de l'e-mail n'ont pas été testés de bout en bout (aucun paiement réel reçu à ce jour) — [mis à jour le 2026-10-09 : un paiement réel a été effectué ; le chemin du paiement échoué (invoice.payment_failed) et l'e-mail de délai de grâce restent non testés].
+- **S2d** (`594c521`) : délai de grâce de 7 jours après un premier échec de paiement — champ `pastDueSince` posé dans `invoice.payment_failed` et `customer.subscription.updated` (statut `past_due`), effacé au retour à `'active'` ; `checkAccess` laisse passer un compte `past_due` pendant 7 jours (lecture seule, aucune écriture) ; `'cancelled'` reste sans délai ; e-mail de prévenance `envoyerPastDue()` (`relances.js`), envoyé une seule fois par épisode ; page `Abonnement.jsx` adaptée pour un compte avec `hasStripeCustomer`. **Limite** : le chemin du paiement échoué (`invoice.payment_failed`) et l'envoi réel de l'e-mail de délai de grâce n'ont pas été testés (le test réel du 2026-10-09 a couvert le parcours nominal).
 - **S8** (`056b95e`) : `messageErreurIA()` (`ia.js`) — les erreurs Anthropic ne renvoient plus `err.message` au client, remplacées par des messages génériques avec `code: 'ia_indisponible'` ou `'ia_erreur'` ; journal préfixé `[IA][ALERTE]` pour les erreurs de configuration ou de crédit épuisé ; `try/catch` ajouté autour de `getDb()`/`reserverQuota()` dans les 5 routes IA ; délai Anthropic fixé à 90 s, `maxRetries: 0` ; middleware d'erreurs à 4 arguments ajouté en fin de pile dans `index.js` (gère `MulterError`, fichier trop volumineux, erreurs `4xx`, `500` générique) ; `process.on('unhandledRejection')` journalise sans arrêter le processus ; bouton « Mettre à jour mon moyen de paiement » (page Abonnement) harmonisé en vert pleine largeur.
 
 ### Test réel de paiement (2026-10-09)
@@ -914,7 +940,7 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 ### À vérifier, non confirmé
 - [x] `JWT_SECRET` réellement défini sur Render (une valeur par défaut est codée en dur dans `server/middleware/auth.js` ET dans `server/routes/auth.js`) — confirmé par Seb le 2026-10-01
 - [x] `CORS_ORIGIN` défini sur Render en production — confirmé par Seb le 2026-10-01 (ajouté)
-- [ ] Exécution effective des crons quotidiens (relances/lifecycle) sur le plan gratuit Render — le service ne dort plus depuis le 2026-10-12 ; exécution réelle du cron non vérifiée
+- [ ] Exécution effective des crons quotidiens (relances/lifecycle) — le service ne dort plus depuis le 2026-10-12 ; exécution réelle non vérifiée
 - [ ] Limite de stockage 512 Mo de MongoDB Atlas M0 — marge restante non vérifiée
 - [x] Quotas d'usage des appels IA (Anthropic) — aucun suivi/limite applicatif identifié — traité : quota mensuel par utilisateur, Sprint S7, d1ba0fe ; coût réel par appel non mesuré
 - [x] Route Stripe portal (gestion abonnement côté client) — traité : Sprint S2c, 2e85441 ; testé le 2026-10-09 (ouverture du portail, retour vers /parametres, résiliation)
