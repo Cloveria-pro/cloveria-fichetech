@@ -105,6 +105,12 @@ export default function App() {
     return () => window.removeEventListener('trial_expired', handler);
   }, [navigate]);
 
+  useEffect(() => {
+    const handler = () => { handleLogout(); navigate('/login'); };
+    window.addEventListener('session_invalide', handler);
+    return () => window.removeEventListener('session_invalide', handler);
+  }, [navigate]);
+
   function handleLogin(newToken, newUser) {
     localStorage.setItem('token', newToken);
     localStorage.setItem('user', JSON.stringify(newUser));

@@ -9,7 +9,24 @@ export function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+// Messages exacts renvoyés par server/middleware/auth.js pour un jeton absent ou invalide (401).
+const MESSAGES_401_SESSION_INVALIDE = ['Non authentifié', 'Token invalide ou expiré'];
+
+export function estSessionInvalide(status, body, aUnToken) {
+  if (!aUnToken) return false;
+  if (status === 401 && MESSAGES_401_SESSION_INVALIDE.includes(body?.error)) return true;
+  if (status === 403 && body?.error === 'account_disabled') return true;
+  return false;
+}
+
+function signalerSessionInvalide() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  window.dispatchEvent(new CustomEvent('session_invalide'));
+}
+
 async function request(path, options = {}) {
+  const aUnToken = !!getToken();
   const res = await fetch(`${API_URL}${path}`, {
     headers: { 'Content-Type': 'application/json', ...authHeaders(), ...options.headers },
     ...options
@@ -19,6 +36,9 @@ async function request(path, options = {}) {
     if (res.status === 403 && body?.error === 'trial_expired') {
       window.dispatchEvent(new CustomEvent('trial_expired', { detail: body }));
       throw new Error('trial_expired');
+    }
+    if (estSessionInvalide(res.status, body, aUnToken)) {
+      signalerSessionInvalide();
     }
     const err = new Error(body?.error || body?.message || 'Erreur de communication');
     err.code = body?.code;
@@ -67,24 +87,40 @@ export const api = {
   ia: {
     structurer: (description) => request('/ia/structurer', { method: 'POST', body: JSON.stringify({ description }) }),
     descriptionCommerciale: (data) => request('/ia/description-commerciale', { method: 'POST', body: JSON.stringify(data) }),
-    analyserFiche: (formData) => fetch(`${API_URL}/ia/analyser-fiche`, {
-      method: 'POST',
-      headers: { ...authHeaders() },
-      body: formData,
-    }).then(async res => {
-      const body = await res.json().catch(() => null);
-      if (!res.ok) { const err = new Error(body?.error || 'Erreur serveur'); err.code = body?.code; throw err; }
-      return body;
-    }),
-    analyserVentes: (formData) => fetch(`${API_URL}/ia/analyser-ventes`, {
-      method: 'POST',
-      headers: { ...authHeaders() },
-      body: formData,
-    }).then(async res => {
-      const body = await res.json().catch(() => null);
-      if (!res.ok) { const err = new Error(body?.error || 'Erreur serveur'); err.code = body?.code; throw err; }
-      return body;
-    }),
+    analyserFiche: (formData) => {
+      const aUnToken = !!getToken();
+      return fetch(`${API_URL}/ia/analyser-fiche`, {
+        method: 'POST',
+        headers: { ...authHeaders() },
+        body: formData,
+      }).then(async res => {
+        const body = await res.json().catch(() => null);
+        if (!res.ok) {
+          if (body?.error !== 'trial_expired' && estSessionInvalide(res.status, body, aUnToken)) {
+            signalerSessionInvalide();
+          }
+          const err = new Error(body?.error || 'Erreur serveur'); err.code = body?.code; throw err;
+        }
+        return body;
+      });
+    },
+    analyserVentes: (formData) => {
+      const aUnToken = !!getToken();
+      return fetch(`${API_URL}/ia/analyser-ventes`, {
+        method: 'POST',
+        headers: { ...authHeaders() },
+        body: formData,
+      }).then(async res => {
+        const body = await res.json().catch(() => null);
+        if (!res.ok) {
+          if (body?.error !== 'trial_expired' && estSessionInvalide(res.status, body, aUnToken)) {
+            signalerSessionInvalide();
+          }
+          const err = new Error(body?.error || 'Erreur serveur'); err.code = body?.code; throw err;
+        }
+        return body;
+      });
+    },
   },
   ventes: {
     list: () => request('/ventes'),
