@@ -1,6 +1,6 @@
 # CloverIA FicheTech — Contexte projet
 
-> Dernière mise à jour : 2026-10-12 (Sprint 1 — prompts IA alignés sur les 7 unités officielles, commit b556585 ; Sprint 2 — normalisation des unités dans conversions.js, commit c7d7c95 ; Sprint 3 — signal des lignes incomplètes, commit e16f136 ; correctif matching prix IA (apostrophes/ligatures/espaces), commit 66fde6a ; Sprint 4 — signal d'incohérence de famille d'unité (pièce vs masse/volume), commit bbdf126 ; Sprint 5 — message d'information sur le prix d'un ingrédient du catalogue en mode édition, commit aa40d5a ; Sprint 6 — reconnaissance d'une ligne issue d'une sous-recette et avertissements adaptés, commit 32e3804 ; Sprint 7 — fin des ingrédients catalogue fantômes créés pour un nom de sous-recette, commit 3b670d0 ; Sprint 8 — identifiant de sous-recette stocké dans la ligne, commit 255cb1b ; Sprint 9 — préparation serveur du calcul de prix d'une sous-recette, commit ee73ccd ; Sprint 10 — effacement de l'identifiant de sous-recette sur association catalogue/prix modifié à la main, commit fe90bbc ; Sprint 11 — catalogue chargé une seule fois par appel au lieu d'une fois par recette, commit e138634 ; Sprint 12 — prix d'une ligne suivie recalculé depuis sa sous-recette, commit f8ffb88 ; Sprint 13 — libellé du coût unitaire des sous-recettes corrigé (EUR/kg, EUR/L, EUR/pièce), commit c8240ec ; Sprint 14 — affichage d'une ligne suivie comme un ingrédient (prix verrouillé, étiquette cohérente), commit ab36acd ; Sprint 15 — suppression de l'avertissement trompeur des anciennes lignes de sous-recette, commit 193780e ; 2026-10-08 — audit de pré-lancement : S1 écritures multi-tenant, commit e3eb40e ; S2a webhook Stripe, commit b9bd046 ; S3 suppression de la bibliothèque xlsx, commit 7fd5c94 ; S4 fin du repli sur les ingrédients demo, commit 61fc55e ; 2026-10-09 — S5 alias par utilisateur (d640173) ; S2b Stripe identifiant utilisateur et handlers (84e4833) ; S2c portail client (2e85441) ; S6 réponses de profil sans jetons (b3faf40) ; S7 quota IA (d1ba0fe) ; S2d délai de grâce 7 jours (594c521) ; S8 erreurs IA et finitions (056b95e) ; 2026-10-12 — test réel d'un paiement de bout en bout réussi (voir « Audit de pré-lancement »), plan Render payant 7 $/mois ; audit de cohérence CONTEXTE.md ↔ code : corrections de documentation)
+> Dernière mise à jour : 2026-10-12 (Sprint 1 — prompts IA alignés sur les 7 unités officielles, commit b556585 ; Sprint 2 — normalisation des unités dans conversions.js, commit c7d7c95 ; Sprint 3 — signal des lignes incomplètes, commit e16f136 ; correctif matching prix IA (apostrophes/ligatures/espaces), commit 66fde6a ; Sprint 4 — signal d'incohérence de famille d'unité (pièce vs masse/volume), commit bbdf126 ; Sprint 5 — message d'information sur le prix d'un ingrédient du catalogue en mode édition, commit aa40d5a ; Sprint 6 — reconnaissance d'une ligne issue d'une sous-recette et avertissements adaptés, commit 32e3804 ; Sprint 7 — fin des ingrédients catalogue fantômes créés pour un nom de sous-recette, commit 3b670d0 ; Sprint 8 — identifiant de sous-recette stocké dans la ligne, commit 255cb1b ; Sprint 9 — préparation serveur du calcul de prix d'une sous-recette, commit ee73ccd ; Sprint 10 — effacement de l'identifiant de sous-recette sur association catalogue/prix modifié à la main, commit fe90bbc ; Sprint 11 — catalogue chargé une seule fois par appel au lieu d'une fois par recette, commit e138634 ; Sprint 12 — prix d'une ligne suivie recalculé depuis sa sous-recette, commit f8ffb88 ; Sprint 13 — libellé du coût unitaire des sous-recettes corrigé (EUR/kg, EUR/L, EUR/pièce), commit c8240ec ; Sprint 14 — affichage d'une ligne suivie comme un ingrédient (prix verrouillé, étiquette cohérente), commit ab36acd ; Sprint 15 — suppression de l'avertissement trompeur des anciennes lignes de sous-recette, commit 193780e ; 2026-10-08 — audit de pré-lancement : S1 écritures multi-tenant, commit e3eb40e ; S2a webhook Stripe, commit b9bd046 ; S3 suppression de la bibliothèque xlsx, commit 7fd5c94 ; S4 fin du repli sur les ingrédients demo, commit 61fc55e ; 2026-10-09 — S5 alias par utilisateur (d640173) ; S2b Stripe identifiant utilisateur et handlers (84e4833) ; S2c portail client (2e85441) ; S6 réponses de profil sans jetons (b3faf40) ; S7 quota IA (d1ba0fe) ; S2d délai de grâce 7 jours (594c521) ; S8 erreurs IA et finitions (056b95e) ; 2026-10-12 — test réel d'un paiement de bout en bout réussi (voir « Audit de pré-lancement »), plan Render payant 7 $/mois ; audit de cohérence CONTEXTE.md ↔ code : corrections de documentation ; S9 suppression de compte et Stripe (0c47cf9) ; S10 effacement réel à la suppression de compte (6823d8e))
 
 ---
 
@@ -334,6 +334,19 @@ cloveria-fichetech/
 ```json
 { "from": "crevettes roses", "to": "crevette", "user_id": "uuid (Sprint S5)" }
 ```
+
+### `sous_recettes`
+```json
+{
+  "id": "uuid",
+  "user_id": "uuid",
+  "ingredients": [{ "nom": "string", "prixUnitaire": "nombre" }],
+  "createdAt": "ISO8601",
+  "updatedAt": "ISO8601"
+}
+```
+
+> `server/routes/sous_recettes.js`. Les autres champs envoyés par le client (`req.body`) sont stockés tels quels (CRUD classique). `GET /` et `GET /:id` enrichissent `ingredients[].prixUnitaire` à la lecture depuis le catalogue (`ingredients`) de l'utilisateur, par correspondance de nom normalisé.
 
 ### `agenda`
 ```json
@@ -772,7 +785,7 @@ Il est passé en `key` à `<EditeurCarte key={...}>` pour forcer son remontage e
 
 ### checkAccess — middleware d'accès
 Appliqué sur toutes les routes protégées sauf `/auth/*` et `/stripe/*`.  
-Ordre des vérifications : `trialStartDate` absent → accès libre (anciens comptes) | `betaAccess: true` | `subscriptionStatus: 'active'` | `'lifetime'` | `'past_due'` avec `pastDueSince` de moins de 7 jours (`delaiDeGraceActif`, Sprint S2d) | `trial` non expiré → sinon 403 `trial_expired`.
+Ordre des vérifications : compte introuvable, supprimé ou désactivé → `403 account_disabled` | `trialStartDate` absent → accès libre (anciens comptes) | `betaAccess` | `active` | `lifetime` | `past_due` avec `pastDueSince` de moins de 7 jours (`delaiDeGraceActif`, Sprint S2d) | `trial` non expiré → sinon 403 `trial_expired`.
 
 ### SAFE_PROJECTION (admin)
 ```js
@@ -818,6 +831,8 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 - **S7** (`d1ba0fe`) : quota IA mensuel par utilisateur, 300 points par fenêtre (`description-commerciale` = 1, `structurer` = 2, `analyser-facture`/`fiche`/`ventes` = 3), fenêtre au format `AAAA-MM` calculée en UTC, champs `iaCallsCount` et `iaCallsWindow` sur `users`, réservation atomique avant chaque appel Anthropic, remboursement si l'appel échoue, réponse `429` avec `code: 'quota_ia_atteint'`. Aucune exception pour le compte `demo`. **La limite de 300 est une valeur de départ, à recaler avec la consommation réelle.** Un incrément de compteur peut être écrasé en cas d'écriture simultanée du document utilisateur (`PUT /profil`, webhooks Stripe) — risque faible, noté.
 - **S2d** (`594c521`) : délai de grâce de 7 jours après un premier échec de paiement — champ `pastDueSince` posé dans `invoice.payment_failed` et `customer.subscription.updated` (statut `past_due`), effacé au retour à `'active'` ; `checkAccess` laisse passer un compte `past_due` pendant 7 jours (lecture seule, aucune écriture) ; `'cancelled'` reste sans délai ; e-mail de prévenance `envoyerPastDue()` (`relances.js`), envoyé une seule fois par épisode ; page `Abonnement.jsx` adaptée pour un compte avec `hasStripeCustomer`. **Limite** : le chemin du paiement échoué (`invoice.payment_failed`) et l'envoi réel de l'e-mail de délai de grâce n'ont pas été testés (le test réel du 2026-10-09 a couvert le parcours nominal).
 - **S8** (`056b95e`) : `messageErreurIA()` (`ia.js`) — les erreurs Anthropic ne renvoient plus `err.message` au client, remplacées par des messages génériques avec `code: 'ia_indisponible'` ou `'ia_erreur'` ; journal préfixé `[IA][ALERTE]` pour les erreurs de configuration ou de crédit épuisé ; `try/catch` ajouté autour de `getDb()`/`reserverQuota()` dans les 5 routes IA ; délai Anthropic fixé à 90 s, `maxRetries: 0` ; middleware d'erreurs à 4 arguments ajouté en fin de pile dans `index.js` (gère `MulterError`, fichier trop volumineux, erreurs `4xx`, `500` générique) ; `process.on('unhandledRejection')` journalise sans arrêter le processus ; bouton « Mettre à jour mon moyen de paiement » (page Abonnement) harmonisé en vert pleine largeur.
+- **S9** (`0c47cf9`) : `annulerAbonnementStripe()` (`stripe.js`) — lit l'abonnement, ne fait rien s'il est introuvable ou déjà `'canceled'`, sinon l'annule immédiatement ; appelée par `DELETE /api/auth/account` et `DELETE /api/admin/users/:id` avant l'archivage ; si Stripe est injoignable, la suppression est bloquée (`503`, compte intact). `checkAccess` refuse (`403 account_disabled`) un compte `deleted` ou `disabled` avant toute autre vérification (`betaAccess` et `lifetime` compris). Le webhook ignore un compte supprimé (`shouldApplyStripeEvent`). **Limite** : l'annulation d'un vrai abonnement n'est pas testée de bout en bout.
+- **S10** (`6823d8e`) : `server/lib/effacerUtilisateur.js` (`effacerDonneesUtilisateur`) — coupe l'accès (`deleted`/`disabled`), supprime les données de 12 collections (`recettes`, `ingredients`, `cartes`, `sous_recettes`, `aliases`, `historique_prix`, `parametres`, `agenda`, `ventes_imports`, `documents_ventes`, `documents_fiches`, `documents_factures`) puis le document `users` en dernier (l'adresse e-mail est libérée) ; relançable sans erreur ; en cas d'échec, `503` et le compte reste. `checkAccess` refuse désormais un compte introuvable (`403 account_disabled`). Seule `DELETE /api/auth/account` utilise cet effacement. Testé le 2026-10-12 sur un compte de test : compte et données absents, réinscription avec la même adresse réussie. Le customer Stripe n'est pas supprimé (conservation de la facturation).
 
 ### Test réel de paiement (2026-10-09)
 - Parcours testé avec un compte de test dédié (inscription, confirmation d'e-mail, onboarding), puis paiement de 39 € par Stripe Checkout en mode live.
@@ -846,10 +861,27 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 - (j) La page `/verify-email` s'est affichée en blanc après le clic sur le lien de confirmation dans un navigateur où une autre session (demo) était ouverte — cause non diagnostiquée, la confirmation a pourtant été enregistrée.
 - (k) La page `/abonnement` affiche « Votre période d'essai est terminée » pour un compte en essai non expiré qui s'y rend.
 - (l) `POST /register` renvoie des liens vers `cloveria-fichetech.vercel.app` dans son message « compte existant » (adresse technique que le serveur refuse en CORS).
-- (m) Un compte supprimé depuis le CRM reste archivé et bloque la réinscription avec la même adresse.
-- (n) On ne sait pas si la suppression d'un compte (Zone dangereuse de Paramètres ou CRM) résilie l'abonnement Stripe. Le texte de la Zone dangereuse annonce une suppression « définitive et immédiate », alors que CONTEXTE.md décrit un archivage.
+- (m) La suppression volontaire (Zone dangereuse) efface réellement le compte et libère l'adresse (S10) ; la suppression depuis le CRM (`DELETE /users/:id`) et les routes `/test-accounts*` n'effacent toujours pas les données (comptes archivés ou données orphelines).
+- (n) L'abonnement Stripe est annulé à la suppression (S9) ; le customer Stripe est conservé volontairement.
 - (o) Mentions légales et informations d'entreprise des reçus et factures Stripe à vérifier avec un comptable.
 - (p) L'accès à `/parametres` reste possible pour un compte résilié (comportement constaté, non analysé).
+- (q) Le bouton « Supprimer tous les comptes test » et `DELETE /test-accounts*` détectent un compte test par sous-chaîne d'e-mail (`test`, `beuce`, `chez`) : à ne pas utiliser avec de vrais clients, et à durcir avant de les brancher sur l'effacement réel.
+- (r) Décision du 2026-10-12 (Seb) : un compte dont l'abonnement est terminé (`cancelled`) ou dont l'essai gratuit est terminé sans abonnement doit être effacé comme à une suppression volontaire 60 jours après cette fin, avec un e-mail de prévenance au 45e jour ; jamais pour un compte `lifetime`, `betaAccess`, demo, `active`, ni `past_due` encore dans son délai de grâce. **NON IMPLÉMENTÉ.** Sprints prévus : S11 (champ `abonnementTermineLe` et e-mail de prévenance), S12 (tâche de purge, simulation par défaut), S13 (migration des comptes existants, lancée par Seb). Aujourd'hui, rien n'efface les données d'un compte résilié ou d'un essai non converti.
+- (s) Textes à aligner avec le comportement réel, après avis d'un professionnel (RGPD, comptabilité) : `CGU.jsx:51` (30 jours après l'essai) et `:69` (conservation 12 mois) ; `PolitiqueConfidentialite.jsx:74` (factures « supprimées après analyse », faux : les fichiers sont conservés) et `:108-114` (durées de conservation). Le texte de la Zone dangereuse est exact depuis S10.
+- (t) Côté client : une erreur `403 account_disabled` n'est pas traitée par `api.js` ni `App.jsx` (pas de déconnexion) ; l'intercepteur 401 de `main.jsx` semble ne pas s'appliquer aux appels de `api.js` (URL absolue) — à vérifier.
+- (u) `PUT /api/auth/profil` ne vérifie pas `deleted` : un jeton encore valide pourrait recréer un document `parametres` pour un compte en cours d'effacement (fenêtre étroite).
+- (v) La notification interne de suppression (`notifierSuppressionCompte`) contient l'adresse du client supprimé : à confirmer avec un conseil RGPD.
+- (w) À confirmer avec un professionnel : durée de conservation des factures de vente (6 ou 10 ans), clauses de sous-traitance (article 28 RGPD) dans les CGU, liste des prestataires dans la politique de confidentialité.
+
+---
+
+## Réglages hors code (tableaux de bord)
+
+> Décrit d'après les écrans vus le 2026-10-09 et le 2026-10-12 ; à revérifier si modifié depuis.
+
+- **Anthropic** : limite de dépense mensuelle 25 $, notification e-mail à 10 $, recharge automatique activée (seuil 5 $, solde ramené à 15 $).
+- **Stripe** : endpoint webhook « CloverIA Webhook Live » avec 5 événements ; nouvelles tentatives de paiement par carte : Smart Retries, 8 fois sur 2 semaines, puis annulation de l'abonnement ; e-mails clients : reçus de paiements réussis et remboursements activés, langue par défaut français ; portail client configuré (annulation à la fin de la période, motif demandé).
+- **Render** : plan payant 7 $/mois (0,5 CPU, 512 Mo) depuis le 2026-10-12 ; maintenance annoncée le 2026-10-14 à 3 h.
 
 ---
 
