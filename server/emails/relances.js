@@ -283,30 +283,34 @@ export function dateEffacementPrevue(user) {
   return fin.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-// E-mail de prévenance avant effacement automatique (Sprint S11). TEXTE PLACEHOLDER — à valider par Seb
-// avant tout envoi réel : doit indiquer la date d'effacement prévue et qu'un réabonnement avant cette
-// date conserve les données. Ne journalise jamais l'adresse e-mail du destinataire.
+// E-mail de prévenance avant effacement automatique (Sprint S11/S12c). Ne journalise jamais
+// l'adresse e-mail du destinataire.
 export async function envoyerPrevenanceEffacement(user) {
   if (!process.env.RESEND_API_KEY) {
     console.warn('[PrevenanceEffacement] RESEND_API_KEY manquant, email non envoyé');
     return;
   }
 
-  const salutation = user.prenom ? `Bonjour ${user.prenom},` : 'Bonjour,';
-  const dateEffacement = dateEffacementPrevue(user) || '[date à déterminer]';
+  const dateEffacement = dateEffacementPrevue(user);
+  if (!dateEffacement) {
+    console.error('[PrevenanceEffacement] date indisponible');
+    throw new Error('prevenance_date_indisponible');
+  }
   const url = `${process.env.APP_URL || 'https://app.cloveria-pro.fr'}/abonnement`;
 
   const html = layout(`
-    <p>${salutation}</p>
-    <p>[TEXTE À VALIDER PAR SEB] Votre compte et vos données CloverIA seront effacés le ${dateEffacement} si vous ne reprenez pas d'abonnement avant cette date. Un réabonnement avant cette date conserve toutes vos données.</p>
-    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:24px 0;"><a href="${url}" target="_blank" style="background-color:#2D6A4F;color:#ffffff !important;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:16px;display:inline-block;mso-padding-alt:0;font-family:Arial,sans-serif;">Reprendre mon abonnement</a></td></tr></table>
-    <p>[TEXTE À VALIDER PAR SEB] Une question ? Écrivez-nous à contact@cloveria.fr.</p>
+    <p>Bonjour,</p>
+    <p>Votre accès à CloverIA est terminé depuis un moment et votre compte est resté inactif.</p>
+    <p>Nous supprimons les comptes inactifs 60 jours après la fin de l'accès. Votre compte et toutes les données qu'il contient (fiches techniques, ingrédients, cartes, factures importées…) seront donc supprimés le ${dateEffacement}, de façon définitive et irréversible.</p>
+    <p>Si vous souhaitez conserver vos données, connectez-vous avant cette date sur <a href="${url}" target="_blank" style="color:#2D6A4F;">app.cloveria-pro.fr</a> et reprenez un abonnement. Si vous n'en avez plus besoin, vous n'avez rien à faire.</p>
+    <p>Une question ? Écrivez-nous à contact@cloveria.fr.</p>
+    <p>L'équipe CloverIA</p>
   `);
 
   const { error } = await resend.emails.send({
     from: 'CloverIA <contact@cloveria.fr>',
     to: user.email,
-    subject: '[TEXTE À VALIDER PAR SEB] Votre compte CloverIA',
+    subject: `Votre compte CloverIA sera supprimé le ${dateEffacement}`,
     html,
   });
   if (error) {
