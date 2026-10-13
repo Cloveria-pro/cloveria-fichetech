@@ -5,7 +5,8 @@ import cors from 'cors';
 import cron from 'node-cron';
 import multer from 'multer';
 import { getDb } from './db.js';
-import { envoyerRelance, envoyerLifecycle } from './emails/relances.js';
+import { envoyerRelance, envoyerLifecycle, envoyerPrevenanceEffacement } from './emails/relances.js';
+import { statutPurge } from './lib/eligibilitePurge.js';
 import recettesRouter from './routes/recettes.js';
 import ingredientsRouter from './routes/ingredients.js';
 import cartesRouter from './routes/cartes.js';
@@ -184,6 +185,48 @@ async function sendLifecycleEmails() {
   }
 }
 
+// ── E-mail de prévenance avant effacement automatique (Sprint S11) ──────────
+// Par défaut (PREVENANCE_EFFACEMENT_ACTIVE absente ou différente de 'true') : mode simulation,
+// compte uniquement les comptes au statut 'prevenir', aucun envoi, aucune donnée personnelle journalisée.
+// Limite : 50 comptes par exécution. S11 ne déclenche jamais d'effacement (statut 'effacer' ignoré ici).
+const PREVENANCE_LIMITE = 50;
+
+async function sendPrevenanceEffacement() {
+  const db = await getDb();
+  const actif = process.env.PREVENANCE_EFFACEMENT_ACTIVE === 'true';
+
+  const users = await db.collection('users')
+    .find({ deleted: { $ne: true }, disabled: { $ne: true } }, { projection: { _id: 0 } })
+    .toArray();
+
+  const aPrevenir = users.filter(u => statutPurge(u) === 'prevenir').slice(0, PREVENANCE_LIMITE);
+
+  if (!actif) {
+    console.log(`[PrevenanceEffacement] (simulation) comptes au statut 'prevenir' : ${aPrevenir.length}`);
+    return;
+  }
+
+  let envoyes = 0;
+  let echecs = 0;
+  for (const user of aPrevenir) {
+    const maintenant = new Date().toISOString();
+    const reservation = await db.collection('users').updateOne(
+      { id: user.id, prevenuEffacementLe: null },
+      { $set: { prevenuEffacementLe: maintenant } }
+    );
+    if (reservation.modifiedCount !== 1) continue;
+
+    try {
+      await envoyerPrevenanceEffacement(user);
+      envoyes++;
+    } catch {
+      await db.collection('users').updateOne({ id: user.id }, { $set: { prevenuEffacementLe: null } });
+      echecs++;
+    }
+  }
+  console.log(`[PrevenanceEffacement] prévenus : ${envoyes}, échecs : ${echecs}`);
+}
+
 // ── Démarrage ────────────────────────────────────────────────────────────────
 getDb()
   .then(() => {
@@ -195,6 +238,7 @@ getDb()
     cron.schedule('0 9 * * *', () => {
       sendTrialEmails().catch(err => console.error('[Cron relances]', err.message));
       sendLifecycleEmails().catch(err => console.error('[Cron lifecycle]', err.message));
+      sendPrevenanceEffacement().catch(err => console.error('[Cron prévenance effacement]', err.message));
     });
     console.log('Cron relances + lifecycle démarré (quotidien à 9h00)');
   })

@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { dateFinReference } from '../lib/eligibilitePurge.js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -268,6 +269,44 @@ export async function envoyerPastDue(user) {
     from: 'CloverIA <contact@cloveria.fr>',
     to: user.email,
     subject: "Votre paiement CloverIA n'a pas abouti",
+    html,
+  });
+}
+
+// Date d'effacement prévue (60 jours après la date de référence : abonnementTermineLe ou, pour un
+// essai jamais converti, trialEndDate), au format "12 octobre 2026" (fr-FR). null si aucune référence.
+export function dateEffacementPrevue(user) {
+  const reference = dateFinReference(user);
+  if (!reference) return null;
+  const debut = new Date(reference);
+  const fin = new Date(debut.getTime() + 60 * 24 * 60 * 60 * 1000);
+  return fin.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+// E-mail de prévenance avant effacement automatique (Sprint S11). TEXTE PLACEHOLDER — à valider par Seb
+// avant tout envoi réel : doit indiquer la date d'effacement prévue et qu'un réabonnement avant cette
+// date conserve les données. Ne journalise jamais l'adresse e-mail du destinataire.
+export async function envoyerPrevenanceEffacement(user) {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('[PrevenanceEffacement] RESEND_API_KEY manquant, email non envoyé');
+    return;
+  }
+
+  const salutation = user.prenom ? `Bonjour ${user.prenom},` : 'Bonjour,';
+  const dateEffacement = dateEffacementPrevue(user) || '[date à déterminer]';
+  const url = `${process.env.APP_URL || 'https://app.cloveria-pro.fr'}/abonnement`;
+
+  const html = layout(`
+    <p>${salutation}</p>
+    <p>[TEXTE À VALIDER PAR SEB] Votre compte et vos données CloverIA seront effacés le ${dateEffacement} si vous ne reprenez pas d'abonnement avant cette date. Un réabonnement avant cette date conserve toutes vos données.</p>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:24px 0;"><a href="${url}" target="_blank" style="background-color:#2D6A4F;color:#ffffff !important;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:16px;display:inline-block;mso-padding-alt:0;font-family:Arial,sans-serif;">Reprendre mon abonnement</a></td></tr></table>
+    <p>[TEXTE À VALIDER PAR SEB] Une question ? Écrivez-nous à contact@cloveria.fr.</p>
+  `);
+
+  await resend.emails.send({
+    from: 'CloverIA <contact@cloveria.fr>',
+    to: user.email,
+    subject: '[TEXTE À VALIDER PAR SEB] Votre compte CloverIA',
     html,
   });
 }

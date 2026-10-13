@@ -10,6 +10,11 @@ function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY);
 }
 
+// Convertit un horodatage d'événement Stripe (secondes Unix) en ISO8601.
+function isoDepuisEventStripe(eventCreated) {
+  return new Date(eventCreated * 1000).toISOString();
+}
+
 // Statut Stripe (customer.subscription.*) -> statut interne. null = aucun changement (statut non mappé).
 export function mapStripeSubscriptionStatus(stripeStatus) {
   if (stripeStatus === 'active' || stripeStatus === 'trialing') return 'active';
@@ -127,6 +132,8 @@ export async function stripeWebhook(req, res) {
           stripeSubscriptionId: subscriptionId || user.stripeSubscriptionId,
           stripeLastEventAt: event.created,
           pastDueSince: null,
+          abonnementTermineLe: null,
+          prevenuEffacementLe: null,
         });
       }
     } else {
@@ -147,6 +154,7 @@ export async function stripeWebhook(req, res) {
           subscriptionStatus: 'cancelled',
           stripeCustomerId: sub.customer || user.stripeCustomerId,
           stripeLastEventAt: event.created,
+          abonnementTermineLe: user.abonnementTermineLe || isoDepuisEventStripe(event.created),
         });
       }
     } else {
@@ -183,7 +191,8 @@ export async function stripeWebhook(req, res) {
             subscriptionStatus: mapped,
             stripeCustomerId: sub.customer || user.stripeCustomerId,
             stripeLastEventAt: event.created,
-            ...(mapped === 'active' ? { pastDueSince: null } : {}),
+            ...(mapped === 'active' ? { pastDueSince: null, abonnementTermineLe: null, prevenuEffacementLe: null } : {}),
+            ...(mapped === 'cancelled' ? { abonnementTermineLe: user.abonnementTermineLe || isoDepuisEventStripe(event.created) } : {}),
           });
         }
       }
@@ -221,7 +230,14 @@ export async function stripeWebhook(req, res) {
         if (user.deleted) console.log('[StripeWebhook] invoice.payment_succeeded : compte supprimé, ignoré');
         else if (user.subscriptionStatus === 'lifetime') console.error('[StripeWebhook] invoice.payment_succeeded : compte lifetime, ignoré');
       } else if (user.subscriptionStatus === 'past_due') {
-        await col.replaceOne({ id: user.id }, { ...user, subscriptionStatus: 'active', stripeLastEventAt: event.created, pastDueSince: null });
+        await col.replaceOne({ id: user.id }, {
+          ...user,
+          subscriptionStatus: 'active',
+          stripeLastEventAt: event.created,
+          pastDueSince: null,
+          abonnementTermineLe: null,
+          prevenuEffacementLe: null,
+        });
       }
     } else {
       console.error('[StripeWebhook] invoice.payment_succeeded : aucun utilisateur correspondant trouvé');
