@@ -7,6 +7,7 @@ import multer from 'multer';
 import { getDb } from './db.js';
 import { envoyerRelance, envoyerLifecycle, envoyerPrevenanceEffacement } from './emails/relances.js';
 import { statutPurge } from './lib/eligibilitePurge.js';
+import { executerPurge, modePurge } from './lib/purgeComptes.js';
 import recettesRouter from './routes/recettes.js';
 import ingredientsRouter from './routes/ingredients.js';
 import cartesRouter from './routes/cartes.js';
@@ -227,6 +228,17 @@ async function sendPrevenanceEffacement() {
   console.log(`[PrevenanceEffacement] prévenus : ${envoyes}, échecs : ${echecs}`);
 }
 
+// ── Effacement automatique des comptes résiliés ou d'essai non converti (Sprint S12) ───────
+// Mode piloté par PURGE_MODE ('reel' uniquement si exact, 'off' si exact, 'simulation' sinon —
+// y compris absente ou mal orthographiée, valeur par défaut la plus sûre). Journalisation en
+// comptages uniquement, jamais d'adresse e-mail, d'identifiant ni de nom d'établissement.
+async function runPurgeComptes() {
+  const db = await getDb();
+  const mode = modePurge();
+  const resultat = await executerPurge(db, { mode });
+  console.log('[PurgeComptes]', JSON.stringify(resultat));
+}
+
 // ── Démarrage ────────────────────────────────────────────────────────────────
 getDb()
   .then(() => {
@@ -234,13 +246,21 @@ getDb()
       console.log(`Serveur demarre sur le port ${PORT}`);
     });
 
-    // Cron quotidien 9h00 : emails de relance essai + lifecycle
+    console.log('[PurgeComptes] mode au démarrage :', modePurge());
+
+    // Cron quotidien 9h00 : emails de relance essai + lifecycle + prévenance effacement
     cron.schedule('0 9 * * *', () => {
       sendTrialEmails().catch(err => console.error('[Cron relances]', err.message));
       sendLifecycleEmails().catch(err => console.error('[Cron lifecycle]', err.message));
       sendPrevenanceEffacement().catch(err => console.error('[Cron prévenance effacement]', err.message));
     });
     console.log('Cron relances + lifecycle démarré (quotidien à 9h00)');
+
+    // Cron quotidien 10h00 : effacement automatique (décalé pour ne pas chevaucher le cron de 9h)
+    cron.schedule('0 10 * * *', () => {
+      runPurgeComptes().catch(err => console.error('[Cron purge comptes]', err.message));
+    });
+    console.log('Cron purge comptes démarré (quotidien à 10h00)');
   })
   .catch(err => {
     console.error('[MongoDB] Connexion impossible:', err.message);
