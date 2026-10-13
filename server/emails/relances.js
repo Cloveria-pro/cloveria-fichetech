@@ -303,10 +303,14 @@ export async function envoyerPrevenanceEffacement(user) {
     <p>[TEXTE À VALIDER PAR SEB] Une question ? Écrivez-nous à contact@cloveria.fr.</p>
   `);
 
-  await resend.emails.send({
+  const { error } = await resend.emails.send({
     from: 'CloverIA <contact@cloveria.fr>',
     to: user.email,
     subject: '[TEXTE À VALIDER PAR SEB] Votre compte CloverIA',
     html,
   });
+  if (error) {
+    console.error('[PrevenanceEffacement] envoi échoué :', error?.name || 'erreur inconnue');
+    throw new Error('prevenance_envoi_echoue');
+  }
 }
