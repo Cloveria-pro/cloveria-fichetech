@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { getDb } from '../db.js';
 import { notifierSuppressionCompte } from '../emails/notifications.js';
 import { annulerAbonnementStripe } from './stripe.js';
+import { effacerDonneesUtilisateur } from '../lib/effacerUtilisateur.js';
 
 const router = express.Router();
 
@@ -30,6 +31,13 @@ function isTestAccount(email) {
   const lower = (email || '').toLowerCase();
   return ['test', 'beuce', 'chez'].some(marker => lower.includes(marker));
 }
+
+// Compte payant (ou passé par Stripe) : jamais supprimé par les routes « comptes test ».
+function estComptePayant(u) {
+  return ['active', 'lifetime', 'past_due'].includes(u.subscriptionStatus) || !!u.stripeCustomerId;
+}
+
+const TEST_PROJECTION = { projection: { _id: 0, id: 1, email: 1, subscriptionStatus: 1, stripeCustomerId: 1, stripeSubscriptionId: 1 } };
 
 function computeStatut(u, nbFiches) {
   if (u.subscriptionStatus === 'active') return 'client engagé';
@@ -133,21 +141,23 @@ router.delete('/users/:id', adminAuth, async (req, res) => {
     const db = await getDb();
     const user = await db.collection('users').findOne({ id: req.params.id }, { projection: { _id: 0, id: 1, email: 1, etablissement: 1, deleted: 1, stripeSubscriptionId: 1 } });
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
-    if (user.deleted) return res.json({ success: true, archived: user.email });
 
     try {
       await annulerAbonnementStripe(user);
     } catch {
-      console.error('[Admin] annulation Stripe à l\'archivage : échec');
-      return res.status(503).json({ error: "Impossible d'annuler l'abonnement Stripe. Le compte n'a pas été archivé." });
+      console.error('[Admin] annulation Stripe à la suppression : échec');
+      return res.status(503).json({ error: "Impossible d'annuler l'abonnement Stripe. Le compte n'a pas été supprimé." });
     }
 
-    await db.collection('users').updateOne(
-      { id: user.id },
-      { $set: { deleted: true, deletedAt: new Date().toISOString(), disabled: true, updated_at: new Date().toISOString() } }
-    );
+    try {
+      await effacerDonneesUtilisateur(db, user.id);
+    } catch (err) {
+      console.error('[Admin] effacement des données à la suppression : échec', err?.collection || 'inconnue');
+      return res.status(503).json({ error: "L'effacement des données n'a pas abouti. Le compte n'a pas été entièrement supprimé." });
+    }
+
     notifierSuppressionCompte({ email: user.email, etablissement: user.etablissement, id: user.id });
-    res.json({ success: true, archived: user.email });
+    res.json({ success: true, archived: user.email, erased: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -206,10 +216,25 @@ router.patch('/users/:id/restore', adminAuth, async (req, res) => {
 router.delete('/test-accounts/:id', adminAuth, async (req, res) => {
   try {
     const db = await getDb();
-    const user = await db.collection('users').findOne({ id: req.params.id }, { projection: { _id: 0, id: 1, email: 1 } });
+    const user = await db.collection('users').findOne({ id: req.params.id }, TEST_PROJECTION);
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
     if (!isTestAccount(user.email)) return res.status(403).json({ error: 'Compte non autorisé à la suppression — email ne correspond pas à un compte test' });
-    await db.collection('users').deleteOne({ id: user.id });
+    if (estComptePayant(user)) return res.status(403).json({ error: 'Compte payant : utiliser la suppression normale' });
+
+    try {
+      await annulerAbonnementStripe(user);
+    } catch {
+      console.error('[Admin] annulation Stripe (compte test) : échec');
+      return res.status(503).json({ error: "Impossible d'annuler l'abonnement Stripe. Le compte n'a pas été supprimé." });
+    }
+
+    try {
+      await effacerDonneesUtilisateur(db, user.id);
+    } catch (err) {
+      console.error('[Admin] effacement des données (compte test) : échec', err?.collection || 'inconnue');
+      return res.status(503).json({ error: "L'effacement des données n'a pas abouti. Le compte n'a pas été entièrement supprimé." });
+    }
+
     res.json({ success: true, deleted: user.email });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -219,12 +244,28 @@ router.delete('/test-accounts/:id', adminAuth, async (req, res) => {
 router.delete('/test-accounts', adminAuth, async (req, res) => {
   try {
     const db = await getDb();
-    const all = await db.collection('users').find({}, { projection: { _id: 0, id: 1, email: 1 } }).toArray();
+    const all = await db.collection('users').find({}, TEST_PROJECTION).toArray();
     const targets = all.filter(u => isTestAccount(u.email));
-    if (targets.length === 0) return res.json({ success: true, deleted: 0, emails: [] });
-    const ids = targets.map(u => u.id);
-    const result = await db.collection('users').deleteMany({ id: { $in: ids } });
-    res.json({ success: true, deleted: result.deletedCount, emails: targets.map(u => u.email) });
+    if (targets.length === 0) return res.json({ success: true, deleted: 0, emails: [], skipped: [], failed: 0 });
+
+    const emails = [];
+    const skipped = [];
+    let failed = 0;
+    for (const user of targets) {
+      if (estComptePayant(user)) {
+        skipped.push(user.email);
+        continue;
+      }
+      try {
+        await annulerAbonnementStripe(user);
+        await effacerDonneesUtilisateur(db, user.id);
+        emails.push(user.email);
+      } catch {
+        failed++;
+      }
+    }
+    console.log(`[Admin] suppression comptes test : supprimés ${emails.length}, ignorés ${skipped.length}, échecs ${failed}`);
+    res.json({ success: true, deleted: emails.length, emails, skipped, failed });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
