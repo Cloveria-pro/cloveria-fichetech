@@ -31,7 +31,7 @@ export default function CGU() {
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: isMobile ? '1.4rem' : '1.75rem', fontWeight: 700, color: T.text, marginBottom: '0.5rem' }}>
             Conditions Générales d'Utilisation
           </h1>
-          <p style={{ color: T.muted, fontSize: '0.875rem' }}>Dernière mise à jour : mai 2025</p>
+          <p style={{ color: T.muted, fontSize: '0.875rem' }}>Dernière mise à jour : octobre 2026</p>
         </div>
 
         <div style={{ background: '#fff', borderRadius: '16px', boxShadow: '0 2px 16px rgba(0,0,0,0.06)', padding: cardPad }}>
@@ -48,7 +48,7 @@ export default function CGU() {
 
           <Section title="Article 3 — Période d'essai">
             <p>Tout nouvel utilisateur bénéficie d'une <strong>période d'essai gratuite de 14 jours</strong> dès l'inscription, sans nécessité de renseigner une carte bancaire. L'ensemble des fonctionnalités du service est accessible durant cette période, sans aucun engagement.</p>
-            <p style={{ marginTop: '0.5rem' }}>À l'issue des 14 jours, l'accès au service est suspendu automatiquement si aucun abonnement n'a été souscrit. Les données saisies sont conservées 30 jours supplémentaires.</p>
+            <p style={{ marginTop: '0.5rem' }}>À l'issue des 14 jours, l'accès au service est suspendu automatiquement si aucun abonnement n'a été souscrit. Les données saisies sont conservées 60 jours à compter de la fin de l'essai, puis supprimées définitivement ; un e-mail vous prévient avant la suppression. Un abonnement souscrit avant cette date permet de retrouver vos données.</p>
           </Section>
 
           <Section title="Article 4 — Abonnement et paiement">
@@ -66,7 +66,8 @@ export default function CGU() {
           <Section title="Article 5 — Résiliation">
             <p>L'utilisateur peut résilier son abonnement à tout moment, <strong>sans frais ni préavis</strong>, depuis son compte ou par email à <a href="mailto:contact@cloveria.fr" style={{ color: T.green }}>contact@cloveria.fr</a>.</p>
             <p style={{ marginTop: '0.5rem' }}>La résiliation prend effet à la fin de la période mensuelle en cours. L'utilisateur conserve l'accès au service jusqu'à cette date. Aucun remboursement au prorata n'est effectué pour la période restante.</p>
-            <p style={{ marginTop: '0.5rem' }}>Après résiliation, les données de l'utilisateur sont conservées 12 mois avant suppression définitive, sauf demande d'effacement anticipé conformément au RGPD.</p>
+            <p style={{ marginTop: '0.5rem' }}>Après résiliation, les données de l'utilisateur sont conservées 60 jours à compter de la fin de l'abonnement, puis supprimées définitivement ; un e-mail vous prévient avant la suppression. L'utilisateur peut à tout moment supprimer lui-même son compte et ses données depuis l'application (Paramètres, Zone dangereuse), ou en faire la demande par e-mail.</p>
+            <p style={{ marginTop: '0.5rem' }}>La suppression du compte par l'utilisateur met fin immédiatement à l'abonnement et à l'accès au service ; aucun remboursement au prorata n'est effectué.</p>
           </Section>
 
           <Section title="Article 6 — Obligations de l'utilisateur">
@@ -87,17 +88,17 @@ export default function CGU() {
 
           <Section title="Article 8 — Propriété intellectuelle">
             <p><strong>Plateforme</strong> — CloverIA FicheTech, son interface, ses algorithmes, son code source et ses bases de données restent la propriété exclusive de l'éditeur. L'utilisateur bénéficie d'un droit d'usage personnel, non exclusif et non transférable.</p>
-            <p style={{ marginTop: '0.5rem' }}><strong>Données utilisateur</strong> — L'utilisateur reste propriétaire de l'ensemble de ses données (recettes, ingrédients, fiches techniques, cartes). L'éditeur ne les exploite pas à des fins commerciales et ne les partage pas avec des tiers sans consentement explicite.</p>
+            <p style={{ marginTop: '0.5rem' }}><strong>Données utilisateur</strong> — L'utilisateur reste propriétaire de l'ensemble de ses données (recettes, ingrédients, fiches techniques, cartes, documents importés). L'éditeur ne les exploite pas à des fins commerciales et ne les communique à des tiers que dans la mesure nécessaire au fonctionnement du service, auprès des sous-traitants listés dans la Politique de confidentialité (hébergement, paiement, envoi d'e-mails, traitement par intelligence artificielle).</p>
           </Section>
 
           <Section title="Article 9 — Limitation de responsabilité">
-            <p>CloverIA FicheTech ne peut être tenu responsable des décisions commerciales prises sur la base des calculs fournis par le service. Les calculs de food cost sont <strong>indicatifs</strong> : l'utilisateur reste seul responsable de leur vérification et de l'exactitude des données saisies.</p>
+            <p>CloverIA FicheTech ne peut être tenu responsable des décisions commerciales prises sur la base des calculs fournis par le service. Les calculs de food cost sont <strong>indicatifs</strong> : l'utilisateur reste seul responsable de leur vérification et de l'exactitude des données saisies. Les résultats issus d'un traitement automatisé par intelligence artificielle (analyse de factures, structuration de recettes, descriptions) sont fournis à titre d'aide ; l'utilisateur doit les vérifier avant de les utiliser.</p>
             <p style={{ marginTop: '0.5rem' }}>Dans les limites autorisées par la loi, la responsabilité de l'éditeur est limitée aux dommages directs résultant d'une faute prouvée de sa part. Il ne saurait être tenu responsable des pertes commerciales, de chiffre d'affaires ou de données résultant d'une interruption de service, ni de tout dommage indirect ou consécutif.</p>
           </Section>
 
           <Section title="Article 10 — Suspension et résiliation par l'éditeur">
-            <p>L'éditeur se réserve le droit de suspendre ou résilier l'accès d'un utilisateur en cas de violation des présentes CGU, d'usage frauduleux ou abusif du service, ou de non-paiement après expiration du délai de grâce.</p>
-            <p style={{ marginTop: '0.5rem' }}>Sauf urgence (fraude, atteinte à la sécurité), l'utilisateur est notifié préalablement par email et dispose d'un délai raisonnable pour régulariser sa situation. L'utilisateur peut contester la décision en contactant <a href="mailto:contact@cloveria.fr" style={{ color: T.green }}>contact@cloveria.fr</a>.</p>
+            <p>L'éditeur se réserve le droit de suspendre ou résilier l'accès d'un utilisateur en cas de violation des présentes CGU ou d'usage frauduleux ou abusif du service. En cas de non-paiement, l'accès est suspendu automatiquement à l'expiration du délai de 7 jours prévu à l'article 4.</p>
+            <p style={{ marginTop: '0.5rem' }}>Sauf urgence (fraude, atteinte à la sécurité), en cas de violation des CGU, l'utilisateur est notifié par email et dispose de 7 jours pour régulariser sa situation. L'utilisateur peut contester la décision en contactant <a href="mailto:contact@cloveria.fr" style={{ color: T.green }}>contact@cloveria.fr</a>.</p>
           </Section>
 
           <Section title="Article 11 — Modifications des CGU">
@@ -105,7 +106,20 @@ export default function CGU() {
             <p style={{ marginTop: '0.5rem' }}>L'utilisateur qui n'accepte pas les nouvelles conditions peut résilier son abonnement avant l'entrée en vigueur des modifications, sans frais.</p>
           </Section>
 
-          <Section title="Article 12 — Droit applicable">
+          <Section title="Article 12 — Données personnelles et sous-traitance">
+            <p>Pour les données personnelles contenues dans les données que l'utilisateur saisit ou importe dans le service (par exemple des noms de fournisseurs ou de collaborateurs), l'utilisateur est responsable du traitement et CloverIA FicheTech agit en qualité de sous-traitant au sens de l'article 28 du RGPD. À ce titre, l'éditeur :</p>
+            <ul style={{ marginTop: '0.5rem', paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <li>traite ces données uniquement pour fournir le service et sur instruction de l'utilisateur, pendant la durée de l'abonnement et les durées de conservation prévues aux articles 3 et 5 ;</li>
+              <li>veille à la confidentialité des données et applique les mesures de sécurité décrites dans la Politique de confidentialité ;</li>
+              <li>recourt aux sous-traitants ultérieurs listés dans la Politique de confidentialité ;</li>
+              <li>aide l'utilisateur à répondre aux demandes d'exercice des droits des personnes concernées ;</li>
+              <li>notifie l'utilisateur dans les meilleurs délais de toute violation de données personnelles le concernant ;</li>
+              <li>supprime les données à la fin du service selon les durées prévues aux articles 3 et 5.</li>
+            </ul>
+            <p style={{ marginTop: '0.5rem' }}>Pour les données de compte de l'utilisateur (adresse e-mail, nom de l'établissement), l'éditeur est responsable du traitement : voir la Politique de confidentialité.</p>
+          </Section>
+
+          <Section title="Article 13 — Droit applicable">
             <p>Les présentes CGU sont soumises au <strong>droit français</strong>. En cas de litige, les parties s'engagent à rechercher une solution amiable avant tout recours judiciaire. À défaut d'accord, tout litige relève de la compétence exclusive des <strong>tribunaux français</strong>.</p>
             <p style={{ marginTop: '0.5rem' }}>Pour toute question relative à ces CGU : <a href="mailto:contact@cloveria.fr" style={{ color: T.green }}>contact@cloveria.fr</a>.</p>
           </Section>
