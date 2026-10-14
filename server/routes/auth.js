@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { randomBytes, createHash } from 'crypto';
 import { getDb } from '../db.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, JWT_SECRET } from '../middleware/auth.js';
 import { envoyerConfirmationEmail, envoyerResetEmail } from '../emails/verification.js';
 import { notifierNouveauClient, notifierSuppressionCompte } from '../emails/notifications.js';
 import { annulerAbonnementStripe } from './stripe.js';
@@ -35,7 +35,6 @@ function forgotPasswordRateLimit(req, res, next) {
   }
   next();
 }
-const JWT_SECRET = process.env.JWT_SECRET || 'cloveria-fichetech-secret-2026';
 const JWT_EXPIRES = '7d';
 const PROJ = { projection: { _id: 0 } };
 const PROJ_SAFE = { projection: { _id: 0, password_hash: 0 } };

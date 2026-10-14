@@ -1,7 +1,17 @@
 import jwt from 'jsonwebtoken';
 import { getDb } from '../db.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'cloveria-fichetech-secret-2026';
+// En production (Render ou NODE_ENV=production), JWT_SECRET est obligatoire : pas de clé de repli.
+// En local, le repli est conservé pour ne pas casser le développement.
+export function resolveJwtSecret(env = process.env) {
+  if (env.JWT_SECRET) return env.JWT_SECRET;
+  if (env.RENDER || env.NODE_ENV === 'production') {
+    throw new Error('[Auth] JWT_SECRET manquant en production : définir la variable d\'environnement JWT_SECRET. Démarrage interrompu.');
+  }
+  return 'cloveria-fichetech-secret-2026';
+}
+
+export const JWT_SECRET = resolveJwtSecret();
 const SEEN_THROTTLE_MS = 5 * 60 * 1000;
 
 export function authMiddleware(req, res, next) {
