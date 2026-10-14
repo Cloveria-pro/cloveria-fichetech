@@ -116,7 +116,7 @@ const TEMPLATES = {
       <h2>${prenom ? `${prenom}, tout` : 'Tout'} est encore là pour vous</h2>
       <p>Votre essai s'est terminé il y a 2 jours. On voulait juste vous dire : pas de pression, pas d'urgence. Votre travail est en sécurité.</p>
       <div class="highlight">
-        <p>🍀 Toutes vos fiches techniques, vos ingrédients et vos calculs sont sauvegardés. Vous pouvez reprendre exactement là où vous en étiez, à tout moment.</p>
+        <p>🍀 Toutes vos fiches techniques, vos ingrédients et vos calculs sont sauvegardés. Vous pouvez reprendre exactement là où vous en étiez, dès que vous vous abonnez.</p>
       </div>
       <p>Si vous avez envie de continuer à piloter vos coûts et à construire votre cuisine de manière rentable, on est là. Sans engagement, 39 € par mois.</p>
       <div style="text-align:center; margin: 8px 0 24px;">
