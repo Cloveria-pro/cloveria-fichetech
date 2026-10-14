@@ -21,11 +21,13 @@ function SubTitle({ children }) {
 }
 
 const SOUS_TRAITANTS = [
-  { name: 'MongoDB Atlas', role: 'Hébergement de la base de données', loc: 'UE (AWS eu-west-1, Irlande)' },
-  { name: 'Render', role: 'Hébergement du serveur applicatif', loc: 'UE (Francfort) / USA selon plan' },
+  { name: 'MongoDB Atlas', role: 'Hébergement de la base de données', loc: 'UE (AWS Paris, France)' },
+  { name: 'Render', role: 'Hébergement du serveur applicatif', loc: 'UE (Francfort, Allemagne)' },
   { name: 'Vercel', role: 'Hébergement du frontend', loc: 'UE / États-Unis' },
   { name: 'Anthropic (Claude)', role: 'Traitement IA — structuration de recettes, descriptions commerciales, analyse de documents', loc: 'États-Unis' },
   { name: 'Stripe', role: 'Paiement et gestion des abonnements', loc: 'UE / États-Unis — certifié PCI-DSS' },
+  { name: 'Resend', role: "Envoi des e-mails (confirmation de compte, relances, notifications)", loc: 'États-Unis' },
+  { name: 'Google Fonts', role: "Affichage des polices de caractères (votre adresse IP est transmise à Google lors du chargement)", loc: 'Service fourni par Google' },
 ];
 
 export default function PolitiqueConfidentialite() {
@@ -43,7 +45,7 @@ export default function PolitiqueConfidentialite() {
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: isMobile ? '1.4rem' : '1.75rem', fontWeight: 700, color: T.text, marginBottom: '0.5rem' }}>
             Politique de confidentialité
           </h1>
-          <p style={{ color: T.muted, fontSize: '0.875rem' }}>Dernière mise à jour : mai 2025 — Conforme au RGPD (UE 2016/679)</p>
+          <p style={{ color: T.muted, fontSize: '0.875rem' }}>Dernière mise à jour : octobre 2026 — Conforme au RGPD (UE 2016/679)</p>
         </div>
 
         <div style={{ background: '#fff', borderRadius: '16px', boxShadow: '0 2px 16px rgba(0,0,0,0.06)', padding: cardPad }}>
@@ -71,7 +73,7 @@ export default function PolitiqueConfidentialite() {
             </ul>
 
             <SubTitle>Données d'utilisation du service</SubTitle>
-            <p>Fiches techniques, recettes, ingrédients et leurs prix, cartes de restaurant, données de ventes importées, factures fournisseurs (images/PDF traités puis supprimés du serveur après analyse par l'IA).</p>
+            <p>Fiches techniques, recettes, ingrédients et leurs prix, cartes de restaurant, données de ventes importées et documents importés (factures fournisseurs, fiches, fichiers de ventes). Les documents importés sont envoyés à Anthropic pour analyse, puis conservés dans votre espace afin que vous puissiez les retrouver ; vous pouvez les supprimer à tout moment depuis l'application, et ils sont supprimés avec votre compte.</p>
 
             <SubTitle>Données de navigation</SubTitle>
             <p>Logs serveur techniques (adresse IP, horodatage des requêtes), uniquement à des fins de sécurité et de stabilité du service.</p>
@@ -84,7 +86,6 @@ export default function PolitiqueConfidentialite() {
             <ul style={{ paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
               <li><strong>Fourniture du service</strong> — gestion du compte, accès aux fonctionnalités, calculs de food cost (base légale : exécution du contrat)</li>
               <li><strong>Gestion de l'abonnement</strong> — facturation, suivi de la période d'essai, emails de rappel (base légale : exécution du contrat)</li>
-              <li><strong>Amélioration du service</strong> — analyse agrégée et anonymisée des usages (base légale : intérêt légitime)</li>
               <li><strong>Communications transactionnelles</strong> — emails relatifs au compte et à l'abonnement (base légale : exécution du contrat)</li>
               <li><strong>Sécurité</strong> — prévention des accès non autorisés et des fraudes (base légale : intérêt légitime)</li>
             </ul>
@@ -102,26 +103,25 @@ export default function PolitiqueConfidentialite() {
               ))}
             </div>
             <p style={{ marginTop: '1rem' }}>Aucune donnée n'est vendue ni partagée avec des tiers à des fins publicitaires ou commerciales.</p>
-            <p style={{ marginTop: '0.75rem' }}>Certains de nos prestataires sont établis hors de l'Union Européenne. Ces transferts sont encadrés par les clauses contractuelles types approuvées par la Commission européenne (Vercel, Anthropic) ou par l'adhésion au Data Privacy Framework UE-États-Unis (Stripe). Render est hébergé en UE.</p>
+            <p style={{ marginTop: '0.75rem' }}>Certains de nos prestataires sont établis hors de l'Union Européenne. Ces transferts sont encadrés par les clauses contractuelles types approuvées par la Commission européenne (Vercel, Anthropic, Resend) ou par l'adhésion au Data Privacy Framework UE-États-Unis (Stripe, Resend). Render et MongoDB Atlas hébergent vos données dans l'Union européenne.</p>
           </Section>
 
           <Section title="6. Durée de conservation">
             <ul style={{ paddingLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
               <li><strong>Données de compte actif</strong> — conservées pendant toute la durée de l'abonnement</li>
-              <li><strong>Données de compte inactif</strong> — supprimées 12 mois après la dernière connexion ou après la résiliation</li>
-              <li><strong>Documents importés</strong> (factures, fichiers de ventes) — supprimés du stockage temporaire immédiatement après traitement par l'IA</li>
-              <li><strong>Logs techniques</strong> — conservés 90 jours à des fins de sécurité</li>
-              <li><strong>Données de facturation</strong> — conservées 10 ans conformément aux obligations comptables légales (article L123-22 du Code de commerce)</li>
+              <li><strong>Données de compte inactif</strong> — supprimées 60 jours après la fin de l'abonnement ou de la période d'essai ; un e-mail vous prévient avant l'effacement</li>
+              <li><strong>Documents importés</strong> (factures, fiches, fichiers de ventes) — conservés dans votre espace jusqu'à leur suppression par vos soins ou jusqu'à la suppression de votre compte</li>
+              <li><strong>Données de facturation</strong> — les factures émises par CloverIA sont conservées 10 ans conformément aux obligations comptables légales (article L123-22 du Code de commerce)</li>
             </ul>
           </Section>
 
           <Section title="7. Droits des utilisateurs">
             <p>Conformément au RGPD, vous disposez des droits suivants sur vos données personnelles :</p>
             <ul style={{ paddingLeft: '1.25rem', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-              <li><strong>Droit d'accès</strong> — obtenir une copie de l'ensemble de vos données</li>
+              <li><strong>Droit d'accès</strong> — obtenir une copie de vos données : sur demande à contact@cloveria.fr, nous vous la transmettons</li>
               <li><strong>Droit de rectification</strong> — corriger des données inexactes ou incomplètes</li>
-              <li><strong>Droit à l'effacement</strong> — demander la suppression de votre compte et de vos données</li>
-              <li><strong>Droit à la portabilité</strong> — recevoir vos données dans un format structuré et lisible par machine</li>
+              <li><strong>Droit à l'effacement</strong> — vous pouvez supprimer vous-même votre compte et vos données depuis l'application (page « Paramètres », rubrique « Zone dangereuse », bouton « Supprimer mon compte ») ; l'effacement est immédiat et définitif. Les factures émises sont conservées 10 ans (voir section 6)</li>
+              <li><strong>Droit à la portabilité</strong> — sur demande à contact@cloveria.fr, nous vous transmettons vos données dans un format structuré et lisible par machine</li>
               <li><strong>Droit d'opposition</strong> — vous opposer à certains traitements basés sur l'intérêt légitime</li>
               <li><strong>Droit à la limitation</strong> — restreindre le traitement dans certains cas prévus par le RGPD</li>
             </ul>
@@ -134,16 +134,15 @@ export default function PolitiqueConfidentialite() {
               <li>Transmission chiffrée (HTTPS/TLS sur l'ensemble des communications)</li>
               <li>Accès aux bases de données restreint par authentification</li>
               <li>Tokens d'authentification avec expiration (7 jours)</li>
-              <li>Journalisation des accès serveur</li>
             </ul>
           </Section>
 
           <Section title="9. Cookies et traceurs">
-            <p>CloverIA FicheTech n'utilise aucun cookie publicitaire ni traceur tiers. Des cookies techniques strictement nécessaires au fonctionnement du service sont utilisés (authentification, session). Stripe peut déposer des cookies techniques lors du parcours de paiement, strictement nécessaires à la sécurisation des transactions. Aucun bandeau de consentement n'est requis pour ces cookies strictement nécessaires.</p>
+            <p>CloverIA FicheTech n'utilise aucun cookie publicitaire ni traceur à des fins publicitaires ou de mesure d'audience. La connexion repose sur un jeton stocké dans le stockage local de votre navigateur (localStorage), valable 7 jours. Stripe peut déposer des cookies techniques sur sa propre page de paiement, strictement nécessaires à la sécurisation des transactions. Aucun bandeau de consentement n'est requis pour ces éléments strictement nécessaires.</p>
           </Section>
 
           <Section title="10. Exercice de vos droits">
-            <p>Pour exercer vos droits, envoyez un email à <a href="mailto:contact@cloveria.fr" style={{ color: T.green, fontWeight: 600 }}>contact@cloveria.fr</a> avec pour objet <strong>« Demande RGPD »</strong>, en précisant la nature de votre demande et en joignant une copie d'une pièce d'identité. Nous répondons dans un délai maximum de 30 jours. En cas de litige, vous pouvez saisir la CNIL sur <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer" style={{ color: T.green }}>www.cnil.fr</a>.</p>
+            <p>Pour exercer vos droits, envoyez un email à <a href="mailto:contact@cloveria.fr" style={{ color: T.green, fontWeight: 600 }}>contact@cloveria.fr</a> avec pour objet <strong>« Demande RGPD »</strong>, en précisant la nature de votre demande. Nous pouvons vous demander un justificatif d'identité en cas de doute raisonnable sur votre identité. Nous répondons dans un délai maximum de 30 jours. En cas de litige, vous pouvez saisir la CNIL sur <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer" style={{ color: T.green }}>www.cnil.fr</a>.</p>
           </Section>
 
           <Section title="11. Modifications de la politique">
