@@ -239,7 +239,7 @@ export default function Parametres() {
         <div style={{ ...card, padding: '1.5rem', border: '1px solid #FECACA', marginTop: '1rem' }}>
           <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, color: T.red, marginBottom: '0.5rem' }}>Zone dangereuse</h3>
           <p style={{ fontSize: '0.82rem', color: T.muted, marginBottom: '1.25rem', lineHeight: 1.6 }}>
-            La suppression de votre compte est <strong>définitive et irréversible</strong>. Toutes vos données (fiches techniques, ingrédients, cartes, paramètres) seront supprimées immédiatement et ne pourront pas être récupérées.
+            La suppression de votre compte est <strong>définitive et irréversible</strong>. Toutes vos données (fiches techniques, ingrédients, cartes, documents importés, paramètres) seront supprimées immédiatement et ne pourront pas être récupérées.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxWidth: '340px' }}>
             <div>

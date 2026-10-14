@@ -76,7 +76,7 @@ export default function PolitiqueConfidentialite() {
             <p>Fiches techniques, recettes, ingrédients et leurs prix, cartes de restaurant, données de ventes importées et documents importés (factures fournisseurs, fiches, fichiers de ventes). Les documents importés sont envoyés à Anthropic pour analyse, puis conservés dans votre espace afin que vous puissiez les retrouver ; vous pouvez les supprimer à tout moment depuis l'application, et ils sont supprimés avec votre compte.</p>
 
             <SubTitle>Données de navigation</SubTitle>
-            <p>Logs serveur techniques (adresse IP, horodatage des requêtes), uniquement à des fins de sécurité et de stabilité du service.</p>
+            <p>Nos hébergeurs (Vercel, Render) peuvent enregistrer des journaux techniques (adresse IP, horodatage des requêtes) à des fins de sécurité et de stabilité du service. Leur durée de conservation est fixée par ces prestataires.</p>
 
             <SubTitle>Données de paiement</SubTitle>
             <p>CloverIA FicheTech ne stocke aucune donnée bancaire. Les paiements sont gérés exclusivement par <strong>Stripe</strong>, certifié PCI-DSS niveau 1. Seul un identifiant client Stripe est conservé pour la gestion de l'abonnement.</p>
