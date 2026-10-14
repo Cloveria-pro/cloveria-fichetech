@@ -174,9 +174,9 @@ export default function Admin() {
     setKey(keyInput.trim());
   }
 
+  // Même règle exacte que le serveur (server/routes/admin.js).
   function isTestAccount(email) {
-    const lower = (email || '').toLowerCase();
-    return ['test', 'beuce', 'chez'].some(m => lower.includes(m));
+    return /^sebastienmifsud\+test\d*@gmail\.com$/.test((email || '').toLowerCase().trim());
   }
 
   async function handleDisableToggle(u) {
@@ -206,10 +206,11 @@ export default function Admin() {
         method: 'DELETE',
         headers: { 'X-Admin-Key': key },
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
-      setDeleteMsg(`✓ Compte archivé : ${data.archived}`);
-      setUsers(prev => prev.map(x => x.id === u.id ? { ...x, deleted: true, deletedAt: new Date().toISOString(), disabled: true } : x));
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Erreur serveur (${res.status})`);
+      setDeleteMsg(`✓ Compte supprimé, données effacées : ${data.archived}`);
+      setUsers(prev => prev.filter(x => x.id !== u.id));
+      setSelectedUser(prev => (prev?.id === u.id ? null : prev));
     } catch (e) {
       setDeleteMsg(`✗ Erreur : ${e.message}`);
     }
@@ -240,10 +241,11 @@ export default function Admin() {
         method: 'DELETE',
         headers: { 'X-Admin-Key': key },
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
-      setDeleteMsg(`✓ Compte supprimé : ${data.deleted}`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Erreur serveur (${res.status})`);
+      setDeleteMsg(`✓ Compte supprimé, données effacées : ${data.deleted}`);
       setUsers(prev => prev.filter(x => x.id !== u.id));
+      setSelectedUser(prev => (prev?.id === u.id ? null : prev));
     } catch (e) {
       setDeleteMsg(`✗ Erreur : ${e.message}`);
     }
@@ -262,11 +264,18 @@ export default function Admin() {
         method: 'DELETE',
         headers: { 'X-Admin-Key': key },
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
-      setDeleteMsg(`✓ ${data.deleted} compte(s) supprimé(s) : ${data.emails.join(', ')}`);
-      const deletedEmails = new Set(data.emails);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Erreur serveur (${res.status})`);
+      const emails = data.emails || [];
+      const skipped = data.skipped || [];
+      const failed = data.failed || 0;
+      let msg = `✓ ${data.deleted} compte(s) supprimé(s)${emails.length ? ` : ${emails.join(', ')}` : ''}`;
+      if (skipped.length) msg += ` — ${skipped.length} compte(s) payant(s) ignoré(s) : ${skipped.join(', ')}`;
+      if (failed) msg += ` — ${failed} échec(s)`;
+      setDeleteMsg(msg);
+      const deletedEmails = new Set(emails);
       setUsers(prev => prev.filter(x => !deletedEmails.has(x.email)));
+      setSelectedUser(prev => (prev && deletedEmails.has(prev.email) ? null : prev));
     } catch (e) {
       setDeleteMsg(`✗ Erreur : ${e.message}`);
     }
