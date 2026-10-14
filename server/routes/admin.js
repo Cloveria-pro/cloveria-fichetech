@@ -27,9 +27,11 @@ const SAFE_PROJECTION = {
   },
 };
 
+// Compte test : uniquement les adresses sebastienmifsud+test<chiffres>@gmail.com (correspondance exacte).
+const TEST_ACCOUNT_REGEX = /^sebastienmifsud\+test\d*@gmail\.com$/;
+
 function isTestAccount(email) {
-  const lower = (email || '').toLowerCase();
-  return ['test', 'beuce', 'chez'].some(marker => lower.includes(marker));
+  return TEST_ACCOUNT_REGEX.test((email || '').toLowerCase().trim());
 }
 
 // Compte payant (ou passé par Stripe) : jamais supprimé par les routes « comptes test ».
