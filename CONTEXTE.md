@@ -1,6 +1,6 @@
 # CloverIA FicheTech — Contexte projet
 
-> Dernière mise à jour : 2026-10-13 (Sprint 1 — prompts IA alignés sur les 7 unités officielles, commit b556585 ; Sprint 2 — normalisation des unités dans conversions.js, commit c7d7c95 ; Sprint 3 — signal des lignes incomplètes, commit e16f136 ; correctif matching prix IA (apostrophes/ligatures/espaces), commit 66fde6a ; Sprint 4 — signal d'incohérence de famille d'unité (pièce vs masse/volume), commit bbdf126 ; Sprint 5 — message d'information sur le prix d'un ingrédient du catalogue en mode édition, commit aa40d5a ; Sprint 6 — reconnaissance d'une ligne issue d'une sous-recette et avertissements adaptés, commit 32e3804 ; Sprint 7 — fin des ingrédients catalogue fantômes créés pour un nom de sous-recette, commit 3b670d0 ; Sprint 8 — identifiant de sous-recette stocké dans la ligne, commit 255cb1b ; Sprint 9 — préparation serveur du calcul de prix d'une sous-recette, commit ee73ccd ; Sprint 10 — effacement de l'identifiant de sous-recette sur association catalogue/prix modifié à la main, commit fe90bbc ; Sprint 11 — catalogue chargé une seule fois par appel au lieu d'une fois par recette, commit e138634 ; Sprint 12 — prix d'une ligne suivie recalculé depuis sa sous-recette, commit f8ffb88 ; Sprint 13 — libellé du coût unitaire des sous-recettes corrigé (EUR/kg, EUR/L, EUR/pièce), commit c8240ec ; Sprint 14 — affichage d'une ligne suivie comme un ingrédient (prix verrouillé, étiquette cohérente), commit ab36acd ; Sprint 15 — suppression de l'avertissement trompeur des anciennes lignes de sous-recette, commit 193780e ; 2026-10-08 — audit de pré-lancement : S1 écritures multi-tenant, commit e3eb40e ; S2a webhook Stripe, commit b9bd046 ; S3 suppression de la bibliothèque xlsx, commit 7fd5c94 ; S4 fin du repli sur les ingrédients demo, commit 61fc55e ; 2026-10-09 — S5 alias par utilisateur (d640173) ; S2b Stripe identifiant utilisateur et handlers (84e4833) ; S2c portail client (2e85441) ; S6 réponses de profil sans jetons (b3faf40) ; S7 quota IA (d1ba0fe) ; S2d délai de grâce 7 jours (594c521) ; S8 erreurs IA et finitions (056b95e) ; 2026-10-12 — test réel d'un paiement de bout en bout réussi (voir « Audit de pré-lancement »), plan Render payant 7 $/mois ; audit de cohérence CONTEXTE.md ↔ code : corrections de documentation ; S9 suppression de compte et Stripe (0c47cf9) ; S10 effacement réel à la suppression de compte (6823d8e) ; C1 déconnexion propre sur session invalide (6b65a09) ; C2 confirmation d'e-mail accessible dans tous les cas (9a1868d) ; S11 date de fin d'abonnement et prévenance (144014d) ; S12 effacement automatique en simulation (5db4b29) ; S12b échec d'envoi de la prévenance (ad6b723) ; S12c texte final de la prévenance (372643c))
+> Dernière mise à jour : 2026-10-15 (Sprint 1 — prompts IA alignés sur les 7 unités officielles, commit b556585 ; Sprint 2 — normalisation des unités dans conversions.js, commit c7d7c95 ; Sprint 3 — signal des lignes incomplètes, commit e16f136 ; correctif matching prix IA (apostrophes/ligatures/espaces), commit 66fde6a ; Sprint 4 — signal d'incohérence de famille d'unité (pièce vs masse/volume), commit bbdf126 ; Sprint 5 — message d'information sur le prix d'un ingrédient du catalogue en mode édition, commit aa40d5a ; Sprint 6 — reconnaissance d'une ligne issue d'une sous-recette et avertissements adaptés, commit 32e3804 ; Sprint 7 — fin des ingrédients catalogue fantômes créés pour un nom de sous-recette, commit 3b670d0 ; Sprint 8 — identifiant de sous-recette stocké dans la ligne, commit 255cb1b ; Sprint 9 — préparation serveur du calcul de prix d'une sous-recette, commit ee73ccd ; Sprint 10 — effacement de l'identifiant de sous-recette sur association catalogue/prix modifié à la main, commit fe90bbc ; Sprint 11 — catalogue chargé une seule fois par appel au lieu d'une fois par recette, commit e138634 ; Sprint 12 — prix d'une ligne suivie recalculé depuis sa sous-recette, commit f8ffb88 ; Sprint 13 — libellé du coût unitaire des sous-recettes corrigé (EUR/kg, EUR/L, EUR/pièce), commit c8240ec ; Sprint 14 — affichage d'une ligne suivie comme un ingrédient (prix verrouillé, étiquette cohérente), commit ab36acd ; Sprint 15 — suppression de l'avertissement trompeur des anciennes lignes de sous-recette, commit 193780e ; 2026-10-08 — audit de pré-lancement : S1 écritures multi-tenant, commit e3eb40e ; S2a webhook Stripe, commit b9bd046 ; S3 suppression de la bibliothèque xlsx, commit 7fd5c94 ; S4 fin du repli sur les ingrédients demo, commit 61fc55e ; 2026-10-09 — S5 alias par utilisateur (d640173) ; S2b Stripe identifiant utilisateur et handlers (84e4833) ; S2c portail client (2e85441) ; S6 réponses de profil sans jetons (b3faf40) ; S7 quota IA (d1ba0fe) ; S2d délai de grâce 7 jours (594c521) ; S8 erreurs IA et finitions (056b95e) ; 2026-10-12 — test réel d'un paiement de bout en bout réussi (voir « Audit de pré-lancement »), plan Render payant 7 $/mois ; audit de cohérence CONTEXTE.md ↔ code : corrections de documentation ; S9 suppression de compte et Stripe (0c47cf9) ; S10 effacement réel à la suppression de compte (6823d8e) ; C1 déconnexion propre sur session invalide (6b65a09) ; C2 confirmation d'e-mail accessible dans tous les cas (9a1868d) ; S11 date de fin d'abonnement et prévenance (144014d) ; S12 effacement automatique en simulation (5db4b29) ; S12b échec d'envoi de la prévenance (ad6b723) ; S12c texte final de la prévenance (372643c) ; 2026-10-15 — SEC1 JWT_SECRET obligatoire en production (1176ed5) ; textes légaux alignés : P1 (5123e67), P1b (4e12663), CGU (b17186d) ; E1 relance post2 (a091c2a) ; A1 effacement réel depuis l'admin (6d90a05), A2 comptes test stricts (62199a5), A3 écran admin aligné (882fc5e) ; CGU-2 acceptation des CGU vérifiée côté serveur (265e70d), CGU-3 libellé de la case (8647a77) ; ordre d'activation corrigé, points ouverts ajoutés ; corrections route /api/auth/account, point (r), titre État d'activation)
 
 ---
 
@@ -102,7 +102,7 @@ npm run dev           # lance les deux en parallèle (concurrently)
 |---|---|---|
 | `MONGODB_URI` | Oui | URI MongoDB Atlas |
 | `ANTHROPIC_API_KEY` | Oui | Clé API Anthropic |
-| `JWT_SECRET` | Non | Défaut : `cloveria-fichetech-secret-2026` |
+| `JWT_SECRET` | Oui (prod) | Obligatoire en production (`RENDER` défini ou `NODE_ENV=production`) : sans elle, le serveur refuse de démarrer (SEC1, `1176ed5`). Hors production, repli local `cloveria-fichetech-secret-2026` conservé. |
 | `PORT` | Non | Défaut : `3001` |
 | `CORS_ORIGIN` | Non | Origines autorisées, séparées par virgule (défaut : `*`) |
 | `RESEND_API_KEY` | Oui (prod) | Clé API Resend — emails transactionnels et relances |
@@ -133,7 +133,7 @@ cloveria-fichetech/
 │   │   ├── auth.js                 # vérifie JWT → req.userId + updateLastSeen (throttle 5min)
 │   │   └── checkAccess.js          # vérifie trial/active/lifetime → 403 trial_expired si expiré
 │   ├── routes/
-│   │   ├── admin.js                # CRM admin (X-Admin-Key) — users, disable, archive, lifetime
+│   │   ├── admin.js                # CRM admin (X-Admin-Key) — users, disable, suppression avec effacement réel (A1), lifetime
 │   │   ├── auth.js                 # register, login, verify-email, forgot/reset-password, profil
 │   │   ├── recettes.js             # CRUD + PUT /:id/prix (sync cascade)
 │   │   ├── ingredients.js          # CRUD
@@ -191,7 +191,7 @@ cloveria-fichetech/
         │   ├── ForgotPassword.jsx      # Demande de réinitialisation mot de passe
         │   ├── ResetPassword.jsx       # Saisie nouveau mot de passe (depuis lien email)
         │   ├── VerifyEmail.jsx         # Confirmation email (depuis lien email)
-        │   ├── CGU.jsx                 # Conditions Générales d'Utilisation (12 articles, public)
+        │   ├── CGU.jsx                 # Conditions Générales d'Utilisation (13 articles, public)
         │   ├── PolitiqueConfidentialite.jsx # Politique RGPD (11 sections, public)
         │   └── MentionsLegales.jsx     # Mentions légales (public)
         ├── hooks/
@@ -249,6 +249,8 @@ cloveria-fichetech/
   "pastDueSince": "ISO8601|null (Sprint S2d — premier échec de paiement de l'épisode en cours)",
   "iaCallsCount": "nombre (Sprint S7 — compteur de points IA consommés dans la fenêtre courante)",
   "iaCallsWindow": "AAAA-MM (Sprint S7 — fenêtre mensuelle UTC du compteur iaCallsCount)",
+  "cguAccepteesLe": "ISO8601 (CGU-2 — date d'acceptation des CGU à l'inscription, posée par le serveur ; absent des comptes créés avant CGU-2)",
+  "cguVersion": "string (CGU-2 — 'octobre 2026', constante CGU_VERSION de server/routes/auth.js ; absent des comptes créés avant CGU-2)",
   "created_at": "ISO8601",
   "updated_at": "ISO8601"
 }
@@ -445,6 +447,8 @@ cloveria-fichetech/
 
 > Stocké automatiquement à chaque appel `POST /api/ia/analyser-facture` (`server/routes/ia.js`). `ingredientsLies` est la liste des noms de produits extraits par l'IA (`result.produits[].nom`). Accessible via `GET /api/documents/factures` et `GET /api/documents/factures/:id/file` (`server/routes/documents.js`).
 
+> **Les trois collections `documents_*`** (`documents_ventes`, `documents_fiches`, `documents_factures`) stockent le fichier original complet (image, PDF ou CSV) en base64 dans MongoDB (`fileBase64`). L'utilisateur peut les supprimer depuis l'écran Documents (`DELETE /api/documents/:type/:id`) ; ils sont effacés avec le compte (`effacerDonneesUtilisateur`).
+
 ---
 
 ## Routes API
@@ -453,7 +457,7 @@ Toutes les routes requièrent `Authorization: Bearer <token>`, sauf `/api/health
 
 | Méthode | Route | Description |
 |---|---|---|
-| POST | `/api/auth/register` | Inscription → JWT + envoi email confirmation |
+| POST | `/api/auth/register` | Inscription → exige `cguAcceptees === true` (sinon `400`, `code: 'cgu_non_acceptees'`, CGU-2) → JWT + envoi email confirmation |
 | POST | `/api/auth/login` | Connexion → JWT + mise à jour `lastLoginAt` |
 | GET | `/api/auth/verify-email?token=` | Confirmation email (lien depuis email) |
 | POST | `/api/auth/resend-verification` | Renvoie l'email de confirmation (throttle 60s) |
@@ -461,17 +465,17 @@ Toutes les routes requièrent `Authorization: Bearer <token>`, sauf `/api/health
 | POST | `/api/auth/reset-password` | Réinitialise le mot de passe depuis token |
 | GET | `/api/auth/profil` | Lecture profil utilisateur |
 | PUT | `/api/auth/profil` | Mise à jour profil (onboarding inclus) |
-| DELETE | `/api/auth/account` | Suppression compte (soft delete, mot de passe requis) |
+| DELETE | `/api/auth/account` | Suppression compte (mot de passe requis) : annule l'abonnement Stripe (S9) puis efface réellement le compte et ses données via `effacerDonneesUtilisateur` (S10) ; `503` sans rien supprimer si l'une des deux étapes échoue ; notification interne ensuite |
 | GET | `/api/health` | Health check public |
 | GET | `/api/admin/users` | Liste enrichie tous les users (CRM) |
 | POST | `/api/admin/reset-user-password` | Reset mot de passe user par email |
 | PATCH | `/api/admin/users/:id/disable` | Toggle activation/désactivation compte |
 | PATCH | `/api/admin/users/:id/lifetime` | Accorde accès à vie (`subscriptionStatus: 'lifetime'`) |
 | PATCH | `/api/admin/users/:id/remove-lifetime` | Révoque accès à vie → repasse en `trial` (trialEndDate = createdAt + 14j) |
-| PATCH | `/api/admin/users/:id/restore` | Restaure un compte archivé |
-| DELETE | `/api/admin/users/:id` | Archive compte (soft delete) + notification interne |
-| DELETE | `/api/admin/test-accounts/:id` | Suppression définitive compte test |
-| DELETE | `/api/admin/test-accounts` | Suppression définitive tous les comptes test |
+| PATCH | `/api/admin/users/:id/restore` | Restaure un compte archivé (comptes archivés avant A1) |
+| DELETE | `/api/admin/users/:id` | Annule l'abonnement Stripe puis efface réellement le compte et ses données (A1) + notification interne |
+| DELETE | `/api/admin/test-accounts/:id` | Efface un compte test (`sebastienmifsud+test<chiffres>@gmail.com`, A2) ; refuse un compte payant (`403`, A1) |
+| DELETE | `/api/admin/test-accounts` | Efface tous les comptes test ; comptes payants ignorés (`skipped`), échecs comptés (`failed`) (A1) |
 | GET | `/api/recettes` | Liste + enrichissement prixUnitaire |
 | GET | `/api/recettes/:id` | Détail + enrichissement |
 | POST | `/api/recettes` | Création |
@@ -516,7 +520,8 @@ Toutes les routes requièrent `Authorization: Bearer <token>`, sauf `/api/health
 - Inscription / connexion email + mot de passe (bcrypt round 10, JWT 7j)
 - **Confirmation email obligatoire** : lien envoyé à l'inscription via Resend, valable 24h. L'app bloque sur `/verify-email` tant que l'email n'est pas confirmé.
 - **Mot de passe oublié** : lien de réinitialisation envoyé par email (token SHA-256, valable 1h, rate limit 3 demandes/15min par IP)
-- **Soft delete / archivage** : suppression = `deleted: true + disabled: true` sur le document user. Les comptes archivés ne peuvent plus se connecter. Restauration possible depuis le CRM admin.
+- **Soft delete / archivage** : un compte archivé porte `deleted: true + disabled: true` sur le document user et ne peut plus se connecter ; restauration possible depuis le CRM admin. Depuis A1 (`6d90a05`), la suppression depuis le CRM n'archive plus : elle efface réellement (voir « CRM Admin ») ; seuls les comptes archivés avant A1 restent dans cet état.
+- **Acceptation des CGU à l'inscription** (CGU-2, `265e70d`) : `POST /register` exige `cguAcceptees === true` (comparaison stricte), sinon `400 { code: 'cgu_non_acceptees' }`, contrôle fait avant toute lecture en base ; le serveur enregistre `cguAccepteesLe` et `cguVersion` (`'octobre 2026'`, constante `CGU_VERSION` de `server/routes/auth.js`, à tenir synchronisée avec l'en-tête de `CGU.jsx`), jamais lus dans la requête. Les comptes créés avant CGU-2 n'ont pas ces champs. Libellé de la case (CGU-3, `8647a77`) : « J'accepte les CGU et la Politique de confidentialité » (Mentions légales retirées du libellé, lien conservé en bas de la carte).
 - **Accès à vie** : `subscriptionStatus: 'lifetime'` — accordé manuellement depuis le CRM admin. Ces utilisateurs ne sont jamais bloqués par `checkAccess`, ne voient jamais la page `/abonnement`.
 - Token en `localStorage`, headers `Authorization: Bearer` sur tous les appels
 - Intercepteur `fetch` global dans `main.jsx` : 401 → déconnexion automatique + redirect `/login`
@@ -549,10 +554,12 @@ Page `/admin` — accès direct sans sidebar, protégée par header `X-Admin-Key
 
 **Actions par ligne :**
 - Désactiver / Réactiver compte (`PATCH /disable`)
-- Archiver compte (`DELETE /users/:id`) avec confirmation email saisi
-- Restaurer compte archivé (`PATCH /restore`)
-- Supprimer définitivement (comptes test uniquement)
-- Suppression en masse des comptes test
+- Supprimer le compte (`DELETE /users/:id`) avec confirmation email saisi : annule l'abonnement Stripe puis efface réellement les données (`effacerDonneesUtilisateur`, plus d'archivage — A1, `6d90a05`) ; si l'annulation Stripe ou l'effacement échoue, rien n'est supprimé et un message d'erreur est renvoyé (`503`)
+- Restaurer compte archivé (`PATCH /restore`) — ne concerne plus que les comptes archivés avant A1
+- Supprimer définitivement (comptes test uniquement) : un compte test = uniquement `sebastienmifsud+test<chiffres>@gmail.com` (correspondance exacte ; anciens motifs « test », « beuce », « chez » supprimés — A2, `62199a5`) ; un compte payant est refusé
+- Suppression en masse des comptes test : les comptes payants (statut `active`/`lifetime`/`past_due` ou `stripeCustomerId` présent) ne sont jamais supprimés (A1)
+- Écran aligné sur le serveur (A3, `882fc5e`) : même règle de compte test, message « Compte supprimé, données effacées », ligne retirée immédiatement, comptes ignorés et échecs affichés après une suppression groupée
+- Test réel en production le 2026-10-15 : inscription puis suppression d'un compte test, OK
 
 ### Emails (Resend)
 
@@ -564,7 +571,7 @@ Tous les emails sont envoyés via **Resend** (`from: CloverIA <contact@cloveria.
 | Confirmation inscription | À l'inscription (`/auth/register`) |
 | Réinitialisation mot de passe | Sur demande (`/auth/forgot-password`) |
 | Notification interne nouveau client | Quand un user vérifie son email |
-| Notification interne suppression | Quand un compte est archivé (admin ou user) |
+| Notification interne suppression | Quand un compte est supprimé (admin ou user) |
 
 **Relances essai (cron quotidien 9h00) :**
 | Clé | Timing | Condition |
@@ -578,6 +585,8 @@ Tous les emails sont envoyés via **Resend** (`from: CloverIA <contact@cloveria.
 | `post40` | J+40 après expiration | idem |
 
 Anti-doublon : chaque clé envoyée est pushée dans `user.emailsEnvoyes`.
+
+Texte de `post2` corrigé (E1, `a091c2a`) : « Vous pouvez reprendre exactement là où vous en étiez, dès que vous vous abonnez » (au lieu de « à tout moment »).
 
 **Emails lifecycle (cron quotidien 9h00) :**
 | Clé | Timing | Condition |
@@ -683,10 +692,13 @@ Choix mémorisé dans `user.examplePackChoice` (`'example'` ou `'skip'`).
 - Webhook Stripe gère activation/désactivation du compte
 - Champ `trialEndDate` + `subscriptionStatus` sur le document `users`
 - `subscriptionStatus: 'lifetime'` → accès permanent, jamais bloqué par `checkAccess`
+- Portail client Stripe réglé sur « annuler à la fin de la période de facturation » (déclaré par Seb le 2026-10-15 ; le réglage en mode live n'a pas été confirmé)
+- La suppression de compte annule l'abonnement immédiatement, sans remboursement au prorata (CGU art. 5) — jamais testé de bout en bout sur un vrai abonnement payant
 
 ### Documents
 - Archive des factures fournisseurs uploadées (JPEG/PNG/PDF)
 - Lié au scan facture de la page Ingrédients
+- Les trois collections `documents_*` stockent le fichier original complet en base64 dans MongoDB ; supprimables par l'utilisateur depuis l'écran Documents ; effacés avec le compte
 
 ### Landing page
 - Fichier HTML statique dans `landing/index.html`, repo séparé `cloveria-landing`
@@ -703,9 +715,10 @@ Choix mémorisé dans `user.examplePackChoice` (`'example'` ou `'skip'`).
 - Meta tags optimisés sur la landing
 
 ### Légal & Conformité RGPD
-- **CGU** : 12 articles (Objet → Droit applicable), accessible sans login sur `/cgu`
-- **Politique de confidentialité** : 11 sections RGPD, données obligatoires/facultatives labellisées, sous-traitants, transferts hors UE, cookies, droits exercice — accessible sans login sur `/politique-confidentialite`
-- Case à cocher CGU obligatoire à l'inscription
+- **CGU** : 13 articles (Objet → Droit applicable), date « octobre 2026 », accessible sans login sur `/cgu` — mises à jour (`b17186d`) : nouvel article 12 « Données personnelles et sous-traitance », ancien article 12 devenu article 13
+- **Politique de confidentialité** : 11 sections RGPD, données obligatoires/facultatives labellisées, sous-traitants, transferts hors UE, cookies, droits exercice — accessible sans login sur `/politique-confidentialite` — alignée sur le comportement réel (P1 `5123e67`, P1b `4e12663`). Sa section 1 (« édité à titre individuel ») n'est pas modifiée, en attente du SIRET
+- **Mentions légales** : NON réécrites, en attente du SIRET
+- Case à cocher CGU obligatoire à l'inscription, vérifiée côté serveur depuis CGU-2 (voir « Authentification »)
 - Liens CGU/Politique dans : Login, Register, Abonnement, Aide, footer landing
 
 ### Autres fonctionnalités
@@ -839,6 +852,14 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 - **S12** (`5db4b29`) : `server/lib/purgeComptes.js` (`modePurge`, `decisionPurge`, `executerPurge`), cron quotidien 10h00 (`index.js`). `PURGE_MODE` : `'reel'` uniquement si la valeur est exactement `'reel'`, `'off'` uniquement si exactement `'off'`, `'simulation'` dans tous les autres cas (y compris absente). N'efface que si `statutPurge === 'effacer'` **et** `prevenuEffacementLe` posé depuis au moins 10 jours ; relit le compte juste avant l'effacement (un réabonnement entre-temps l'épargne) ; limite 10 comptes par exécution ; journalisation en comptages uniquement.
 - **S12b** (`ad6b723`) : `envoyerPrevenanceEffacement()` capture désormais le retour `{ error }` de Resend et lève `'prevenance_envoi_echoue'` si `error` est présent (le `catch` de `sendPrevenanceEffacement()` dans `index.js` remet alors `prevenuEffacementLe` à `null`).
 - **S12c** (`372643c`) : texte final de l'e-mail de prévenance (sujet et corps) ; lève désormais `'prevenance_date_indisponible'` avant tout appel à Resend si `dateEffacementPrevue(user)` ne renvoie rien.
+- **SEC1** (`1176ed5`) : `JWT_SECRET` obligatoire en production (`RENDER` défini ou `NODE_ENV=production`) — le serveur refuse de démarrer sans ; repli local conservé hors production. La valeur est résolue une seule fois dans `server/middleware/auth.js` et réutilisée par `server/routes/auth.js`.
+- **P1** (`5123e67`) et **P1b** (`4e12663`) : Politique de confidentialité alignée sur le comportement réel (documents conservés, rétention 60 jours, sous-traitants dont Resend et Google Fonts, jeton en `localStorage`, journaux attribués aux hébergeurs) ; « documents importés » cités dans la Zone dangereuse (`Parametres.jsx`).
+- **CGU** (`b17186d`) : CGU mises à jour (date « octobre 2026 », rétention 60 jours, partage limité aux sous-traitants, résultats IA à vérifier, suspension à 7 jours) ; nouvel article 12 « Données personnelles et sous-traitance » (article 28 RGPD), ancien article 12 devenu article 13.
+- **E1** (`a091c2a`) : relance `post2`, « dès que vous vous abonnez » au lieu de « à tout moment ».
+- **A1** (`6d90a05`) : `DELETE /api/admin/users/:id` et `/test-accounts*` annulent l'abonnement Stripe puis appellent `effacerDonneesUtilisateur` (plus d'archivage, plus de données orphelines) ; en cas d'échec Stripe ou d'effacement, rien n'est supprimé et un message d'erreur est renvoyé ; les comptes payants (`active`, `lifetime`, `past_due` ou `stripeCustomerId`) ne sont jamais supprimés par les routes comptes test.
+- **A2** (`62199a5`) : un compte test = uniquement `sebastienmifsud+test<chiffres>@gmail.com` (correspondance exacte ; anciens motifs « test », « beuce », « chez » supprimés).
+- **A3** (`882fc5e`) : `Admin.jsx` aligné sur le serveur (règle comptes test, message « Compte supprimé, données effacées », ligne retirée immédiatement, comptes ignorés et échecs affichés). Test réel en production le 2026-10-15 : inscription puis suppression d'un compte test, OK.
+- **CGU-2** (`265e70d`) : `POST /register` exige `cguAcceptees === true` (`400`, `code: 'cgu_non_acceptees'` sinon, avant toute lecture en base) et enregistre `cguAccepteesLe` et `cguVersion`. **CGU-3** (`8647a77`) : libellé de la case « J'accepte les CGU et la Politique de confidentialité ».
 
 ### Test réel de paiement (2026-10-09)
 - Parcours testé avec un compte de test dédié (inscription, confirmation d'e-mail, onboarding), puis paiement de 39 € par Stripe Checkout en mode live.
@@ -848,7 +869,7 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 - Aucun e-mail n'a été reçu par le client de test (ni reçu, ni message de CloverIA) : les interrupteurs Stripe « Paiements réussis » et « Remboursements » (Paramètres > Entreprise > Adresses e-mail de clients) étaient désactivés, et la langue par défaut des e-mails Stripe était « Anglais ». Seb a activé les deux interrupteurs le 2026-10-09 ; le passage de la langue à « Français » n'est pas confirmé.
 
 ### Reste ouvert
-- Pas de rate-limit sur `/login` et `/register` ; pas de `helmet` ; pas de `app.set('trust proxy')` ; `JWT_SECRET` avec valeur par défaut codée en dur ; comparaison non constante dans le temps de `ADMIN_SECRET`.
+- Pas de rate-limit sur `/login` et `/register` ; pas de `helmet` ; pas de `app.set('trust proxy')` ; comparaison non constante dans le temps de `ADMIN_SECRET`. (`JWT_SECRET` : la valeur par défaut codée en dur n'est plus utilisée en production depuis SEC1, `1176ed5`.)
 - Les documents base64 stockés par les routes IA n'ont pas de purge (risque vis-à-vis du quota MongoDB Atlas M0).
 - Aucun index MongoDB sur `user_id` (seul `users.id` est indexé) ; le champ `photo` est renvoyé en entier dans `GET /api/recettes` (liste, pas seulement le détail) ; pas de middleware de compression des réponses.
 - Dépendances : `npm audit` côté serveur signale `proxy-addr` (critique), `qs`, `uuid`, et `nodemailer` (élevé) ; côté client, `dompurify` et `react-router` (modérés). `nodemailer` et les variables Render `EMAIL_USER`/`EMAIL_PASS` sont obsolètes (remplacés par Resend). Aucun champ `engines` déclaré dans les `package.json`.
@@ -862,54 +883,73 @@ Les champs sensibles ne sont jamais renvoyés par les routes admin.
 - (e) `resend-verification` a un délai de 60 s entre deux envois, mais aucun plafond quotidien.
 - (f) `POST /api/ia/description-commerciale` renvoie le texte brut de l'IA (`raw`) dans une réponse `422` si le JSON retourné est invalide.
 - (g) Les anciens alias sans `user_id` (créés avant le Sprint S5) restent en base, invisibles pour tous.
-- (h) Le texte des CGU, Article 10, parle d'un « délai raisonnable » en plus des « 7 jours » de l'article sur le paiement.
+- (h) Corrigé par la mise à jour des CGU (`b17186d`) : l'article 10 ne parle plus de « délai raisonnable » (7 jours).
 - (i) Dans Stripe, l'e-mail de confirmation de paiement (3D Secure) et ses rappels à 3, 5 et 7 jours sont activés ; les e-mails Stripe d'échec de paiement restent désactivés.
 - (j) Corrigé par C2 (`9a1868d`) : la page était blanche parce que la route `/verify-email` n'existait pas pour un compte connecté dont l'e-mail était vérifié (comme demo) ; contrairement à ce qui était noté, l'e-mail n'avait pas été confirmé lors du test initial.
 - (k) La page `/abonnement` affiche « Votre période d'essai est terminée » pour un compte en essai non expiré qui s'y rend.
 - (l) `POST /register` renvoie des liens vers `cloveria-fichetech.vercel.app` dans son message « compte existant » (adresse technique que le serveur refuse en CORS).
-- (m) La suppression volontaire (Zone dangereuse) efface réellement le compte et libère l'adresse (S10) ; la suppression depuis le CRM (`DELETE /users/:id`) et les routes `/test-accounts*` n'effacent toujours pas les données (comptes archivés ou données orphelines).
+- (m) Corrigé par A1 (`6d90a05`) : la suppression volontaire (Zone dangereuse, S10), la suppression depuis le CRM (`DELETE /users/:id`) et les routes `/test-accounts*` effacent toutes réellement les données.
 - (n) L'abonnement Stripe est annulé à la suppression (S9) ; le customer Stripe est conservé volontairement.
 - (o) Mentions légales et informations d'entreprise des reçus et factures Stripe à vérifier avec un comptable.
 - (p) L'accès à `/parametres` reste possible pour un compte résilié (comportement constaté, non analysé).
-- (q) Le bouton « Supprimer tous les comptes test » et `DELETE /test-accounts*` détectent un compte test par sous-chaîne d'e-mail (`test`, `beuce`, `chez`) : à ne pas utiliser avec de vrais clients, et à durcir avant de les brancher sur l'effacement réel.
-- (r) Décision du 2026-10-12 (Seb) : un compte dont l'abonnement est terminé (`cancelled`) ou dont l'essai gratuit est terminé sans abonnement doit être effacé comme à une suppression volontaire 60 jours après cette fin, avec un e-mail de prévenance au 45e jour ; jamais pour un compte `lifetime`, `betaAccess`, demo, `active`, ni `past_due` encore dans son délai de grâce. **NON IMPLÉMENTÉ.** Sprints prévus : S11 (champ `abonnementTermineLe` et e-mail de prévenance), S12 (tâche de purge, simulation par défaut), S13 (migration des comptes existants, lancée par Seb). Aujourd'hui, rien n'efface les données d'un compte résilié ou d'un essai non converti.
-- (s) Textes à aligner avec le comportement réel, après avis d'un professionnel (RGPD, comptabilité) : `CGU.jsx:51` (30 jours après l'essai) et `:69` (conservation 12 mois) ; `PolitiqueConfidentialite.jsx:74` (factures « supprimées après analyse », faux : les fichiers sont conservés) et `:108-114` (durées de conservation). Le texte de la Zone dangereuse est exact depuis S10.
+- (q) Corrigé par A2 (`62199a5`) et A3 (`882fc5e`) : un compte test = uniquement `sebastienmifsud+test<chiffres>@gmail.com` (correspondance exacte, serveur et écran admin) ; les comptes payants ne sont jamais supprimés par ces routes (A1).
+- (r) Décision du 2026-10-12 (Seb) : un compte dont l'abonnement est terminé (`cancelled`) ou dont l'essai gratuit est terminé sans abonnement doit être effacé comme à une suppression volontaire 60 jours après cette fin, avec un e-mail de prévenance au 45e jour ; jamais pour un compte `lifetime`, `betaAccess`, demo, `active`, ni `past_due` encore dans son délai de grâce. **Implémenté, en simulation par défaut** : S11 (`144014d`, éligibilité `statutPurge`, champ `abonnementTermineLe`, e-mail de prévenance actif seulement si `PREVENANCE_EFFACEMENT_ACTIVE === 'true'`), S12 (`5db4b29`, purge quotidienne, effacement réel seulement si `PURGE_MODE` vaut exactement `'reel'`, et au moins 10 jours après la prévenance), S12b (`ad6b723`) et S12c (`372643c`) pour l'envoi et le texte de la prévenance. S13 (migration des comptes existants, lancée par Seb) reste à faire. Tant que ces deux variables ne sont pas activées sur Render (valeur réelle non vérifiable depuis le code), rien n'efface les données d'un compte résilié ou d'un essai non converti.
+- (s) Corrigé par P1 (`5123e67`), P1b (`4e12663`) et la mise à jour des CGU (`b17186d`) : CGU et Politique de confidentialité alignées sur le comportement réel (rétention 60 jours, documents conservés). Mentions légales non réécrites (en attente du SIRET).
 - (t) Corrigé par C1 pour `request()` et les appels IA ; subsiste pour les `fetch` directs de `Parametres.jsx` (lecture et enregistrement de `/api/parametres`, sans vérification de `res.ok`).
 - (u) `PUT /api/auth/profil` ne vérifie pas `deleted` : un jeton encore valide pourrait recréer un document `parametres` pour un compte en cours d'effacement (fenêtre étroite).
 - (v) La notification interne de suppression (`notifierSuppressionCompte`) contient l'adresse du client supprimé : à confirmer avec un conseil RGPD.
-- (w) À confirmer avec un professionnel : durée de conservation des factures de vente (6 ou 10 ans), clauses de sous-traitance (article 28 RGPD) dans les CGU, liste des prestataires dans la politique de confidentialité.
+- (w) À confirmer avec un professionnel : durée de conservation des factures de vente (6 ou 10 ans), clauses de sous-traitance (article 28 RGPD) dans les CGU (ajoutées en article 12, `b17186d`), liste des prestataires dans la politique de confidentialité.
 - (x) Deux circuits réseau coexistent : `api.js` appelle l'URL absolue du serveur Render ; `Login.jsx`, `Register.jsx` et deux appels de `Parametres.jsx` utilisent des chemins relatifs `/api/...` via le rewrite de `vercel.json`. L'intercepteur `fetch` de `main.jsx` ne s'applique qu'aux chemins relatifs, donc jamais aux appels de `api.js`.
 - (y) VerifyEmail : un lien déjà utilisé et un lien jamais valide affichent le même message « Lien invalide ou déjà utilisé » (le jeton est supprimé après usage) ; une erreur réseau affiche le texte brut du navigateur.
 - (z) `api.health()` n'a aucune gestion d'erreur.
 - (aa) `envoyerRelance` et `envoyerLifecycle` (`server/emails/relances.js`) ignorent toujours le retour `{ error }` de Resend (contrairement à `envoyerPrevenanceEffacement` depuis S12b) : un échec d'envoi reste silencieux pour ces deux fonctions — hors scope de S12b, non corrigé.
 - (bb) S13 (non fait) : migration des comptes déjà résiliés sans `abonnementTermineLe` — à lancer en simulation d'abord, par Seb lui-même.
 - (cc) Rediriger `cloveria-fichetech.vercel.app` vers `app.cloveria-pro.fr` (le CORS refuse l'ancien domaine, erreurs silencieuses côté client).
-- (dd) `DELETE /users/:id` et `/test-accounts*` (`server/routes/admin.js`) archivent (`deleted: true`) ou suppriment le document `users` sans jamais appeler `effacerDonneesUtilisateur` : les 12 collections de données restent orphelines dans tous les cas — à aligner sur l'effacement de S10.
+- (dd) Corrigé par A1 (`6d90a05`) : `DELETE /users/:id` et `/test-accounts*` appellent désormais `effacerDonneesUtilisateur`.
 - (ee) `Parametres.jsx` : ses deux appels `fetch` directs (`/api/parametres`, lecture et enregistrement) ne vérifient pas `res.ok`. `Admin.jsx` stocke la clé admin (`X-Admin-Key`) en clair dans `sessionStorage`. `PUT /api/auth/profil` ne vérifie pas `deleted` (cf. (u)).
+- (ff) `POST /register` : aucune unicité de l'e-mail en base (seul `users.id` a un index unique — deux inscriptions simultanées avec la même adresse peuvent créer deux comptes), aucun contrôle du format de l'e-mail, aucune limite de tentatives, mot de passe de 6 caractères minimum (8 pour la réinitialisation par l'admin).
+- (gg) Les comptes créés avant CGU-2 n'ont ni `cguAccepteesLe` ni `cguVersion` : décision à prendre (acceptation implicite selon l'article 11 des CGU, préavis de 30 jours, ou nouvelle demande d'acceptation).
+- (hh) La version des CGU est écrite à deux endroits : constante `CGU_VERSION` (`server/routes/auth.js`) et en-tête de `CGU.jsx` — à mettre à jour ensemble.
+- (ii) La landing (dépôt `cloveria-landing`, non modifiée) affiche « Nous ne partageons ni ne vendons vos données à des tiers », phrase plus large que la réalité (sous-traitants listés dans la Politique de confidentialité).
+- (jj) En-tête de la Politique de confidentialité « Conforme au RGPD (UE 2016/679) » à reformuler — décision de Seb en attente.
+- (kk) `PATCH /api/admin/users/:id/restore` réactive n'importe quel compte sans vérifier Stripe : un ancien compte archivé avant A1 alors qu'il était `active` repasserait `active` sans abonnement.
+- (ll) Auto-hébergement des polices Google Fonts possible (éviterait la transmission de l'adresse IP à Google).
+
+> Toujours ouverts parmi les points rappelés le 2026-10-15 (déjà notés ci-dessus) : redirection de `cloveria-fichetech.vercel.app` (cc) ; `envoyerRelance`/`envoyerLifecycle` ignorent l'erreur Resend (aa) ; `Parametres.jsx` sans contrôle `res.ok`, clé admin en `sessionStorage`, `PUT /profil` sans contrôle de `deleted` (ee) ; échec silencieux de l'insertion des documents dans `ia.js` (« `.catch(() => {})` silencieux ») ; région Vercel non vérifiée (« Infrastructure et réglages hors code »).
 
 ### Règle de rétention et effacement automatique (décision du 12-13 octobre 2026)
 - Effacement 60 jours après `abonnementTermineLe` ou `trialEndDate` (essai non converti = `subscriptionStatus: 'trial'` sans `stripeCustomerId`). Jamais pour un compte `lifetime`, `betaAccess`, demo, `active`, `deleted`, `disabled`, ni `past_due` en délai de grâce (implémenté par S11/S12, voir « Corrigé »). Le customer Stripe est conservé (historique de facturation, S9). Factures émises conservées 10 ans (fait de gestion, non vérifiable depuis le code).
 - Un ancien client qui se réinscrit avec la même adresse (après effacement S10) repart de zéro : aucune donnée n'est restaurée, confirmé par `server/routes/auth.js` (`POST /register` ne retrouve aucun compte existant une fois le document `users` effacé).
 
-### État d'activation (S11/S12, au 2026-10-13)
+### État d'activation (S11/S12, au 2026-10-15)
 - `PREVENANCE_EFFACEMENT_ACTIVE` et `PURGE_MODE` : en l'absence de ces variables, le code retombe toujours sur le mode le plus sûr (simulation) — confirmé par `index.js`/`purgeComptes.js`. Leur valeur réelle sur Render en production n'est pas vérifiable depuis le code (tableau de bord Render).
-- Ordre d'activation prévu : textes légaux alignés sur le comportement réel → prévenance active → au moins 10 jours plus tard, `PURGE_MODE=reel`. Ne pas activer sans accord explicite de Seb.
+- Ordre d'activation retenu (2026-10-15) :
+  1. Textes légaux alignés sur le comportement réel — **fait** (P1, P1b, CGU `b17186d`).
+  2. Effacement réel depuis l'écran admin — **fait** (A1, A2, A3).
+  3. Acceptation des CGU vérifiée côté serveur — **fait** (CGU-2, CGU-3).
+  4. Notification interne de suppression sans l'adresse du client — à faire.
+  5. Migration S13 des comptes déjà résiliés sans `abonnementTermineLe`, en simulation d'abord — à faire.
+  6. Décision sur les sauvegardes MongoDB Atlas (actuellement inactives) — à faire.
+  7. Mentions légales et SIRET — à faire.
+  8. `PREVENANCE_EFFACEMENT_ACTIVE=true`.
+  9. Au moins 10 jours plus tard, `PURGE_MODE=reel`.
+- Ne pas activer sans accord explicite de Seb.
 
 ### Six décisions pour les textes légaux (2026-10-13)
 1. Construire la purge (S11, S12) avant de réécrire les textes légaux.
 2. Droit à la portabilité/accès traité par export manuel sur demande (pas de route d'export automatisée — confirmé, aucune route de ce type trouvée dans `server/`).
-3. Case CGU vérifiée côté serveur (avec date d'acceptation) — à faire ; confirmé non implémenté aujourd'hui (`POST /register`, `auth.js`, n'exige aucun champ d'acceptation).
-4. Google Fonts à ajouter à la liste des prestataires (`PolitiqueConfidentialite.jsx`, section 5) — non fait aujourd'hui ; `client/index.html` charge bien des polices depuis `fonts.googleapis.com`/`fonts.gstatic.com`, absentes de cette liste.
+3. Case CGU vérifiée côté serveur (avec date d'acceptation) — fait (CGU-2, `265e70d`).
+4. Google Fonts à ajouter à la liste des prestataires (`PolitiqueConfidentialite.jsx`, section 5) — fait (P1, `5123e67`).
 5. Notification interne de suppression (`notifierSuppressionCompte`) sans l'adresse du client (date + statut abonnement Stripe oui/non) — à faire ; aujourd'hui elle contient l'email (cf. point (v)).
 6. Factures émises conservées 10 ans (cohérent avec `PolitiqueConfidentialite.jsx:114`, déjà ce texte).
 
 ### Audit des textes légaux (fait le 2026-10-13)
-Les CGU, la politique de confidentialité et les mentions légales ne correspondent pas encore au comportement réel. À réécrire **après** l'activation de la purge (voir ci-dessus), phrase par phrase, avec validation de Seb. Points identifiés (numéros de ligne vérifiés le 2026-10-13, inchangés depuis le dernier audit) :
-- `CGU.jsx:51` (30 jours après l'essai) et `:69` (conservation 12 mois) ; Article 8 (`:88-91`, partage avec des tiers vs sous-traitance Anthropic) ; Article 10 (`:98-101`, « délai raisonnable »).
-- `PolitiqueConfidentialite.jsx:74` (factures « supprimées après analyse », faux) ; `:87` (« analyse agrégée et anonymisée des usages », aucun code correspondant trouvé) ; `:111-114` (durées de conservation) ; `:121-124` (droits d'accès/portabilité non automatisés) ; `:137` (journalisation des accès serveur, aucun système trouvé dans le code applicatif) ; `:142` (parle de « cookies » d'authentification alors que l'app utilise `localStorage`, pas de cookie).
-- Ajouter Resend et Google Fonts à la liste des sous-traitants (`PolitiqueConfidentialite.jsx`, section 5) — Resend y est absent malgré son usage réel (`server/emails/*.js`).
-- Mentions légales : ajouter MongoDB Atlas (absent de la section Hébergement, qui ne liste que Render et Vercel) ; harmoniser les dates de mise à jour (CGU et Politique : « mai 2025 » ; Mentions légales : « mai 2026 »).
-- Ajouter une clause article 28 RGPD (sous-traitance) adaptée à un SaaS traitant le contenu des clients.
+Points identifiés le 2026-10-13 (les numéros de ligne renvoient à l'état du 2026-10-13) et leur traitement :
+- `CGU.jsx:51` (30 jours après l'essai) et `:69` (conservation 12 mois) ; Article 8 (`:88-91`, partage avec des tiers vs sous-traitance Anthropic) ; Article 10 (`:98-101`, « délai raisonnable ») — **traités** par la mise à jour des CGU (`b17186d`).
+- `PolitiqueConfidentialite.jsx:74` (factures « supprimées après analyse », faux) ; `:87` (« analyse agrégée et anonymisée des usages », aucun code correspondant trouvé) ; `:111-114` (durées de conservation) ; `:121-124` (droits d'accès/portabilité non automatisés) ; `:137` (journalisation des accès serveur, aucun système trouvé dans le code applicatif) ; `:142` (parle de « cookies » d'authentification alors que l'app utilise `localStorage`, pas de cookie) — **traités** par P1 (`5123e67`) et P1b (`4e12663`).
+- Ajouter Resend et Google Fonts à la liste des sous-traitants (`PolitiqueConfidentialite.jsx`, section 5) — **fait** (P1).
+- Mentions légales : ajouter MongoDB Atlas (absent de la section Hébergement, qui ne liste que Render et Vercel) ; harmoniser les dates de mise à jour (CGU et Politique : désormais « octobre 2026 » ; Mentions légales : « mai 2026 ») — **non fait** : mentions légales non réécrites, en attente du SIRET (de même pour la section 1 de la Politique, « édité à titre individuel »).
+- Ajouter une clause article 28 RGPD (sous-traitance) adaptée à un SaaS traitant le contenu des clients — **fait** (CGU, article 12, `b17186d`).
 
 ### Infrastructure et réglages hors code (2026-10-13, non vérifiable depuis le code)
 - Render : région Frankfurt (plan payant 7 $/mois). MongoDB Atlas : AWS Paris (eu-west-3), statut de sauvegarde « Backups Inactive » (décision à prendre). Région Vercel : à vérifier. Stripe : langue du portail client et de Checkout réglée sur Français.
@@ -922,7 +962,7 @@ Les CGU, la politique de confidentialité et les mentions légales ne correspond
 > Décrit d'après les écrans vus le 2026-10-09 et le 2026-10-12 ; à revérifier si modifié depuis.
 
 - **Anthropic** : limite de dépense mensuelle 25 $, notification e-mail à 10 $, recharge automatique activée (seuil 5 $, solde ramené à 15 $).
-- **Stripe** : endpoint webhook « CloverIA Webhook Live » avec 5 événements ; nouvelles tentatives de paiement par carte : Smart Retries, 8 fois sur 2 semaines, puis annulation de l'abonnement ; e-mails clients : reçus de paiements réussis et remboursements activés, langue par défaut français ; portail client configuré (annulation à la fin de la période, motif demandé).
+- **Stripe** : endpoint webhook « CloverIA Webhook Live » avec 5 événements ; nouvelles tentatives de paiement par carte : Smart Retries, 8 fois sur 2 semaines, puis annulation de l'abonnement ; e-mails clients : reçus de paiements réussis et remboursements activés, langue par défaut français ; portail client configuré (annulation à la fin de la période, motif demandé) — réglage « annuler à la fin de la période de facturation » redéclaré par Seb le 2026-10-15, mode live non confirmé.
 - **Render** : plan payant 7 $/mois (0,5 CPU, 512 Mo) depuis le 2026-10-12 ; maintenance annoncée le 2026-10-14 à 3 h.
 - **Hostinger** : domaine cloveria-pro.fr actif, expiration 2027-05-20, renouvellement automatique activé (vu le 2026-10-12) ; des e-mails d'hameçonnage imitant Hostinger ont été reçus (septembre et octobre 2026, expéditeurs sans rapport avec Hostinger) — ne jamais agir depuis un e-mail, passer par l'espace Hostinger.
 
@@ -1013,7 +1053,7 @@ Les CGU, la politique de confidentialité et les mentions légales ne correspond
 - [x] CORS : confirmer que `CORS_ORIGIN` est défini sur Render
 
 ### À vérifier, non confirmé
-- [x] `JWT_SECRET` réellement défini sur Render (une valeur par défaut est codée en dur dans `server/middleware/auth.js` ET dans `server/routes/auth.js`) — confirmé par Seb le 2026-10-01
+- [x] `JWT_SECRET` réellement défini sur Render — confirmé par Seb le 2026-10-01 ; depuis SEC1 (`1176ed5`), le serveur refuse de démarrer en production sans cette variable (la valeur de repli n'existe plus qu'à un seul endroit, `server/middleware/auth.js`, hors production)
 - [x] `CORS_ORIGIN` défini sur Render en production — confirmé par Seb le 2026-10-01 (ajouté)
 - [ ] Exécution effective des crons quotidiens (relances/lifecycle) — le service ne dort plus depuis le 2026-10-12 ; exécution réelle non vérifiée
 - [ ] Limite de stockage 512 Mo de MongoDB Atlas M0 — marge restante non vérifiée
