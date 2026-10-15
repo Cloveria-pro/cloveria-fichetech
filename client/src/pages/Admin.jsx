@@ -556,13 +556,22 @@ export default function Admin() {
                     <td onClick={e => e.stopPropagation()} style={{ padding: '0.6rem 0.75rem', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
                         {isArchived ? (
-                          <button
-                            onClick={() => handleRestoreUser(u)}
-                            title="Restaurer ce compte"
-                            style={{ padding: '0.28rem 0.6rem', background: '#D1FAE5', color: '#065F46', border: '1px solid #6EE7B7', borderRadius: '5px', fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'inherit' }}
-                          >
-                            ↩ Restaurer
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handleRestoreUser(u)}
+                              title="Restaurer ce compte"
+                              style={{ padding: '0.28rem 0.6rem', background: '#D1FAE5', color: '#065F46', border: '1px solid #6EE7B7', borderRadius: '5px', fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'inherit' }}
+                            >
+                              ↩ Restaurer
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(u)}
+                              title="Supprimer définitivement ce compte"
+                              style={{ padding: '0.28rem 0.55rem', background: '#F9FAFB', color: '#6B7280', border: '1px solid #E5E7EB', borderRadius: '5px', fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'inherit' }}
+                            >
+                              🗑
+                            </button>
+                          </>
                         ) : (
                           <>
                             <button
@@ -583,7 +592,7 @@ export default function Admin() {
                             ) : (
                               <button
                                 onClick={() => handleDeleteUser(u)}
-                                title="Archiver ce compte"
+                                title="Supprimer définitivement ce compte"
                                 style={{ padding: '0.28rem 0.55rem', background: '#F9FAFB', color: '#6B7280', border: '1px solid #E5E7EB', borderRadius: '5px', fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: 'inherit' }}
                               >
                                 🗑
