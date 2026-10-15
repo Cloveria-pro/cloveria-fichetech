@@ -297,7 +297,8 @@ router.delete('/account', authMiddleware, async (req, res) => {
     return res.status(503).json({ error: "La suppression de votre compte n'a pas pu aboutir. Réessayez dans un instant ou écrivez-nous à contact@cloveria.fr." });
   }
 
-  const { email, etablissement, id } = user;
+  const { id } = user;
+  const abonnementStripe = !!(user.stripeSubscriptionId || user.stripeCustomerId);
   try {
     await effacerDonneesUtilisateur(db, id);
   } catch (err) {
@@ -305,7 +306,7 @@ router.delete('/account', authMiddleware, async (req, res) => {
     return res.status(503).json({ error: "La suppression de votre compte n'a pas pu aboutir. Réessayez dans un instant ou écrivez-nous à contact@cloveria.fr." });
   }
 
-  notifierSuppressionCompte({ email, etablissement, id });
+  notifierSuppressionCompte({ abonnementStripe });
   res.json({ success: true });
 });
 

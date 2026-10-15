@@ -141,8 +141,9 @@ router.patch('/users/:id/disable', adminAuth, async (req, res) => {
 router.delete('/users/:id', adminAuth, async (req, res) => {
   try {
     const db = await getDb();
-    const user = await db.collection('users').findOne({ id: req.params.id }, { projection: { _id: 0, id: 1, email: 1, etablissement: 1, deleted: 1, stripeSubscriptionId: 1 } });
+    const user = await db.collection('users').findOne({ id: req.params.id }, { projection: { _id: 0, id: 1, email: 1, etablissement: 1, deleted: 1, stripeSubscriptionId: 1, stripeCustomerId: 1 } });
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+    const abonnementStripe = !!(user.stripeSubscriptionId || user.stripeCustomerId);
 
     try {
       await annulerAbonnementStripe(user);
@@ -158,7 +159,7 @@ router.delete('/users/:id', adminAuth, async (req, res) => {
       return res.status(503).json({ error: "L'effacement des données n'a pas abouti. Le compte n'a pas été entièrement supprimé." });
     }
 
-    notifierSuppressionCompte({ email: user.email, etablissement: user.etablissement, id: user.id });
+    notifierSuppressionCompte({ abonnementStripe });
     res.json({ success: true, archived: user.email, erased: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

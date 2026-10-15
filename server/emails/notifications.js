@@ -38,9 +38,12 @@ export function notifierNouveauClient({ email, etablissement, id }) {
   envoyer('[NOUVEAU CLIENT] CloverIA', body).catch(err => console.error('[Notif] Nouveau client:', err.message));
 }
 
-export function notifierSuppressionCompte({ email, etablissement, id }) {
+// Notification interne de suppression : aucune donnée du client (ni e-mail, ni établissement, ni id).
+// `abonnementStripe` est calculé par l'appelant avant l'effacement.
+export function notifierSuppressionCompte({ abonnementStripe }) {
   const now = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' });
-  const lignes = row('Email', email) + row('Établissement', etablissement) + row('ID utilisateur', id) + row('Date / heure', now);
+  const ouiNon = abonnementStripe ? 'oui' : 'non';
+  const lignes = row('Date / heure', now) + row('Abonnement Stripe', ouiNon);
   const body = html('[SUPPRESSION COMPTE] CloverIA', lignes, 'Le compte client a été supprimé.');
-  envoyer('[SUPPRESSION COMPTE] CloverIA', body).catch(err => console.error('[Notif] Suppression compte:', err.message));
+  envoyer(`Compte supprimé — abonnement Stripe : ${ouiNon}`, body).catch(err => console.error('[Notif] Suppression compte : échec', err?.name || 'erreur inconnue'));
 }
