@@ -14,6 +14,9 @@ export const COLLECTIONS_UTILISATEUR = [
   'documents_factures',
 ];
 
+// Champ qui relie un document de ces collections à son compte (users.id).
+export const CHAMP_PROPRIETAIRE = 'user_id';
+
 // Efface réellement toutes les données d'un utilisateur. Idempotente : relançable sans erreur
 // (deleteMany sur un filtre déjà vide ne fait rien ; deleteOne sur un document déjà supprimé ne
 // fait rien). Ordre : (a) users.deleted/disabled d'abord pour couper l'accès immédiatement,
@@ -35,7 +38,7 @@ export async function effacerDonneesUtilisateur(db, userId) {
   const comptages = {};
   for (const collection of COLLECTIONS_UTILISATEUR) {
     try {
-      const { deletedCount } = await db.collection(collection).deleteMany({ user_id: userId });
+      const { deletedCount } = await db.collection(collection).deleteMany({ [CHAMP_PROPRIETAIRE]: userId });
       comptages[collection] = deletedCount;
     } catch (err) {
       err.collection = collection;
