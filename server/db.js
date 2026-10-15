@@ -18,6 +18,11 @@ export function getDb() {
       console.log('[MongoDB] Connecté à cloveria');
       await seedAll(db);
       await db.collection('users').createIndex({ id: 1 }, { unique: true, background: true });
+      try {
+        await db.collection('users').createIndex({ email: 1 }, { unique: true, background: true });
+      } catch (err) {
+        console.error('[MongoDB] index unique email : échec', err?.code ?? err?.codeName ?? 'inconnu');
+      }
       await migrateVentesImports(db);
       const demoResult = await db.collection('users').updateOne(
         { email: 'demo@cloveria.fr' },

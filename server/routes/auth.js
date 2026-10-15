@@ -113,7 +113,13 @@ router.post('/register', async (req, res) => {
     cguAccepteesLe: now.toISOString(),
     cguVersion: CGU_VERSION,
   };
-  await col.insertOne(user);
+  try {
+    await col.insertOne(user);
+  } catch (err) {
+    // Doublon d'e-mail (index unique, inscriptions simultanées) : même réponse qu'une adresse déjà existante.
+    if (err?.code === 11000) return res.status(409).json({ error: 'Un compte existe déjà avec cet email' });
+    throw err;
+  }
   delete user._id;
   envoyerConfirmationEmail(user.email, user.emailVerificationToken).catch(console.error);
   const token = makeToken(user);
