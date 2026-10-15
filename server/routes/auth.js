@@ -10,6 +10,9 @@ import { notifierNouveauClient, notifierSuppressionCompte } from '../emails/noti
 import { annulerAbonnementStripe } from './stripe.js';
 import { effacerDonneesUtilisateur } from '../lib/effacerUtilisateur.js';
 
+// Version des CGU et de la Politique de confidentialité acceptée à l'inscription (en-tête de CGU.jsx).
+const CGU_VERSION = 'octobre 2026';
+
 const router = express.Router();
 
 function hashResetToken(raw) {
@@ -65,6 +68,9 @@ router.post('/register', async (req, res) => {
   const { email, password, etablissement } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis' });
   if (password.length < 6) return res.status(400).json({ error: 'Mot de passe trop court (6 caractères minimum)' });
+  if (req.body.cguAcceptees !== true) {
+    return res.status(400).json({ error: "Vous devez accepter les CGU et la Politique de confidentialité pour créer un compte.", code: 'cgu_non_acceptees' });
+  }
 
   const db = await getDb();
   const col = db.collection('users');
@@ -104,6 +110,8 @@ router.post('/register', async (req, res) => {
     emailVerificationToken: randomBytes(32).toString('hex'),
     emailVerificationExpiry: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
     emailVerificationSentAt: now.toISOString(),
+    cguAccepteesLe: now.toISOString(),
+    cguVersion: CGU_VERSION,
   };
   await col.insertOne(user);
   delete user._id;

@@ -28,7 +28,7 @@ export default function Register({ onLogin }) {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: form.email, password: form.password, etablissement: form.etablissement }),
+        body: JSON.stringify({ email: form.email, password: form.password, etablissement: form.etablissement, cguAcceptees: cguAccepted }),
       });
       const data = await res.json();
       if (!res.ok) {
