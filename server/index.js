@@ -41,6 +41,26 @@ app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
+// TEMPORAIRE — PROXY-1, à supprimer
+// Mesure le nombre de proxys devant le serveur : aucune adresse IP ni valeur d'en-tête renvoyée ou journalisée.
+app.get('/api/diag-proxy', (req, res) => {
+  const xff = req.headers['x-forwarded-for'];
+  const xffEntries = xff ? String(xff).split(',').map(s => s.trim()).filter(Boolean).length : 0;
+  const ip = String(req.ip || '').replace(/^::ffff:/, '');
+  const ipIsPrivate = ip === '::1' || ip === '127.0.0.1' || ip.startsWith('10.') || ip.startsWith('192.168.') || /^172\.(1[6-9]|2\d|3[01])\./.test(ip);
+  const present = nom => req.headers[nom] !== undefined;
+  res.json({
+    xff_entries: xffEntries,
+    has_x_vercel_id: present('x-vercel-id'),
+    has_x_vercel_forwarded_for: present('x-vercel-forwarded-for'),
+    has_cf_connecting_ip: present('cf-connecting-ip'),
+    has_x_real_ip: present('x-real-ip'),
+    has_true_client_ip: present('true-client-ip'),
+    has_forwarded: present('forwarded'),
+    ip_is_private: ipIsPrivate,
+  });
+});
+
 
 // ── Routes protégées ────────────────────────────────────────────────────────
 app.use('/api', authMiddleware);
