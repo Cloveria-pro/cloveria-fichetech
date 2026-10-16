@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
+import { API_URL } from '../api.js';
 
 const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280' };
 const BG_PHOTO = 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1920&q=80';
@@ -25,7 +26,7 @@ export default function Register({ onLogin }) {
     if (form.password.length < 6) { setError('Mot de passe trop court (6 caractères minimum)'); return; }
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: form.email, password: form.password, etablissement: form.etablissement, cguAcceptees: cguAccepted }),
