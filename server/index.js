@@ -128,7 +128,7 @@ async function sendTrialEmails() {
       );
       console.log(`[Relance] ${typeof jour === 'number' ? `j${jour}` : jour} envoyé à ${user.email}`);
     } catch (err) {
-      console.error(`[Relance] Erreur j${jour} pour ${user.email}:`, err.message);
+      console.error(`[Relance] Erreur j${jour} :`, err.message);
     }
   }
 }
@@ -181,7 +181,7 @@ async function sendLifecycleEmails() {
       );
       console.log(`[Lifecycle] ${emailKey} envoyé à ${user.email}`);
     } catch (err) {
-      console.error(`[Lifecycle] Erreur ${emailKey} pour ${user.email}:`, err.message);
+      console.error(`[Lifecycle] Erreur ${emailKey} :`, err.message);
     }
   }
 }

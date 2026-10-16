@@ -3,6 +3,16 @@ import { dateFinReference } from '../lib/eligibilitePurge.js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Le SDK Resend renvoie { data, error } sans lever d'exception : une erreur est journalisée (nom
+// seulement, jamais l'adresse ni le contenu) puis levée avec le code fourni.
+async function envoyerOuLever(prefixe, code, message) {
+  const resultat = await resend.emails.send(message);
+  if (resultat?.error) {
+    console.error(`[${prefixe}] envoi échoué :`, resultat.error.name || 'erreur inconnue');
+    throw new Error(code);
+  }
+}
+
 const CHECKOUT_URL = 'https://app.cloveria-pro.fr/abonnement';
 
 // Date de fin du délai de grâce (pastDueSince + 7 jours), au format "12 octobre 2026" (fr-FR).
@@ -223,7 +233,7 @@ export async function envoyerLifecycle(user, emailKey) {
     return;
   }
 
-  await resend.emails.send({
+  await envoyerOuLever('Lifecycle', 'lifecycle_envoi_echoue', {
     from: 'CloverIA <contact@cloveria.fr>',
     to: user.email,
     subject: tpl.subject,
@@ -240,7 +250,7 @@ export async function envoyerRelance(user, jour) {
     return;
   }
 
-  await resend.emails.send({
+  await envoyerOuLever('Relance', 'relance_envoi_echoue', {
     from: 'CloverIA <contact@cloveria.fr>',
     to: user.email,
     subject: tpl.subject,
@@ -265,7 +275,7 @@ export async function envoyerPastDue(user) {
     <p>Passé ce délai sans régularisation, l'accès sera suspendu. Une question ? Écrivez-nous à contact@cloveria.fr.</p>
   `);
 
-  await resend.emails.send({
+  await envoyerOuLever('PastDue', 'pastdue_envoi_echoue', {
     from: 'CloverIA <contact@cloveria.fr>',
     to: user.email,
     subject: "Votre paiement CloverIA n'a pas abouti",

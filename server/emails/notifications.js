@@ -28,7 +28,12 @@ async function envoyer(sujet, htmlBody) {
     console.warn('[Notif] RESEND_API_KEY manquant, notification non envoyée');
     return;
   }
-  await resend.emails.send({ from: FROM, to: TO, subject: sujet, html: htmlBody });
+  // Le SDK Resend renvoie { data, error } sans lever d'exception : on lève pour que l'appelant journalise.
+  const resultat = await resend.emails.send({ from: FROM, to: TO, subject: sujet, html: htmlBody });
+  if (resultat?.error) {
+    console.error('[Notif] envoi échoué :', resultat.error.name || 'erreur inconnue');
+    throw new Error('notification_envoi_echoue');
+  }
 }
 
 export function notifierNouveauClient({ email, etablissement, id }) {

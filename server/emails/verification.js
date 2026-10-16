@@ -3,6 +3,16 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
 const APP_URL = process.env.APP_URL || 'https://app.cloveria-pro.fr';
 
+// Le SDK Resend renvoie { data, error } sans lever d'exception : une erreur est journalisée (nom
+// seulement, jamais l'adresse ni le contenu) puis levée avec le code fourni.
+async function envoyerOuLever(prefixe, code, message) {
+  const resultat = await resend.emails.send(message);
+  if (resultat?.error) {
+    console.error(`[${prefixe}] envoi échoué :`, resultat.error.name || 'erreur inconnue');
+    throw new Error(code);
+  }
+}
+
 function layout(contenu) {
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -68,7 +78,7 @@ export async function envoyerResetEmail(email, token) {
     <p style="font-size:12px;color:#9CA3AF;text-align:center;margin-top:4px;">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br /><span style="color:#2D6A4F;word-break:break-all;">${url}</span></p>
   `);
 
-  await resend.emails.send({
+  await envoyerOuLever('Reset', 'reset_envoi_echoue', {
     from: 'CloverIA <contact@cloveria.fr>',
     to: email,
     subject: 'Réinitialisez votre mot de passe CloverIA 🍀',
@@ -94,7 +104,7 @@ export async function envoyerConfirmationEmail(email, token) {
     <p style="font-size:12px;color:#9CA3AF;text-align:center;margin-top:4px;">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br /><span style="color:#2D6A4F;word-break:break-all;">${url}</span></p>
   `);
 
-  await resend.emails.send({
+  await envoyerOuLever('Verification', 'confirmation_envoi_echoue', {
     from: 'CloverIA <contact@cloveria.fr>',
     to: email,
     subject: 'Confirmez votre adresse email — CloverIA FicheTech',
