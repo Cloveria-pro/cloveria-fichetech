@@ -184,7 +184,7 @@ router.post('/analyser-ventes', uploadVentes.single('ventes'), async (req, res) 
     const db = await getDb();
     quotaOk = await reserverQuota(db, req.userId, POIDS_ANALYSER_FICHIER);
   } catch (err) {
-    console.error('[IA] analyser-ventes (réservation quota) :', err?.message);
+    console.error('[IA] analyser-ventes (réservation quota) :', err?.name, err?.code ?? err?.codeName ?? '');
     return res.status(503).json({ error: TEXTE_IA_INDISPONIBLE, code: 'ia_indisponible' });
   }
   if (!quotaOk) {
@@ -254,7 +254,7 @@ router.post('/analyser-fiche', upload.single('fiche'), async (req, res) => {
     const db = await getDb();
     quotaOk = await reserverQuota(db, req.userId, POIDS_ANALYSER_FICHIER);
   } catch (err) {
-    console.error('[IA] analyser-fiche (réservation quota) :', err?.message);
+    console.error('[IA] analyser-fiche (réservation quota) :', err?.name, err?.code ?? err?.codeName ?? '');
     return res.status(503).json({ error: TEXTE_IA_INDISPONIBLE, code: 'ia_indisponible' });
   }
   if (!quotaOk) {
@@ -333,7 +333,7 @@ router.post('/analyser-facture', upload.single('facture'), async (req, res) => {
     const db = await getDb();
     quotaOk = await reserverQuota(db, req.userId, POIDS_ANALYSER_FICHIER);
   } catch (err) {
-    console.error('[IA] analyser-facture (réservation quota) :', err?.message);
+    console.error('[IA] analyser-facture (réservation quota) :', err?.name, err?.code ?? err?.codeName ?? '');
     return res.status(503).json({ error: TEXTE_IA_INDISPONIBLE, code: 'ia_indisponible' });
   }
   if (!quotaOk) {
@@ -396,7 +396,7 @@ router.post('/structurer', async (req, res) => {
     const db = await getDb();
     quotaOk = await reserverQuota(db, req.userId, POIDS_STRUCTURER);
   } catch (err) {
-    console.error('[IA] structurer (réservation quota) :', err?.message);
+    console.error('[IA] structurer (réservation quota) :', err?.name, err?.code ?? err?.codeName ?? '');
     return res.status(503).json({ error: TEXTE_IA_INDISPONIBLE, code: 'ia_indisponible' });
   }
   if (!quotaOk) {
@@ -478,7 +478,7 @@ router.post('/description-commerciale', async (req, res) => {
     const db = await getDb();
     quotaOk = await reserverQuota(db, req.userId, POIDS_DESCRIPTION_COMMERCIALE);
   } catch (err) {
-    console.error('[IA] description-commerciale (réservation quota) :', err?.message);
+    console.error('[IA] description-commerciale (réservation quota) :', err?.name, err?.code ?? err?.codeName ?? '');
     return res.status(503).json({ error: TEXTE_IA_INDISPONIBLE, code: 'ia_indisponible' });
   }
   if (!quotaOk) {

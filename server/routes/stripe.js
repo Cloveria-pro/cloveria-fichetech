@@ -290,7 +290,7 @@ router.post('/create-portal-session', async (req, res) => {
 
     res.json({ url: session.url });
   } catch (err) {
-    console.error('[Stripe] create-portal-session error:', err.message);
+    console.error('[Stripe] create-portal-session error:', err?.type || err?.name, err?.code ?? '');
     res.status(500).json({ error: 'Impossible de créer la session du portail. Réessayez plus tard.' });
   }
 });

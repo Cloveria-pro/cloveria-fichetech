@@ -40,7 +40,7 @@ export function notifierNouveauClient({ email, etablissement, id }) {
   const now = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' });
   const lignes = row('Email', email) + row('Établissement', etablissement) + row('ID utilisateur', id) + row('Date / heure', now);
   const body = html('[NOUVEAU CLIENT] CloverIA', lignes, 'Le client a terminé son inscription et est arrivé dans l\'application.');
-  envoyer('[NOUVEAU CLIENT] CloverIA', body).catch(err => console.error('[Notif] Nouveau client:', err.message));
+  envoyer('[NOUVEAU CLIENT] CloverIA', body).catch(err => console.error('[Notif] Nouveau client : échec', err?.name || 'erreur inconnue'));
 }
 
 // Notification interne de suppression : aucune donnée du client (ni e-mail, ni établissement, ni id).

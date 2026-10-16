@@ -78,13 +78,13 @@ app.use((err, req, res, next) => {
     return res.status(statut).json({ error: 'Requête invalide.' });
   }
 
-  console.error('[Erreur non gérée]', err?.message);
+  console.error('[Erreur non gérée]', err?.name, err?.code ?? err?.codeName ?? '', String(err?.name ?? '').startsWith('Mongo') ? '' : (err?.message ?? ''));
   res.status(500).json({ error: 'Une erreur est survenue. Réessayez dans un instant ou écrivez-nous à contact@cloveria.fr.' });
 });
 
 // Journalise sans jamais arrêter le processus (évite qu'un rejet non géré ne coupe le service entier).
 process.on('unhandledRejection', (reason) => {
-  console.error('[unhandledRejection]', reason?.message || reason);
+  console.error('[unhandledRejection]', ...(reason !== null && typeof reason === 'object' ? [reason.name, reason.code ?? reason.codeName ?? '', String(reason.name ?? '').startsWith('Mongo') ? '' : (reason.message ?? '')] : [typeof reason]));
 });
 
 // ── Emails de relance essai ─────────────────────────────────────────────────
@@ -126,9 +126,9 @@ async function sendTrialEmails() {
         { id: user.id },
         { $push: { emailsEnvoyes: typeof jour === 'number' ? `j${jour}` : jour } }
       );
-      console.log(`[Relance] ${typeof jour === 'number' ? `j${jour}` : jour} envoyé à ${user.email}`);
+      console.log(`[Relance] ${typeof jour === 'number' ? `j${jour}` : jour} envoyé (utilisateur ${user.id})`);
     } catch (err) {
-      console.error(`[Relance] Erreur j${jour} :`, err.message);
+      console.error(`[Relance] Erreur j${jour} (utilisateur ${user.id}) :`, err?.name, err?.code ?? err?.codeName ?? '');
     }
   }
 }
@@ -179,9 +179,9 @@ async function sendLifecycleEmails() {
         { id: user.id },
         { $push: { lifecycleEmailsSent: emailKey } }
       );
-      console.log(`[Lifecycle] ${emailKey} envoyé à ${user.email}`);
+      console.log(`[Lifecycle] ${emailKey} envoyé (utilisateur ${user.id})`);
     } catch (err) {
-      console.error(`[Lifecycle] Erreur ${emailKey} :`, err.message);
+      console.error(`[Lifecycle] Erreur ${emailKey} (utilisateur ${user.id}) :`, err?.name, err?.code ?? err?.codeName ?? '');
     }
   }
 }
@@ -250,19 +250,19 @@ getDb()
 
     // Cron quotidien 9h00 : emails de relance essai + lifecycle + prévenance effacement
     cron.schedule('0 9 * * *', () => {
-      sendTrialEmails().catch(err => console.error('[Cron relances]', err.message));
-      sendLifecycleEmails().catch(err => console.error('[Cron lifecycle]', err.message));
-      sendPrevenanceEffacement().catch(err => console.error('[Cron prévenance effacement]', err.message));
+      sendTrialEmails().catch(err => console.error('[Cron relances]', err?.name, err?.code ?? err?.codeName ?? ''));
+      sendLifecycleEmails().catch(err => console.error('[Cron lifecycle]', err?.name, err?.code ?? err?.codeName ?? ''));
+      sendPrevenanceEffacement().catch(err => console.error('[Cron prévenance effacement]', err?.name, err?.code ?? err?.codeName ?? ''));
     });
     console.log('Cron relances + lifecycle démarré (quotidien à 9h00)');
 
     // Cron quotidien 10h00 : effacement automatique (décalé pour ne pas chevaucher le cron de 9h)
     cron.schedule('0 10 * * *', () => {
-      runPurgeComptes().catch(err => console.error('[Cron purge comptes]', err.message));
+      runPurgeComptes().catch(err => console.error('[Cron purge comptes]', err?.name, err?.code ?? err?.codeName ?? ''));
     });
     console.log('Cron purge comptes démarré (quotidien à 10h00)');
   })
   .catch(err => {
-    console.error('[MongoDB] Connexion impossible:', err.message);
+    console.error('[MongoDB] Connexion impossible:', err?.name, err?.code ?? err?.codeName ?? '');
     process.exit(1);
   });

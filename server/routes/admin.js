@@ -99,7 +99,7 @@ router.get('/users', adminAuth, async (req, res) => {
 
     res.json(enriched);
   } catch (err) {
-    console.error('[Admin] GET /users error:', err.message);
+    console.error('[Admin] GET /users error:', err?.name, err?.code ?? err?.codeName ?? '');
     res.status(500).json({ error: err.message });
   }
 });

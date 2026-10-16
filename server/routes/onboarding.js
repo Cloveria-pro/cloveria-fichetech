@@ -118,7 +118,7 @@ router.post('/inject-example', async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    console.error('[Onboarding] inject-example error:', err.message);
+    console.error('[Onboarding] inject-example error:', err?.name, err?.code ?? err?.codeName ?? '');
     res.status(500).json({ error: err.message });
   }
 });

@@ -121,7 +121,7 @@ router.post('/register', async (req, res) => {
     throw err;
   }
   delete user._id;
-  envoyerConfirmationEmail(user.email, user.emailVerificationToken).catch(console.error);
+  envoyerConfirmationEmail(user.email, user.emailVerificationToken).catch(err => console.error('[Register] e-mail de confirmation : échec', err?.name, err?.code ?? ''));
   const token = makeToken(user);
   res.status(201).json({
     token,
@@ -144,7 +144,7 @@ router.post('/login', async (req, res) => {
   const match = await bcrypt.compare(password, user.password_hash);
   if (!match) return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
 
-  col.updateOne({ id: user.id }, { $set: { lastLoginAt: new Date().toISOString() } }).catch(console.error);
+  col.updateOne({ id: user.id }, { $set: { lastLoginAt: new Date().toISOString() } }).catch(err => console.error('[Login] mise à jour de lastLoginAt : échec', err?.name, err?.code ?? err?.codeName ?? ''));
 
   const token = makeToken(user);
   res.json({
@@ -169,10 +169,10 @@ router.post('/forgot-password', forgotPasswordRateLimit, async (req, res) => {
         { id: user.id },
         { $set: { passwordResetToken: tokenHash, passwordResetExpiry: expiry } }
       );
-      envoyerResetEmail(user.email, rawToken).catch(console.error);
+      envoyerResetEmail(user.email, rawToken).catch(err => console.error('[ForgotPassword] e-mail de réinitialisation : échec', err?.name, err?.code ?? ''));
     }
   } catch (err) {
-    console.error('[ForgotPassword]', err.message);
+    console.error('[ForgotPassword]', err?.name, err?.code ?? err?.codeName ?? '');
   }
   res.json(NEUTRAL);
 });
@@ -246,7 +246,7 @@ router.post('/resend-verification', authMiddleware, async (req, res) => {
       emailVerificationSentAt: now.toISOString(),
     },
   });
-  envoyerConfirmationEmail(user.email, newToken).catch(console.error);
+  envoyerConfirmationEmail(user.email, newToken).catch(err => console.error('[ResendVerification] e-mail de confirmation : échec', err?.name, err?.code ?? ''));
   res.json({ success: true });
 });
 
