@@ -27,6 +27,8 @@ import { authMiddleware } from './middleware/auth.js';
 import { checkAccess } from './middleware/checkAccess.js';
 
 const app = express();
+// Render (proxy interne) + Cloudflare : req.ip = adresse du visiteur. Vérifié par /api/diag-proxy (PROXY-1/2).
+app.set('trust proxy', 2);
 const PORT = process.env.PORT || 3001;
 
 app.use(cors({
@@ -58,6 +60,7 @@ app.get('/api/diag-proxy', (req, res) => {
     has_true_client_ip: present('true-client-ip'),
     has_forwarded: present('forwarded'),
     ip_is_private: ipIsPrivate,
+    ip_equals_xff_first: xff ? ip === String(xff).split(',')[0].trim().replace(/^::ffff:/, '') : false,
   });
 });
 
