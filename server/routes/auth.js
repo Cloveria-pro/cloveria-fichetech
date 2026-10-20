@@ -9,6 +9,14 @@ import { envoyerConfirmationEmail, envoyerResetEmail } from '../emails/verificat
 import { notifierNouveauClient, notifierSuppressionCompte } from '../emails/notifications.js';
 import { annulerAbonnementStripe } from './stripe.js';
 import { effacerDonneesUtilisateur } from '../lib/effacerUtilisateur.js';
+import { creerLimiteur } from '../middleware/rateLimit.js';
+
+// Limites par IP (compteurs séparés) : connexion = 10 échecs / 15 min ; inscription = 10 tentatives / 15 min.
+const limiteConnexion = creerLimiteur({ max: 10, fenetreMs: 15 * 60 * 1000, compterSi: statut => statut >= 400 });
+const limiteInscription = creerLimiteur({ max: 10, fenetreMs: 15 * 60 * 1000 });
+
+// Format d'e-mail volontairement simple : un seul @, du texte avant et après, un point dans le domaine, aucun espace.
+const EMAIL_SIMPLE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Version des CGU et de la Politique de confidentialité acceptée à l'inscription (en-tête de CGU.jsx).
 const CGU_VERSION = 'octobre 2026';
@@ -64,12 +72,18 @@ export function buildProfilResponse(user) {
 }
 
 
-router.post('/register', async (req, res) => {
+router.post('/register', limiteInscription, async (req, res) => {
   const { email, password, etablissement } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis' });
   if (password.length < 6) return res.status(400).json({ error: 'Mot de passe trop court (6 caractères minimum)' });
   if (req.body.cguAcceptees !== true) {
     return res.status(400).json({ error: "Vous devez accepter les CGU et la Politique de confidentialité pour créer un compte.", code: 'cgu_non_acceptees' });
+  }
+  // Valide la valeur telle qu'elle est ensuite utilisée (minuscules, sans espaces autour).
+  if (typeof email !== 'string') return res.status(400).json({ error: 'Adresse e-mail invalide' });
+  const emailNormalise = email.toLowerCase().trim();
+  if (emailNormalise.length > 254 || !EMAIL_SIMPLE.test(emailNormalise)) {
+    return res.status(400).json({ error: 'Adresse e-mail invalide' });
   }
 
   const db = await getDb();
@@ -129,7 +143,7 @@ router.post('/register', async (req, res) => {
   });
 });
 
-router.post('/login', async (req, res) => {
+router.post('/login', limiteConnexion, async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis' });
 
