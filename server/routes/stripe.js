@@ -247,6 +247,21 @@ export async function stripeWebhook(req, res) {
   res.json({ received: true });
 }
 
+// Statuts Stripe d'un abonnement existant qui autorisent un nouvel abonnement : résilié, jamais activé,
+// en attente de premier paiement, ou unpaid (Stripe ne tente plus aucun paiement ; traduit en
+// 'cancelled' par mapStripeSubscriptionStatus).
+const STATUTS_AUTORISANT_NOUVEL_ABONNEMENT = ['canceled', 'incomplete_expired', 'incomplete', 'unpaid'];
+
+// Décide, sans base ni Stripe, si un nouvel abonnement peut être créé alors que le compte a déjà un
+// stripeSubscriptionId. statutStripe = statut lu chez Stripe, ou null si l'abonnement est introuvable
+// (resource_missing). Tout autre statut (active, trialing, past_due, paused, inconnu…) → refusé.
+export function peutCreerNouvelAbonnement(statutStripe) {
+  if (statutStripe === null) return true;
+  return STATUTS_AUTORISANT_NOUVEL_ABONNEMENT.includes(statutStripe);
+}
+
+const estAbonnementIntrouvable = (err) => err?.code === 'resource_missing' || err?.raw?.code === 'resource_missing';
+
 // ── Route protégée : création session Checkout ────────────────────────────
 router.post('/create-checkout-session', async (req, res) => {
   try {
@@ -254,6 +269,28 @@ router.post('/create-checkout-session', async (req, res) => {
     const db = await getDb();
     const user = await db.collection('users').findOne({ id: req.userId }, PROJ);
     if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+
+    // Garde contre le double abonnement (DOUBLE-ABO-2).
+    if (user.subscriptionStatus === 'lifetime') {
+      return res.status(409).json({ code: 'compte_a_vie', error: 'Votre compte bénéficie d’un accès à vie : aucun abonnement n’est nécessaire.' });
+    }
+    if (user.stripeSubscriptionId) {
+      let statutStripe;
+      try {
+        const abonnement = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+        statutStripe = abonnement?.status;
+      } catch (err) {
+        if (!estAbonnementIntrouvable(err)) {
+          console.error('[Stripe] create-checkout-session (retrieve) : échec', err?.code || err?.type || 'erreur inconnue');
+          return res.status(503).json({ code: 'stripe_indisponible', error: 'Le paiement est momentanément indisponible. Réessayez dans quelques minutes.' });
+        }
+        statutStripe = null;
+      }
+      if (!peutCreerNouvelAbonnement(statutStripe)) {
+        console.log('[Stripe] create-checkout-session : abonnement existant, statut', String(statutStripe));
+        return res.status(409).json({ code: 'abonnement_deja_actif', error: 'Vous avez déjà un abonnement. Vous pouvez le gérer depuis Paramètres.' });
+      }
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
