@@ -40,6 +40,12 @@ export default function Abonnement() {
 
   const abonnementTermine = !!profil?.hasStripeCustomer;
   const estPastDue = profil?.subscriptionStatus === 'past_due';
+  // Essai en cours : même règle que server/middleware/checkAccess.js (date absente ou invalide → non).
+  const finEssai = profil?.trialEndDate ? new Date(profil.trialEndDate) : null;
+  const essaiEnCours = profil?.subscriptionStatus === 'trial'
+    && !profil?.hasStripeCustomer
+    && finEssai !== null && !Number.isNaN(finEssai.getTime())
+    && finEssai > new Date();
 
   async function handleSubscribe() {
     setLoading(true);
@@ -68,10 +74,14 @@ export default function Abonnement() {
         {/* Titre */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.75rem', fontWeight: 700, color: T.text, marginBottom: '0.75rem', lineHeight: 1.2 }}>
-            {abonnementTermine ? "Votre abonnement n'est plus actif" : "Votre période d'essai est terminée"}
+            {essaiEnCours
+              ? 'Votre essai gratuit est en cours'
+              : abonnementTermine ? "Votre abonnement n'est plus actif" : "Votre période d'essai est terminée"}
           </h1>
           <p style={{ color: T.muted, fontSize: '0.9375rem', lineHeight: 1.6 }}>
-            {abonnementTermine
+            {essaiEnCours
+              ? 'S’abonner maintenant démarre l’abonnement immédiatement : le paiement de 39 €/mois est débité aujourd’hui et les jours d’essai restants ne sont pas reportés.'
+              : abonnementTermine
               ? (estPastDue
                   ? "Le dernier paiement n'a pas abouti. Mettez à jour votre carte pour retrouver votre accès."
                   : "Votre abonnement est terminé. Vous pouvez en reprendre un à tout moment.")
