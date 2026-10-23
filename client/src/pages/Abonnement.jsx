@@ -46,6 +46,10 @@ export default function Abonnement() {
     && !profil?.hasStripeCustomer
     && finEssai !== null && !Number.isNaN(finEssai.getTime())
     && finEssai > new Date();
+  const estActif = profil?.subscriptionStatus === 'active';
+  const estAVie = profil?.subscriptionStatus === 'lifetime';
+  // Refus du serveur (DOUBLE-ABO-2) dont le message est affiché tel quel.
+  const CODES_MESSAGE_SERVEUR = ['abonnement_deja_actif', 'compte_a_vie', 'stripe_indisponible'];
 
   async function handleSubscribe() {
     setLoading(true);
@@ -54,7 +58,9 @@ export default function Abonnement() {
       const { url } = await api.stripe.createCheckoutSession();
       window.location.href = url;
     } catch (err) {
-      if (err.message !== 'trial_expired') {
+      if (CODES_MESSAGE_SERVEUR.includes(err.code)) {
+        setError(err.message);
+      } else if (err.message !== 'trial_expired') {
         setError('Une erreur est survenue. Veuillez réessayer.');
       }
       setLoading(false);
@@ -74,12 +80,20 @@ export default function Abonnement() {
         {/* Titre */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.75rem', fontWeight: 700, color: T.text, marginBottom: '0.75rem', lineHeight: 1.2 }}>
-            {essaiEnCours
+            {estAVie
+              ? 'Votre accès à vie est actif'
+              : estActif
+              ? 'Votre abonnement est actif'
+              : essaiEnCours
               ? 'Votre essai gratuit est en cours'
               : abonnementTermine ? "Votre abonnement n'est plus actif" : "Votre période d'essai est terminée"}
           </h1>
           <p style={{ color: T.muted, fontSize: '0.9375rem', lineHeight: 1.6 }}>
-            {essaiEnCours
+            {estAVie
+              ? 'Aucun abonnement n’est nécessaire.'
+              : estActif
+              ? 'Vous pouvez le gérer depuis Paramètres.'
+              : essaiEnCours
               ? 'S’abonner maintenant démarre l’abonnement immédiatement : le paiement de 39 €/mois est débité aujourd’hui et les jours d’essai restants ne sont pas reportés.'
               : abonnementTermine
               ? (estPastDue
@@ -89,8 +103,8 @@ export default function Abonnement() {
           </p>
         </div>
 
-        {/* Pricing card */}
-        <div style={{ background: '#fff', borderRadius: '16px', boxShadow: '0 4px 32px rgba(0,0,0,0.09)', border: '2px solid rgba(45,106,79,0.15)', overflow: 'hidden' }}>
+        {/* Pricing card (masquée pour un compte à vie) */}
+        {!estAVie && <div style={{ background: '#fff', borderRadius: '16px', boxShadow: '0 4px 32px rgba(0,0,0,0.09)', border: '2px solid rgba(45,106,79,0.15)', overflow: 'hidden' }}>
 
           {/* Header tarif */}
           <div style={{ background: T.green, padding: '1.75rem 2rem 1.5rem', textAlign: 'center' }}>
@@ -121,7 +135,7 @@ export default function Abonnement() {
               </div>
             )}
 
-            {!estPastDue && <button
+            {!estPastDue && !estActif && <button
               onClick={handleSubscribe}
               disabled={loading}
               style={{
@@ -173,7 +187,7 @@ export default function Abonnement() {
               </p>
             )}
           </div>
-        </div>
+        </div>}
 
         {/* Contact */}
         <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.8rem', color: T.muted }}>
