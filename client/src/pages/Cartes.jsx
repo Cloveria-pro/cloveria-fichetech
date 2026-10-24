@@ -4,7 +4,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from 
 import { SortableContext, verticalListSortingStrategy, rectSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
-import { coutIng } from '../utils.js';
+import { coutIng, foodCostHT } from '../utils.js';
 import { api } from '../api.js';
 import html2pdf from 'html2pdf.js';
 
@@ -34,7 +34,7 @@ const ALLERGENES_14 = [
 
 function coutMat(r) { return (r.ingredients || []).reduce((s, i) => s + coutIng(i), 0); }
 function coutPortion(r) { return r.portions > 0 ? coutMat(r) / r.portions : 0; }
-function fcNum(cp, pv) { return pv > 0 ? cp / pv * 100 : null; }
+function fcNum(cp, pv, tvaVente) { return foodCostHT(cp, pv, tvaVente); }
 function fcColor(pct) { if (pct < 30) return T.green; if (pct <= 35) return '#D97706'; return T.red; }
 function fcBadge(fc) {
   if (fc === null) return null;
@@ -342,7 +342,7 @@ function VueCarte({ carte, recettes, parametres, onEdit, onBack, onAutoSave }) {
     platsData: section.plats.map(plat => {
       const rec = localRecettes.find(r => r.id === plat.recetteId);
       const cp = rec ? coutPortion(rec) : 0;
-      const fc = fcNum(cp, plat.prixVente);
+      const fc = fcNum(cp, plat.prixVente, parametres?.tva);
       return { ...plat, rec, cp, fc };
     }),
   }));
@@ -671,7 +671,7 @@ function SortableSection({ id, children }) {
 }
 
 // ─── Éditeur de carte ─────────────────────────────────────────────────────────
-function EditeurCarte({ carte, recettes, onSave, onBack, onAutoSave }) {
+function EditeurCarte({ carte, recettes, parametres, onSave, onBack, onAutoSave }) {
   const [form, setForm] = useState(carte || {
     nom: '',
     sections: SECTIONS_DEFAULT.map(t => ({ titre: t, plats: [] })),
@@ -799,7 +799,7 @@ function EditeurCarte({ carte, recettes, onSave, onBack, onAutoSave }) {
   }
 
   const inputSm = { ...inputStyle, padding: '0.35rem 0.6rem', fontSize: '0.82rem' };
-  const fcPct = (cp, pv) => pv > 0 ? (cp / pv * 100).toFixed(1) : null;
+  const fcPct = (cp, pv) => { const fc = foodCostHT(cp, pv, parametres?.tva); return fc !== null ? fc.toFixed(1) : null; };
 
   return (
     <div>
@@ -1014,6 +1014,7 @@ export default function Cartes() {
       key={`${carteActive?.id || 'new'}-${editKey}`}
       carte={carteActive}
       recettes={recettes}
+      parametres={parametres}
       onSave={handleSave}
       onBack={() => carteActive ? setVue('vue') : setVue('liste')}
       onAutoSave={handleAutoSave}

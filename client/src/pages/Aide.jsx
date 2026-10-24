@@ -29,7 +29,7 @@ const CARDS = [
 const FAQ = [
   {
     q: "C'est quoi le food cost ?",
-    a: "Le food cost est le ratio coût matière / prix de vente, exprimé en pourcentage. Sous votre seuil cible, le plat est rentable.",
+    a: "Le food cost est le ratio coût matière HT / prix de vente HT, exprimé en pourcentage. Sous votre seuil cible, le plat est rentable.",
   },
   {
     q: "Comment fonctionne le rendement matière ?",

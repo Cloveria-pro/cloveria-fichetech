@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
-import { coutPortionTTC, calculerFoodCost } from '../utils.js';
+import { coutPortionHT, foodCostRecetteHT } from '../utils.js';
 import ImportFicheModal from '../components/ImportFicheModal.jsx';
 
 const T = { green: '#2D6A4F', text: '#1A1A1A', muted: '#9CA3AF' };
@@ -34,12 +34,12 @@ function Col({ label, value, color, italic }) {
   );
 }
 
-function TileFiche({ r, cible, onDelete, onDuplicate, onUpdateCategorie, navigate }) {
+function TileFiche({ r, cible, tvaVente, onDelete, onDuplicate, onUpdateCategorie, navigate }) {
   const [hovered, setHovered] = useState(false);
   const [catEdit, setCatEdit] = useState(false);
-  const cpTTC = coutPortionTTC(r);
+  const cpHT = coutPortionHT(r);
   const pvTTC = r.prixVentePratiqueTTC || 0;
-  const fc = calculerFoodCost(cpTTC, pvTTC);
+  const fc = foodCostRecetteHT(r, tvaVente);
   const badge = fc !== null ? fcBadge(fc, cible) : null;
 
   return (
@@ -89,7 +89,7 @@ function TileFiche({ r, cible, onDelete, onDuplicate, onUpdateCategorie, navigat
 
       {/* Coût matière — 160px */}
       <div style={{ width: '160px', flexShrink: 0 }}>
-        <Col label="Coût mat." value={cpTTC > 0 ? cpTTC.toFixed(2) + ' €/cvt' : '—'} />
+        <Col label="Coût mat." value={cpHT > 0 ? cpHT.toFixed(2) + ' € HT/cvt' : '—'} />
       </div>
 
       {/* Prix de vente — 160px */}
@@ -193,9 +193,7 @@ export default function Recettes() {
   }
 
   function getStatus(r) {
-    const cpTTC = coutPortionTTC(r);
-    const pvTTC = r.prixVentePratiqueTTC || 0;
-    const fc = calculerFoodCost(cpTTC, pvTTC);
+    const fc = foodCostRecetteHT(r, params.tva);
     if (fc === null) return 'sans-prix';
     if (fc < params.foodCostCible) return 'Rentable';
     if (fc < params.foodCostCible + 5) return 'Acceptable';
@@ -367,6 +365,7 @@ export default function Recettes() {
                     key={r.id}
                     r={r}
                     cible={params.foodCostCible}
+                    tvaVente={params.tva}
                     onDelete={supprimer}
                     onDuplicate={dupliquer}
                     onUpdateCategorie={updateCategorie}

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { ItemModal } from './Organisation.jsx';
-import { coutPortionHT, foodCostPct } from '../utils.js';
+import { coutPortionHT, foodCostRecetteHT, prixVenteHT } from '../utils.js';
 import { getAnecdoteDuJour } from '../data/anecdotes.js';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
 
@@ -70,7 +70,7 @@ export default function Dashboard() {
   const cible = params.foodCostCible || 30;
 
   const avecPrix = recettes.filter(r => (r.prixVentePratiqueTTC || 0) > 0);
-  const withFC = avecPrix.map(r => ({ ...r, fc: foodCostPct(r) })).filter(r => r.fc !== null);
+  const withFC = avecPrix.map(r => ({ ...r, fc: foodCostRecetteHT(r, params.tva) })).filter(r => r.fc !== null);
 
   const recetteIdsInScope = selectedCarteId
     ? new Set(
@@ -126,12 +126,13 @@ export default function Dashboard() {
     withFC
       .filter(r => r.fc > cible)
       .map(r => {
-        const impactEuro = (r.fc - cible) / 100 * (r.prixVentePratiqueTTC || 0);
+        const pvHT = prixVenteHT(r.prixVentePratiqueTTC, params.tva);
+        const impactEuro = (r.fc - cible) / 100 * pvHT;
         return {
           nom: r.nom,
           probleme: `FC ${r.fc.toFixed(1)}% · cible ${cible}%`,
-          impactLabel: `Surcoût matière : +${impactEuro.toFixed(2)} € / couvert`,
-          impactTitle: `Écart entre le coût matière réel par couvert (${(r.fc / 100 * (r.prixVentePratiqueTTC || 0)).toFixed(2)} €) et le coût cible à ${cible}% (${(cible / 100 * (r.prixVentePratiqueTTC || 0)).toFixed(2)} €)`,
+          impactLabel: `Surcoût matière : +${impactEuro.toFixed(2)} € HT / couvert`,
+          impactTitle: `Écart entre le coût matière réel HT par couvert (${(r.fc / 100 * pvHT).toFixed(2)} € HT) et le coût cible à ${cible}% du prix de vente HT (${(cible / 100 * pvHT).toFixed(2)} € HT)`,
           link: `/fiches-techniques/${r.id}`,
           dotColor: r.fc > cible + 5 ? T.red : T.orange,
           impactSort: impactEuro,

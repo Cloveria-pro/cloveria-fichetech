@@ -21,15 +21,20 @@ export function coutPortionTTC(recette) {
   return recette.portions > 0 ? total / recette.portions : 0;
 }
 
-export function foodCostPct(recette) {
-  const pvTTC = recette.prixVentePratiqueTTC || 0;
-  if (pvTTC <= 0) return null;
-  return (coutPortionTTC(recette) / pvTTC) * 100;
+// Food cost : coût matière HT par portion ÷ prix de vente HT × 100,
+// avec prix HT = prix TTC / (1 + TVA de vente). TVA de vente non numérique → 10.
+export function prixVenteHT(prixVenteTTC, tvaVentePct) {
+  const tva = typeof tvaVentePct === 'number' && Number.isFinite(tvaVentePct) ? tvaVentePct : 10;
+  return (prixVenteTTC || 0) / (1 + tva / 100);
 }
 
-export function calculerFoodCost(coutParCouvertTTC, prixVenteTTC) {
-  if (!prixVenteTTC || prixVenteTTC <= 0) return null;
-  return (coutParCouvertTTC / prixVenteTTC) * 100;
+export function foodCostHT(coutPortionHT, prixVenteTTC, tvaVentePct) {
+  if (!(prixVenteTTC > 0)) return null;
+  return (coutPortionHT / prixVenteHT(prixVenteTTC, tvaVentePct)) * 100;
+}
+
+export function foodCostRecetteHT(recette, tvaVentePct) {
+  return foodCostHT(coutPortionHT(recette), recette.prixVentePratiqueTTC || 0, tvaVentePct);
 }
 
 export function prixSuggereTTC(recette, foodCostCible, tvaPct) {

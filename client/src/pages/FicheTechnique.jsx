@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import html2pdf from 'html2pdf.js';
 import { api } from '../api.js';
-import { coutIng, coutPortionHT, coutPortionTTC, calculerFoodCost } from '../utils.js';
+import { coutIng, coutPortionHT, coutPortionTTC, foodCostHT } from '../utils.js';
 import { uniteAVerifier, famillesIncompatibles, familleUnite } from '../conversions.js';
 import EtapesEditor from '../components/EtapesEditor.jsx';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
@@ -421,16 +421,15 @@ export default function FicheTechnique() {
 
   const prixVentePratiqueTTCVal = form.prixVentePratiqueTTC || 0;
   const prixVentePratiqueHT = prixVentePratiqueTTCVal > 0 ? prixVentePratiqueTTCVal / (1 + parametres.tva / 100) : 0;
-  const coutPortionTTCCalc = couverts > 0 ? totalTTCScaled / couverts : 0;
   const fcCible = parametres.foodCostCible || 30;
-  const tauxCout2Raw = calculerFoodCost(coutPortionTTCCalc, prixVentePratiqueTTCVal);
+  const tauxCout2Raw = foodCostHT(coutPortion, prixVentePratiqueTTCVal, parametres.tva);
   const tauxCout2 = tauxCout2Raw ?? 0;
   const fcColor2 = tauxCout2 === 0 ? T.muted : tauxCout2 < fcCible ? '#16a34a' : tauxCout2 < fcCible + 5 ? '#d97706' : '#dc2626';
   const statusLabel = tauxCout2 === 0 ? '' : tauxCout2 < fcCible ? 'Rentable' : tauxCout2 < fcCible + 5 ? 'Limite' : 'Insuffisant';
   const statusBg = tauxCout2 === 0 ? '#F9F7F4' : tauxCout2 < fcCible ? '#DCFCE7' : tauxCout2 < fcCible + 5 ? '#FEF9EC' : '#FEE2E2';
   const statusColor = tauxCout2 === 0 ? T.muted : tauxCout2 < fcCible ? '#16a34a' : tauxCout2 < fcCible + 5 ? '#92400e' : '#dc2626';
   const coeff2 = coutPortion > 0 && prixVentePratiqueHT > 0 ? prixVentePratiqueHT / coutPortion : 0;
-  const margeBrute = prixVentePratiqueTTCVal > 0 ? prixVentePratiqueTTCVal - coutPortionTTCCalc : 0;
+  const margeBrute = prixVentePratiqueTTCVal > 0 ? prixVentePratiqueHT - coutPortion : 0;
 
   const donutData = (form.ingredients || [])
     .map((i, idx) => ({ name: i.nom || `#${idx + 1}`, value: parseFloat(coutIng(i).toFixed(4)), color: CHART_COLORS[idx % CHART_COLORS.length] }))
@@ -849,7 +848,7 @@ export default function FicheTechnique() {
               <div style={{ fontSize: '1.3rem', fontWeight: 700, color: prixVentePratiqueTTCVal > 0 ? fcColor2 : T.muted }}>
                 {prixVentePratiqueTTCVal > 0 ? tauxCout2.toFixed(1) + '%' : '—'}
               </div>
-              <div style={{ fontSize: '0.68rem', color: T.muted, marginTop: '3px' }}>coût TTC / PV TTC × 100</div>
+              <div style={{ fontSize: '0.68rem', color: T.muted, marginTop: '3px' }}>coût HT / PV HT × 100</div>
             </div>
             <div style={{ background: '#F8F6F1', borderRadius: '8px', padding: '0.875rem 1rem' }}>
               <div style={{ fontSize: '0.68rem', color: T.muted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Coefficient multiplicateur</div>
@@ -863,7 +862,7 @@ export default function FicheTechnique() {
               <div style={{ fontSize: '1.3rem', fontWeight: 700, color: margeBrute > 0 ? T.green : margeBrute < 0 ? '#dc2626' : T.muted }}>
                 {prixVentePratiqueTTCVal > 0 ? margeBrute.toFixed(2) + ' €' : '—'}
               </div>
-              <div style={{ fontSize: '0.68rem', color: T.muted, marginTop: '3px' }}>PV TTC − coût TTC/couvert</div>
+              <div style={{ fontSize: '0.68rem', color: T.muted, marginTop: '3px' }}>PV HT − coût HT/couvert</div>
             </div>
           </div>
 

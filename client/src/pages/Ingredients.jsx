@@ -2,6 +2,7 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { api, API_URL, authHeaders } from '../api.js';
 import { calculerCoutIngredient } from '../conversions.js';
+import { foodCostHT } from '../utils.js';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
 
 function norm(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim(); }
@@ -164,12 +165,11 @@ function HistoriqueModal({ item, onClose, recettes, params }) {
                   const ing = (r.ingredients || []).find(i => norm(i.nom) === norm(item.nom));
                   if (!ing) return null;
                   const portions = r.portions || 1;
-                  const totalTTC = (r.ingredients || []).reduce((acc, i) =>
-                    acc + calculerCoutIngredient(i.quantite, i.unite, i.prixUnitaire) * (1 + (i.tva ?? tva) / 100), 0
+                  const totalHT = (r.ingredients || []).reduce((acc, i) =>
+                    acc + calculerCoutIngredient(i.quantite, i.unite, i.prixUnitaire), 0
                   );
-                  const coutPortionTTC = totalTTC / portions;
-                  const pv = r.prixVentePratiqueTTC || 0;
-                  const fc = pv > 0 ? (coutPortionTTC / pv * 100) : null;
+                  const coutPortionHT = totalHT / portions;
+                  const fc = foodCostHT(coutPortionHT, r.prixVentePratiqueTTC || 0, tva);
                   const perteMarge = hausse && prixPrecedent && prixActuel
                     ? (calculerCoutIngredient(ing.quantite, ing.unite, prixActuel) - calculerCoutIngredient(ing.quantite, ing.unite, prixPrecedent)) / portions
                     : null;
@@ -178,7 +178,7 @@ function HistoriqueModal({ item, onClose, recettes, params }) {
                     <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem', background: '#FAFAF8', borderRadius: '6px', border: '1px solid #F3EFE8', gap: '0.75rem', flexWrap: 'wrap' }}>
                       <span style={{ fontWeight: 600, color: T.text, fontSize: '0.85rem', flex: 1 }}>{r.nom}</span>
                       <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexShrink: 0 }}>
-                        <span style={{ fontSize: '0.78rem', color: T.muted }}>{coutPortionTTC.toFixed(2)} EUR/couvert</span>
+                        <span style={{ fontSize: '0.78rem', color: T.muted }}>{coutPortionHT.toFixed(2)} EUR HT/couvert</span>
                         {fc !== null && (
                           <span style={{ fontSize: '0.78rem', fontWeight: 700, color: fcColor }}>FC {fc.toFixed(1)}%</span>
                         )}
@@ -920,8 +920,8 @@ function ImportFacture({ items, setItems }) {
           const oldCoutPortion = oldCout / portions;
           const newCoutPortion = newCout / portions;
           const pv = r.prixVentePratiqueTTC || 0;
-          const oldFC = pv > 0 ? (oldCoutPortion * (1 + tva / 100) / pv * 100) : null;
-          const newFC = pv > 0 ? (newCoutPortion * (1 + tva / 100) / pv * 100) : null;
+          const oldFC = foodCostHT(oldCoutPortion, pv, tva);
+          const newFC = foodCostHT(newCoutPortion, pv, tva);
           const pvSuggere = newCoutPortion > 0 ? parseFloat((newCoutPortion * (1 + tva / 100) / (cible / 100)).toFixed(2)) : null;
           return { recette: r, pv, oldCoutPortion, newCoutPortion, oldFC, newFC, pvSuggere, cible, exceedsCible: newFC !== null && newFC > cible };
         });
