@@ -780,6 +780,8 @@ function ImportFacture({ items, setItems }) {
   const [impactReport, setImpactReport] = useState(null);
   const fileRef = useRef(null);
   const cameraRef = useRef(null);
+  // true si le champ fournisseur a été rempli par la lecture IA (et non saisi par le chef).
+  const fournisseurVientDeIA = useRef(false);
   const width = useWindowWidth();
   const isMobile = width < 768;
 
@@ -796,9 +798,18 @@ function ImportFacture({ items, setItems }) {
     return alias ? alias.to : nom;
   }
 
+  // Vide le fournisseur seulement s'il vient d'une lecture IA précédente ; une saisie du chef est conservée.
+  function viderFournisseurSiIA() {
+    if (fournisseurVientDeIA.current) {
+      setFournisseur('');
+      fournisseurVientDeIA.current = false;
+    }
+  }
+
   function handleFile(f) {
     if (!f) return;
     if (f.size > 10 * 1024 * 1024) { alert('Fichier trop volumineux (max 10 Mo)'); return; }
+    viderFournisseurSiIA();
     setFile(f); setResults(null); setSelected([]);
   }
 
@@ -814,6 +825,7 @@ function ImportFacture({ items, setItems }) {
       if (!res.ok) throw new Error(data.error || 'Erreur serveur');
       if (!fournisseur.trim() && data.fournisseur) {
         setFournisseur(data.fournisseur);
+        fournisseurVientDeIA.current = true;
       }
       const produits = (data.produits || []).map((p, i) => {
         const resolvedNom = resolveAlias(p.nom);
@@ -840,6 +852,10 @@ function ImportFacture({ items, setItems }) {
       p._id === id ? { ...p, [field]: strFields.includes(field) ? value : parseFloat(value) || 0 } : p
     ));
   }
+
+  // Une ligne cochée en « Associer » sans ingrédient choisi bloque la validation.
+  const associationIncomplete = !!results && results.some(p => selected.includes(p._id) && p._action === 'associate' && !p._associateId);
+  const validerImpossible = selected.length === 0 || associationIncomplete;
 
   function toggleSelect(id) {
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -918,6 +934,7 @@ function ImportFacture({ items, setItems }) {
     setToast(`${count} ingrédient${count > 1 ? 's' : ''} importé${count > 1 ? 's' : ''} ✓`);
     setTimeout(() => setToast(''), 3500);
     setResults(null); setFile(null); setSelected([]); setFournisseur('');
+    fournisseurVientDeIA.current = false;
   }
 
   async function appliquerPrixSuggere(item) {
@@ -1031,7 +1048,7 @@ function ImportFacture({ items, setItems }) {
             <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 1rem', background: '#F8F6F1', borderRadius: '8px', border: '1px solid #E5E0D8' }}>
                 <span style={{ fontSize: '0.82rem', color: T.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📎 {file.name}</span>
-                <button onClick={() => setFile(null)} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: '0.9rem', padding: '2px', flexShrink: 0, lineHeight: 1 }}>✕</button>
+                <button onClick={() => { setFile(null); viderFournisseurSiIA(); }} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: '0.9rem', padding: '2px', flexShrink: 0, lineHeight: 1 }}>✕</button>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div style={{ flex: 1, position: 'relative' }}>
@@ -1039,7 +1056,7 @@ function ImportFacture({ items, setItems }) {
                     type="text"
                     placeholder="Fournisseur (optionnel — l'IA le détectera si vide)"
                     value={fournisseur}
-                    onChange={e => setFournisseur(e.target.value)}
+                    onChange={e => { setFournisseur(e.target.value); fournisseurVientDeIA.current = false; }}
                     style={{ ...inStyle, width: '100%', paddingLeft: '0.75rem', fontSize: '0.85rem' }}
                   />
                 </div>
@@ -1065,12 +1082,17 @@ function ImportFacture({ items, setItems }) {
               <span style={{ fontSize: '0.75rem', color: T.muted, marginLeft: '10px' }}>Choisissez l'action pour chaque produit avant d'importer</span>
             </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button onClick={() => { setResults(null); setFile(null); }} style={{ padding: '0.35rem 0.85rem', border: '1px solid #E5E0D8', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '0.82rem' }}>Annuler</button>
-              <button onClick={importer} disabled={selected.length === 0} style={{ padding: '0.35rem 0.85rem', border: 'none', background: T.green, color: '#fff', borderRadius: '6px', cursor: selected.length === 0 ? 'default' : 'pointer', fontSize: '0.82rem', fontWeight: 600, opacity: selected.length === 0 ? 0.5 : 1 }}>
+              <button onClick={() => { setResults(null); setFile(null); viderFournisseurSiIA(); }} style={{ padding: '0.35rem 0.85rem', border: '1px solid #E5E0D8', background: '#fff', borderRadius: '6px', cursor: 'pointer', fontSize: '0.82rem' }}>Annuler</button>
+              <button onClick={importer} disabled={validerImpossible} style={{ padding: '0.35rem 0.85rem', border: 'none', background: T.green, color: '#fff', borderRadius: '6px', cursor: validerImpossible ? 'default' : 'pointer', fontSize: '0.82rem', fontWeight: 600, opacity: validerImpossible ? 0.5 : 1 }}>
                 Valider ({selected.length})
               </button>
             </div>
           </div>
+          {associationIncomplete && (
+            <div style={{ padding: '0.5rem 1.25rem', borderBottom: '1px solid #F3EFE8', background: '#FFFBF0', fontSize: '0.8rem', color: '#92400E' }}>
+              Choisissez l'ingrédient existant pour chaque ligne cochée en « Associer à un existant ».
+            </div>
+          )}
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: '700px' }}>
               <thead style={{ background: '#FAFAF8' }}>
@@ -1097,7 +1119,7 @@ function ImportFacture({ items, setItems }) {
                     </td>
                     <td style={{ padding: '0.6rem 1rem' }}>
                       <select value={p.unite} onChange={e => updateResult(p._id, 'unite', e.target.value)} style={inStyle}>
-                        {UNITES_IA.map(u => <option key={u}>{u}</option>)}
+                        {(!p.unite || UNITES_IA.includes(p.unite) ? UNITES_IA : [...UNITES_IA, p.unite]).map(u => <option key={u}>{u}</option>)}
                       </select>
                     </td>
                     <td style={{ padding: '0.6rem 1rem' }}>
@@ -1112,7 +1134,7 @@ function ImportFacture({ items, setItems }) {
                             const match = items.find(it => it.nom.toLowerCase() === p.nom.toLowerCase());
                             updateResult(p._id, '_action', action);
                             if (action === 'associate' && !p._associateId) {
-                              updateResult(p._id, '_associateId', match?.id || items[0]?.id || null);
+                              updateResult(p._id, '_associateId', match?.id || null);
                             }
                           }}
                           style={{ ...inStyle, fontWeight: 600, color: p._action === 'associate' ? '#d97706' : '#16a34a', background: p._action === 'associate' ? '#FFFBF0' : '#F0FDF4' }}
