@@ -203,12 +203,12 @@ export default function Parametres() {
 
         {/* TVA */}
         <div style={{ ...card, padding: '1.5rem' }}>
-          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, color: T.text, marginBottom: '1.25rem' }}>TVA par défaut</h3>
+          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, color: T.text, marginBottom: '1.25rem' }}>TVA sur vos ventes</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {[
-              { value: 10, label: '10% — Restauration sur place', desc: 'Repas consommés dans l\'établissement.' },
-              { value: 20, label: '20% — Vente à emporter / livraison', desc: 'Plats froids à emporter et livraisons.' },
-              { value: 5.5, label: '5.5% — Produits alimentaires bruts', desc: 'Ingrédients et matières premières.' },
+              { value: 10, label: '10 % — Repas et plats consommés sur place ou immédiatement', desc: 'Restaurant, food truck, plats chauds à emporter.' },
+              { value: 20, label: '20 % — Boissons alcoolisées', desc: 'Taux normal, pour une activité de vente de boissons alcoolisées.' },
+              { value: 5.5, label: '5,5 % — Produits alimentaires conditionnés pour une consommation différée', desc: 'Plats de traiteur à conserver, par exemple.' },
             ].map(opt => (
               <label key={opt.value} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '0.875rem', borderRadius: '8px', background: form.tva === opt.value ? 'rgba(45,106,79,0.06)' : '#FAFAF8', border: '1px solid ' + (form.tva === opt.value ? 'rgba(45,106,79,0.25)' : '#F3EFE8'), cursor: 'pointer', transition: 'all 0.1s' }}>
                 <input type="radio" name="tva" value={opt.value} checked={form.tva === opt.value} onChange={() => setForm(f => ({ ...f, tva: opt.value }))} style={{ marginTop: '2px', accentColor: T.green }} />
@@ -219,6 +219,9 @@ export default function Parametres() {
               </label>
             ))}
           </div>
+          <p style={{ fontSize: '0.75rem', color: T.muted, marginTop: '0.75rem' }}>
+            En cas de doute sur votre taux, demandez à votre comptable. La TVA de vos achats (vin de cuisson, par exemple) ne change pas votre food cost : il est calculé hors taxes.
+          </p>
         </div>
 
         {saved && (
