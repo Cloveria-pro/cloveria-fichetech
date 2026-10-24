@@ -306,13 +306,13 @@ export default function FicheTechnique() {
     const scaledIngredients = (form.ingredients || []).map(i => ({ ...i, quantite: i.quantite * scaleFactor }));
     const coutTotal = scaledIngredients.reduce((acc, i) => acc + coutIng(i), 0);
     const coutPort = couverts > 0 ? coutTotal / couverts : 0;
-    const pv = recette.prixVente || 0;
-    const pvTTCActuel = pv * (1 + parametres.tva / 100);
-    const fc = pvTTCActuel > 0 ? (coutPort / pvTTCActuel * 100).toFixed(1) : null;
+    // Food cost, coefficient et couleur : mêmes valeurs et même règle que l'écran (prix de vente pratiqué TTC).
+    const fcNum = foodCostHT(coutPortion, form.prixVentePratiqueTTC || 0, parametres.tva);
+    const fc = fcNum !== null ? fcNum.toFixed(1) : null;
     const pvHT = coutPort > 0 ? (coutPort / (parametres.foodCostCible / 100)).toFixed(2) : null;
     const pvTTC = pvHT ? (parseFloat(pvHT) * (1 + parametres.tva / 100)).toFixed(2) : null;
-    const coeffVal = coutPort > 0 && pv > 0 ? (pv / coutPort).toFixed(2) : null;
-    const fcColor = !fc ? '#6B7280' : parseFloat(fc) < 30 ? '#16a34a' : parseFloat(fc) < 35 ? '#d97706' : '#dc2626';
+    const coeffVal = coutPortion > 0 && prixVentePratiqueHT > 0 ? (prixVentePratiqueHT / coutPortion).toFixed(2) : null;
+    const fcColor = !fcNum ? '#6B7280' : fcNum < fcCible ? '#16a34a' : fcNum < fcCible + 5 ? '#d97706' : '#dc2626';
 
     const ingRows = scaledIngredients.map(i => {
       const ingTva = i.tva ?? parametres.tva;
