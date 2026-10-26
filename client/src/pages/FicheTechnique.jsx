@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import html2pdf from 'html2pdf.js';
 import { api } from '../api.js';
-import { coutIng, coutPortionHT, coutPortionTTC, foodCostHT } from '../utils.js';
+import { coutIng, coutPortionHT, coutPortionTTC, foodCostHT, formatQuantite } from '../utils.js';
 import { uniteAVerifier, famillesIncompatibles, familleUnite } from '../conversions.js';
 import EtapesEditor from '../components/EtapesEditor.jsx';
 import DecimalInput from '../components/DecimalInput.jsx';
@@ -317,7 +317,7 @@ export default function FicheTechnique() {
 
     const ingRows = scaledIngredients.map(i => {
       const ingTva = i.tva ?? parametres.tva;
-      return '<tr><td>' + i.nom + '</td><td style="text-align:right">' + (Number.isInteger(i.quantite) ? i.quantite : i.quantite.toFixed(1)) + '</td><td>' + i.unite + '</td><td style="text-align:right">' + i.prixUnitaire + ' EUR HT</td><td style="text-align:right">' + ingTva + '%</td><td style="text-align:right;font-weight:700;color:#2D6A4F">' + coutIng(i).toFixed(2) + ' EUR</td></tr>';
+      return '<tr><td>' + i.nom + '</td><td style="text-align:right">' + formatQuantite(i.quantite) + '</td><td>' + i.unite + '</td><td style="text-align:right">' + i.prixUnitaire + ' EUR HT</td><td style="text-align:right">' + ingTva + '%</td><td style="text-align:right;font-weight:700;color:#2D6A4F">' + coutIng(i).toFixed(2) + ' EUR</td></tr>';
     }).join('');
 
     const etapesHtml = (recette.etapes || []).map((e, idx) =>
@@ -695,7 +695,7 @@ export default function FicheTechnique() {
                             )}
                           </div>
                         : <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                            <span style={{ color: scaleFactor !== 1 ? T.gold : T.text, fontWeight: scaleFactor !== 1 ? 600 : 400 }}>{Number.isInteger(qteScaled) ? qteScaled : qteScaled.toFixed(1)}</span>
+                            <span style={{ color: scaleFactor !== 1 ? T.gold : T.text, fontWeight: scaleFactor !== 1 ? 600 : 400 }}>{formatQuantite(qteScaled)}</span>
                             {ing.quantiteIncomplete && (
                               <span title="Quantité à compléter — le coût de cette ligne est à 0" style={{ cursor: 'help' }}>⚠️</span>
                             )}

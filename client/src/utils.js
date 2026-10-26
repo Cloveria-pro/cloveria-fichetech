@@ -31,6 +31,16 @@ export function parseDecimal(texte) {
   return Number.isFinite(n) ? n : null;
 }
 
+// Affichage d'une quantité : jusqu'à 3 décimales sans zéros inutiles (0.008, 0.08, 1.25) ;
+// une petite quantité non nulle qui s'arrondirait à 0 garde 2 chiffres significatifs (0.0002).
+export function formatQuantite(q) {
+  if (typeof q !== 'number' || !Number.isFinite(q)) return '0';
+  if (Number.isInteger(q)) return String(q);
+  const arrondi = Number(q.toFixed(3));
+  if (arrondi === 0 && q > 0) return String(Number(q.toPrecision(2)));
+  return String(arrondi);
+}
+
 // Food cost : coût matière HT par portion ÷ prix de vente HT × 100,
 // avec prix HT = prix TTC / (1 + TVA de vente). TVA de vente non numérique → 10.
 export function prixVenteHT(prixVenteTTC, tvaVentePct) {
