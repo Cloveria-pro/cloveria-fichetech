@@ -425,7 +425,7 @@ export default function FicheTechnique() {
   const tauxCout2Raw = foodCostHT(coutPortion, prixVentePratiqueTTCVal, parametres.tva);
   const tauxCout2 = tauxCout2Raw ?? 0;
   const fcColor2 = tauxCout2 === 0 ? T.muted : tauxCout2 < fcCible ? '#16a34a' : tauxCout2 < fcCible + 5 ? '#d97706' : '#dc2626';
-  const statusLabel = tauxCout2 === 0 ? '' : tauxCout2 < fcCible ? 'Rentable' : tauxCout2 < fcCible + 5 ? 'Limite' : 'Insuffisant';
+  const statusLabel = tauxCout2 === 0 ? '' : tauxCout2 < fcCible ? 'Rentable' : tauxCout2 < fcCible + 5 ? 'Acceptable' : 'À retravailler';
   const statusBg = tauxCout2 === 0 ? '#F9F7F4' : tauxCout2 < fcCible ? '#DCFCE7' : tauxCout2 < fcCible + 5 ? '#FEF9EC' : '#FEE2E2';
   const statusColor = tauxCout2 === 0 ? T.muted : tauxCout2 < fcCible ? '#16a34a' : tauxCout2 < fcCible + 5 ? '#92400e' : '#dc2626';
   const coeff2 = coutPortion > 0 && prixVentePratiqueHT > 0 ? prixVentePratiqueHT / coutPortion : 0;

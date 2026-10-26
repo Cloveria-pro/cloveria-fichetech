@@ -15,9 +15,9 @@ function fcColor(pct, cible) {
   return T.red;
 }
 function fcLabel(pct, cible) {
-  if (pct < cible) return 'Excellent';
-  if (pct <= cible + 5) return 'Attention';
-  return 'Critique';
+  if (pct < cible) return 'Rentable';
+  if (pct <= cible + 5) return 'Acceptable';
+  return 'À retravailler';
 }
 
 function varCoutsOverDays(historique, days) {
