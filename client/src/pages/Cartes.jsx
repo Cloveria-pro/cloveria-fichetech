@@ -307,7 +307,7 @@ function DescriptionEditor({ recette, onSaved }) {
 }
 
 // ─── Vue consultant ───────────────────────────────────────────────────────────
-function VueCarte({ carte, recettes, parametres, onEdit, onBack, onAutoSave }) {
+function VueCarte({ carte, recettes, parametres, onEdit, onBack, onAutoSave, onPrixPlat, onPrixEchec }) {
   // showAllergenesMenu removed — buttons are now direct
   const [closedSections, setClosedSections] = useState(new Set());
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -338,7 +338,8 @@ function VueCarte({ carte, recettes, parametres, onEdit, onBack, onAutoSave }) {
     setLocalSections(prev => avecPrixPlat(prev, sectionTitre, recetteId, n));
   }
 
-  // Sortie du champ (ou Entrée) : un seul enregistrement. Champ vide : l'ancien prix revient, rien n'est envoyé.
+  // Sortie du champ (ou Entrée) : écrans mis à jour tout de suite, puis un seul enregistrement
+  // (le serveur met à jour la fiche et toutes les cartes). Champ vide : l'ancien prix revient, rien n'est envoyé.
   function validerPrixVente(sectionTitre, recetteId, n) {
     const prixAvant = prixAuFocusVC.current;
     if (n === null) {
@@ -346,11 +347,9 @@ function VueCarte({ carte, recettes, parametres, onEdit, onBack, onAutoSave }) {
       return;
     }
     if (n === prixAvant) return;
-    const updated = avecPrixPlat(localSections, sectionTitre, recetteId, n);
-    setLocalSections(updated);
-    enregistrerPrixPlat(recetteId, n).catch(() => {})
-      .then(() => api.cartes.update(carte.id, { ...carte, sections: updated }))
-      .then(saved => onAutoSave?.(saved)).catch(() => {});
+    setLocalSections(prev => avecPrixPlat(prev, sectionTitre, recetteId, n));
+    onPrixPlat?.(recetteId, n);
+    enregistrerPrixPlat(recetteId, n).catch(() => onPrixEchec?.());
   }
 
   const allSectionsWithData = localSections.map(section => ({
@@ -690,7 +689,7 @@ function SortableSection({ id, children }) {
 }
 
 // ─── Éditeur de carte ─────────────────────────────────────────────────────────
-function EditeurCarte({ carte, recettes, parametres, onSave, onBack, onAutoSave }) {
+function EditeurCarte({ carte, recettes, parametres, onSave, onBack, onAutoSave, onPrixPlat, onPrixEchec }) {
   const [form, setForm] = useState(carte || {
     nom: '',
     sections: SECTIONS_DEFAULT.map(t => ({ titre: t, plats: [] })),
@@ -779,8 +778,8 @@ function EditeurCarte({ carte, recettes, parametres, onSave, onBack, onAutoSave 
     setForm(f => ({ ...f, sections: avecPrixPlat(f.sections, sectionTitre, recetteId, n) }));
   }
 
-  // Sortie du champ (ou Entrée) : fiche + cartes (serveur), puis la carte, sans remonter l'éditeur
-  // (le focus du champ suivant est conservé). Champ vide : l'ancien prix revient, rien n'est envoyé.
+  // Sortie du champ (ou Entrée) : écrans mis à jour tout de suite, puis un seul enregistrement
+  // (le serveur met à jour la fiche et toutes les cartes). Champ vide : l'ancien prix revient, rien n'est envoyé.
   function validerPrix(sectionTitre, recetteId, n) {
     const prixAvant = prixAuFocus.current;
     if (n === null) {
@@ -791,12 +790,8 @@ function EditeurCarte({ carte, recettes, parametres, onSave, onBack, onAutoSave 
     const newForm = { ...form, sections: avecPrixPlat(form.sections, sectionTitre, recetteId, n) };
     setForm(newForm);
     latestForm.current = newForm;
-    enregistrerPrixPlat(recetteId, n).catch(() => {})
-      .then(() => {
-        if (!carte?.id) return;
-        return api.cartes.update(carte.id, latestForm.current).then(saved => onAutoSave?.(saved, false));
-      })
-      .catch(() => {});
+    onPrixPlat?.(recetteId, n);
+    enregistrerPrixPlat(recetteId, n).catch(() => onPrixEchec?.());
   }
 
   function ajouterSection() {
@@ -1024,6 +1019,28 @@ export default function Cartes() {
     if (remonter) setEditKey(k => k + 1);
   }
 
+  // Nouveau prix d'un plat, appliqué tout de suite (avant la réponse du serveur et avant toute navigation) :
+  // toutes les cartes qui contiennent la recette, la carte active et la fiche dans recettes.
+  function appliquerPrixPlat(recetteId, prix) {
+    const majCarte = c => ({
+      ...c,
+      sections: (c.sections || []).map(s => ({
+        ...s,
+        plats: (s.plats || []).map(p => p.recetteId === recetteId ? { ...p, prixVente: prix } : p),
+      })),
+    });
+    setCartes(prev => prev.map(majCarte));
+    setCarteActive(prev => (prev ? majCarte(prev) : prev));
+    setRecettes(prev => prev.map(r => (r.id === recetteId ? { ...r, prixVentePratiqueTTC: prix } : r)));
+  }
+
+  // Échec de l'enregistrement d'un prix : relit cartes et recettes comme au montage.
+  function rechargerDonnees() {
+    Promise.all([api.cartes.list(), api.recettes.list()])
+      .then(([c, r]) => { setCartes(c); setRecettes(r); })
+      .catch(() => {});
+  }
+
   function handleDelete(id) {
     if (!confirm('Supprimer cette carte ?')) return;
     api.cartes.delete(id).then(() => setCartes(prev => prev.filter(c => c.id !== id)));
@@ -1046,6 +1063,8 @@ export default function Cartes() {
       onEdit={() => setVue('edit')}
       onBack={() => { setCarteActive(null); setVue('liste'); }}
       onAutoSave={handleAutoSave}
+      onPrixPlat={appliquerPrixPlat}
+      onPrixEchec={rechargerDonnees}
     />
   );
 
@@ -1058,6 +1077,8 @@ export default function Cartes() {
       onSave={handleSave}
       onBack={() => carteActive ? setVue('vue') : setVue('liste')}
       onAutoSave={handleAutoSave}
+      onPrixPlat={appliquerPrixPlat}
+      onPrixEchec={rechargerDonnees}
     />
   );
 }
