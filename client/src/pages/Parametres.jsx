@@ -8,7 +8,7 @@ const inputStyle = { padding: '0.45rem 0.7rem', border: '1px solid #E5E0D8', bor
 const labelStyle = { fontSize: '0.78rem', color: T.muted, display: 'block', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' };
 
 function fcColor(pct) { if (pct < 30) return T.green; if (pct <= 35) return T.orange; return T.red; }
-function fcLabel(pct) { if (pct < 30) return 'Excellent'; if (pct <= 35) return 'Acceptable'; return 'A retravailler'; }
+function fcLabel(pct) { if (pct < 30) return 'Excellent'; if (pct <= 35) return 'Acceptable'; return 'À retravailler'; }
 
 const TYPE_FC = {
   'Gastro': { thresholds: [28, 33], msgs: ['Excellent pour un gastro — marges très confortables', 'Acceptable pour un gastro', 'À surveiller pour un gastro'] },

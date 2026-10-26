@@ -390,7 +390,7 @@ export default function Dashboard() {
               background: fichesCritiques.length > 0 ? 'rgba(220,38,38,0.05)' : 'rgba(45,106,79,0.05)',
               borderLeft: `3px solid ${fichesCritiques.length > 0 ? T.red : T.green}`,
             }}>
-              <div style={{ ...metaStyle, marginBottom: '3px' }}>Fiches critiques</div>
+              <div style={{ ...metaStyle, marginBottom: '3px' }}>Fiches au-dessus de la cible</div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
                 <span style={{ fontSize: '1.2rem', fontWeight: 700, color: fichesCritiques.length > 0 ? T.red : T.green, lineHeight: 1 }}>
                   {fichesCritiques.length}
