@@ -380,24 +380,9 @@ export default function Ingredients() {
     setEditId(null); setEditForm({});
   }
 
+  // Modifie seulement le formulaire : rien n'est écrit avant « Sauver ».
   function updateEditForm(updater) {
-    setEditForm(prev => {
-      const newForm = typeof updater === 'function' ? updater(prev) : { ...prev, ...updater };
-      latestEdit.current = { id: latestEdit.current.id, form: newForm };
-      clearTimeout(autoSaveTimer.current);
-      autoSaveTimer.current = setTimeout(() => {
-        const { id, form } = latestEdit.current;
-        if (!id) return;
-        api.ingredients.update(id, { ...form, prixUnitaire: parseFloat(form.prixUnitaire) || 0, tva: parseFloat(form.tva) || 10 })
-          .then(updated => {
-            setItems(prev2 => {
-              pushUndo(prev2);
-              return prev2.map(i => i.id === id ? updated : i);
-            });
-          });
-      }, 800);
-      return newForm;
-    });
+    setEditForm(prev => typeof updater === 'function' ? updater(prev) : { ...prev, ...updater });
   }
 
   function saveEdit(id) {
