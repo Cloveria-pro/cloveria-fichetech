@@ -217,18 +217,30 @@ export default function FicheTechnique() {
     setForm(f => ({ ...f, ingredients: f.ingredients.filter((_, i) => i !== idx) }));
   }
 
+  // En édition : formulaire seulement (enregistré avec « Sauvegarder »).
+  // Hors édition : seuls les allergènes sont envoyés (le serveur fusionne), affichage immédiat, ancienne liste rétablie en cas d'échec.
   function toggleAllergene(a) {
-    setForm(f => {
-      const list = f.allergenes || [];
-      const updated = { ...f, allergenes: list.includes(a) ? list.filter(x => x !== a) : [...list, a] };
-      api.recettes.update(id, updated).then(saved => setRecette(saved)).catch(() => {});
-      return updated;
-    });
+    const basculer = list => (list.includes(a) ? list.filter(x => x !== a) : [...list, a]);
+    if (editMode) {
+      setForm(f => ({ ...f, allergenes: basculer(f.allergenes || []) }));
+      return;
+    }
+    const ancienne = form.allergenes || [];
+    const allergenes = basculer(ancienne);
+    setForm(f => ({ ...f, allergenes }));
+    api.recettes.update(id, { allergenes })
+      .then(() => {
+        setRecette(r => ({ ...r, allergenes }));
+        setForm(f => ({ ...f, allergenes }));
+      })
+      .catch(() => setForm(f => ({ ...f, allergenes: ancienne })));
   }
 
-  function savePrixVentePratiqueTTC(currentForm) {
-    api.recettes.update(id, currentForm).then(data => setRecette(data));
-    api.recettes.updatePrix(id, currentForm.prixVentePratiqueTTC ?? 0).catch(() => {});
+  // Seul le prix est envoyé (fiche + cartes côté serveur) ; jamais le formulaire entier.
+  function savePrixVentePratiqueTTC(prix) {
+    api.recettes.updatePrix(id, prix ?? 0)
+      .then(() => setRecette(r => ({ ...r, prixVentePratiqueTTC: prix })))
+      .catch(() => {});
   }
 
   function retirerDeCarte(carte, sectionTitre) {
@@ -286,6 +298,8 @@ export default function FicheTechnique() {
     );
     const updatedForm = { ...form, ingredients: updatedIngs };
     setForm(updatedForm);
+    // En édition : la ligne est modifiée dans le formulaire seulement (enregistrée avec « Sauvegarder »).
+    if (editMode) return;
     const saved = await api.recettes.update(id, updatedForm);
     setRecette(saved);
     setForm(saved);
@@ -822,11 +836,8 @@ export default function FicheTechnique() {
                   }}
                   onBlur={n => {
                     const val = n ?? 0;
-                    setForm(f => {
-                      const updated = { ...f, prixVentePratiqueTTC: val };
-                      savePrixVentePratiqueTTC(updated);
-                      return updated;
-                    });
+                    setForm(f => ({ ...f, prixVentePratiqueTTC: val }));
+                    savePrixVentePratiqueTTC(val);
                   }}
                   style={{ ...inputStyle, width: '130px', fontSize: '1.2rem', fontWeight: 700, padding: '0.4rem 0.6rem' }}
                   placeholder="0.00"
