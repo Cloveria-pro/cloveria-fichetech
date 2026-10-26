@@ -446,6 +446,12 @@ export default function Ingredients() {
   const tdStyle = { padding: '0.65rem 1rem', fontSize: '0.875rem', color: T.text, borderBottom: '1px solid #F9F7F4' };
   const btnSm = { padding: '0.3rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" };
 
+  // Ligne en édition : tout le reste de l'écran est bloqué (clic et clavier) jusqu'à « Annuler » ou « Sauver ».
+  const enEdition = editId !== null;
+  const styleBloque = enEdition ? { opacity: 0.5, pointerEvents: 'none' } : {};
+  const inertSiEdition = enEdition ? { inert: '' } : {};
+  const bloqueSiEdition = { ...inertSiEdition, style: styleBloque };
+
   return (
     <div>
       {histItem && <HistoriqueModal item={histItem} onClose={() => setHistItem(null)} recettes={recettes} params={params} />}
@@ -460,7 +466,7 @@ export default function Ingredients() {
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', fontWeight: 700, color: T.text }}>Ingrédients</h1>
           <p style={{ color: T.muted, fontSize: '0.875rem', marginTop: '2px' }}>{items.length} ingrédient{items.length !== 1 ? 's' : ''} dans le catalogue</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div {...inertSiEdition} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', ...styleBloque }}>
           {undoStack.length > 0 && (
             <button onClick={undo} style={{ ...btnSm, border: '1px solid #E5E0D8', background: '#fff', color: T.text, display: 'flex', alignItems: 'center', gap: '4px' }}>
               ↩ Annuler
@@ -479,16 +485,18 @@ export default function Ingredients() {
         </div>
       </div>
 
-      <ImportFacture items={items} setItems={setItems} />
+      <div {...bloqueSiEdition}>
+        <ImportFacture items={items} setItems={setItems} />
+      </div>
 
       {!showAdd && (
-        <button onClick={() => { setShowAdd(true); setEditId(null); }} style={{ marginBottom: '1.25rem', background: 'none', border: '1px dashed #C9A84C', color: T.muted, borderRadius: '8px', padding: '0.5rem 1.25rem', cursor: 'pointer', fontSize: '0.85rem', width: '100%', fontFamily: "'DM Sans', sans-serif" }}>
+        <button disabled={enEdition} onClick={() => { setShowAdd(true); setEditId(null); }} style={{ ...styleBloque, marginBottom: '1.25rem', background: 'none', border: '1px dashed #C9A84C', color: T.muted, borderRadius: '8px', padding: '0.5rem 1.25rem', cursor: 'pointer', fontSize: '0.85rem', width: '100%', fontFamily: "'DM Sans', sans-serif" }}>
           + Ajouter un ingrédient
         </button>
       )}
 
       {/* Filtres */}
-      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+      <div {...inertSiEdition} style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', ...styleBloque }}>
         <input
           type="search" placeholder="Rechercher un ingrédient..."
           value={recherche} onChange={e => setRecherche(e.target.value)}
@@ -514,7 +522,7 @@ export default function Ingredients() {
       <div style={{ ...card, overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
-          <thead style={{ background: '#FAFAF8' }}>
+          <thead {...inertSiEdition} style={{ background: '#FAFAF8', ...styleBloque }}>
             <tr>
               {[
                 { label: 'Nom', field: 'nom' },
@@ -587,7 +595,7 @@ export default function Ingredients() {
                   </td>
                 </tr>
               ) : (
-                <tr key={item.id} onClick={() => startEdit(item)} style={{ cursor: 'pointer', transition: 'background 0.1s' }}
+                <tr key={item.id} {...inertSiEdition} onClick={() => startEdit(item)} style={{ cursor: 'pointer', transition: 'background 0.1s', ...styleBloque }}
                   onMouseEnter={e => e.currentTarget.style.background = '#FAFAF8'}
                   onMouseLeave={e => e.currentTarget.style.background = ''}
                 >
@@ -632,7 +640,7 @@ export default function Ingredients() {
           </tbody>
           {/* Formulaire ajout */}
           {showAdd && (
-            <tfoot>
+            <tfoot {...bloqueSiEdition}>
               {dupWarning && (
                 <tr style={{ background: '#FFF7ED', borderTop: '2px solid #FED7AA' }}>
                   <td colSpan={8} style={{ padding: '0.75rem 1rem' }}>
@@ -743,7 +751,7 @@ export default function Ingredients() {
       </div>
 
       {!showAdd && (
-        <button onClick={() => { setShowAdd(true); setEditId(null); }} style={{ marginTop: '0.75rem', background: 'none', border: '1px dashed #C9A84C', color: T.muted, borderRadius: '8px', padding: '0.5rem 1.25rem', cursor: 'pointer', fontSize: '0.85rem', width: '100%' }}>
+        <button disabled={enEdition} onClick={() => { setShowAdd(true); setEditId(null); }} style={{ ...styleBloque, marginTop: '0.75rem', background: 'none', border: '1px dashed #C9A84C', color: T.muted, borderRadius: '8px', padding: '0.5rem 1.25rem', cursor: 'pointer', fontSize: '0.85rem', width: '100%' }}>
           + Ajouter un ingrédient
         </button>
       )}
