@@ -6,6 +6,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
 import { coutIng, foodCostHT } from '../utils.js';
 import { api } from '../api.js';
+import DecimalInput from '../components/DecimalInput.jsx';
 import html2pdf from 'html2pdf.js';
 
 const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280', red: '#DC2626' };
@@ -31,6 +32,14 @@ const ALLERGENES_14 = [
   { code: 'Lu',  key: 'lupin',         label: 'Lupin' },
   { code: 'Mol', key: 'mollusques',    label: 'Mollusques' },
 ];
+
+// Prix de vente d'un plat : le serveur met à jour la fiche et toutes les cartes qui la contiennent.
+function enregistrerPrixPlat(recetteId, prix) { return api.recettes.updatePrix(recetteId, prix); }
+function avecPrixPlat(sections, sectionTitre, recetteId, prix) {
+  return sections.map(s => s.titre === sectionTitre
+    ? { ...s, plats: s.plats.map(p => p.recetteId === recetteId ? { ...p, prixVente: prix } : p) }
+    : s);
+}
 
 function coutMat(r) { return (r.ingredients || []).reduce((s, i) => s + coutIng(i), 0); }
 function coutPortion(r) { return r.portions > 0 ? coutMat(r) / r.portions : 0; }
@@ -304,7 +313,7 @@ function VueCarte({ carte, recettes, parametres, onEdit, onBack, onAutoSave }) {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [localSections, setLocalSections] = useState(carte?.sections || []);
   const [localRecettes, setLocalRecettes] = useState(recettes);
-  const autoSaveTimerVC = useRef(null);
+  const prixAuFocusVC = useRef(null);
 
   useEffect(() => { setLocalRecettes(recettes); }, [recettes]);
   const width = useWindowWidth();
@@ -323,20 +332,25 @@ function VueCarte({ carte, recettes, parametres, onEdit, onBack, onAutoSave }) {
     });
   }
 
-  function updatePrixVente(sectionTitre, recetteId, prix) {
-    const updated = localSections.map(s =>
-      s.titre === sectionTitre
-        ? { ...s, plats: s.plats.map(p => p.recetteId === recetteId ? { ...p, prixVente: parseFloat(prix) || 0 } : p) }
-        : s
-    );
+  // Pendant la frappe : état local seulement (food cost en direct). Champ vidé : rien ne change.
+  function majPrixVente(sectionTitre, recetteId, n) {
+    if (n === null) return;
+    setLocalSections(prev => avecPrixPlat(prev, sectionTitre, recetteId, n));
+  }
+
+  // Sortie du champ (ou Entrée) : un seul enregistrement. Champ vide : l'ancien prix revient, rien n'est envoyé.
+  function validerPrixVente(sectionTitre, recetteId, n) {
+    const prixAvant = prixAuFocusVC.current;
+    if (n === null) {
+      setLocalSections(prev => avecPrixPlat(prev, sectionTitre, recetteId, prixAvant));
+      return;
+    }
+    if (n === prixAvant) return;
+    const updated = avecPrixPlat(localSections, sectionTitre, recetteId, n);
     setLocalSections(updated);
-    const prixNum = parseFloat(prix) || 0;
-    api.recettes.updatePrix(recetteId, prixNum).catch(() => {});
-    clearTimeout(autoSaveTimerVC.current);
-    autoSaveTimerVC.current = setTimeout(() => {
-      api.cartes.update(carte.id, { ...carte, sections: updated })
-        .then(saved => onAutoSave?.(saved)).catch(() => {});
-    }, 500);
+    enregistrerPrixPlat(recetteId, n).catch(() => {})
+      .then(() => api.cartes.update(carte.id, { ...carte, sections: updated }))
+      .then(saved => onAutoSave?.(saved)).catch(() => {});
   }
 
   const allSectionsWithData = localSections.map(section => ({
@@ -577,8 +591,11 @@ ${sections}
                           <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', paddingTop: '2px' }}>
                             <span style={{ fontSize: '0.62rem', color: T.muted, fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Prix TTC</span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <input type="number" step="0.5" min="0" value={plat.prixVente || ''}
-                                onChange={e => updatePrixVente(section.titre, plat.recetteId, e.target.value)}
+                              <DecimalInput value={plat.prixVente || ''}
+                                onFocus={() => { prixAuFocusVC.current = plat.prixVente; }}
+                                onValueChange={n => majPrixVente(section.titre, plat.recetteId, n)}
+                                onBlur={n => validerPrixVente(section.titre, plat.recetteId, n)}
+                                onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
                                 onClick={e => e.stopPropagation()}
                                 style={{ width: '72px', padding: '0.3rem 0.5rem', border: '1px solid #E5E0D8', borderRadius: '6px', fontSize: '0.9rem', fontFamily: "'Playfair Display', serif", fontWeight: 700, color: T.text, textAlign: 'right', outline: 'none' }} />
                               <span style={{ fontSize: '0.85rem', color: T.muted }}>€</span>
@@ -702,6 +719,7 @@ function EditeurCarte({ carte, recettes, parametres, onSave, onBack, onAutoSave 
   const width = useWindowWidth();
   const autoSaveTimer = useRef(null);
   const latestForm = useRef(form);
+  const prixAuFocus = useRef(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   function setFormAndSave(updater, debounce = false) {
@@ -755,15 +773,30 @@ function EditeurCarte({ carte, recettes, parametres, onSave, onBack, onAutoSave 
     }));
   }
 
-  function updatePrix(sectionTitre, recetteId, prix) {
-    setFormAndSave(f => ({
-      ...f,
-      sections: f.sections.map(s =>
-        s.titre === sectionTitre
-          ? { ...s, plats: s.plats.map(p => p.recetteId === recetteId ? { ...p, prixVente: parseFloat(prix) || 0 } : p) }
-          : s
-      ),
-    }), true);
+  // Pendant la frappe : formulaire local seulement, sans enregistrement. Champ vidé : rien ne change.
+  function majPrix(sectionTitre, recetteId, n) {
+    if (n === null) return;
+    setForm(f => ({ ...f, sections: avecPrixPlat(f.sections, sectionTitre, recetteId, n) }));
+  }
+
+  // Sortie du champ (ou Entrée) : fiche + cartes (serveur), puis la carte, sans remonter l'éditeur
+  // (le focus du champ suivant est conservé). Champ vide : l'ancien prix revient, rien n'est envoyé.
+  function validerPrix(sectionTitre, recetteId, n) {
+    const prixAvant = prixAuFocus.current;
+    if (n === null) {
+      setForm(f => ({ ...f, sections: avecPrixPlat(f.sections, sectionTitre, recetteId, prixAvant) }));
+      return;
+    }
+    if (n === prixAvant) return;
+    const newForm = { ...form, sections: avecPrixPlat(form.sections, sectionTitre, recetteId, n) };
+    setForm(newForm);
+    latestForm.current = newForm;
+    enregistrerPrixPlat(recetteId, n).catch(() => {})
+      .then(() => {
+        if (!carte?.id) return;
+        return api.cartes.update(carte.id, latestForm.current).then(saved => onAutoSave?.(saved, false));
+      })
+      .catch(() => {});
   }
 
   function ajouterSection() {
@@ -908,8 +941,11 @@ function EditeurCarte({ carte, recettes, parametres, onSave, onBack, onAutoSave 
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
                             <span style={{ fontSize: '0.72rem', color: T.muted }}>PV</span>
-                            <input type="number" step="0.5" value={plat.prixVente}
-                              onChange={e => updatePrix(section.titre, plat.recetteId, e.target.value)}
+                            <DecimalInput value={plat.prixVente}
+                              onFocus={() => { prixAuFocus.current = plat.prixVente; }}
+                              onValueChange={n => majPrix(section.titre, plat.recetteId, n)}
+                              onBlur={n => validerPrix(section.titre, plat.recetteId, n)}
+                              onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
                               onClick={e => e.stopPropagation()}
                               style={{ ...inputStyle, width: '80px', textAlign: 'right' }} />
                             <span style={{ fontSize: '0.78rem', color: T.muted }}>€</span>
@@ -981,10 +1017,11 @@ export default function Cartes() {
     setVue('vue');
   }
 
-  function handleAutoSave(saved) {
+  // remonter = false : l'éditeur n'est pas remonté (enregistrement d'un prix, pour garder le focus).
+  function handleAutoSave(saved, remonter = true) {
     setCartes(prev => prev.map(c => c.id === saved.id ? saved : c));
     setCarteActive(saved);
-    setEditKey(k => k + 1);
+    if (remonter) setEditKey(k => k + 1);
   }
 
   function handleDelete(id) {
