@@ -35,12 +35,14 @@ const ALLERGENES_14 = [
 function coutMat(r) { return (r.ingredients || []).reduce((s, i) => s + coutIng(i), 0); }
 function coutPortion(r) { return r.portions > 0 ? coutMat(r) / r.portions : 0; }
 function fcNum(cp, pv, tvaVente) { return foodCostHT(cp, pv, tvaVente); }
-function fcColor(pct) { if (pct < 30) return T.green; if (pct <= 35) return '#D97706'; return T.red; }
-function fcBadge(fc) {
+// Seuils relatifs à la cible du compte (cible absente → 30, ce qui redonne les anciens seuils 25 / 30 / 35).
+function fcColor(pct, cible) { const c = cible || 30; if (pct < c) return T.green; if (pct <= c + 5) return '#D97706'; return T.red; }
+function fcBadge(fc, cible) {
   if (fc === null) return null;
-  if (fc < 25)  return { icon: '⭐', label: 'Excellent',      color: '#16a34a', bg: '#DCFCE7' };
-  if (fc <= 30) return { icon: '✅', label: 'Rentable',       color: '#2D6A4F', bg: '#D1FAE5' };
-  if (fc <= 35) return { icon: '⚠️', label: 'Acceptable',    color: '#D97706', bg: '#FEF3C7' };
+  const c = cible || 30;
+  if (fc < c - 5)  return { icon: '⭐', label: 'Excellent',      color: '#16a34a', bg: '#DCFCE7' };
+  if (fc <= c) return { icon: '✅', label: 'Rentable',       color: '#2D6A4F', bg: '#D1FAE5' };
+  if (fc <= c + 5) return { icon: '⚠️', label: 'Acceptable',    color: '#D97706', bg: '#FEF3C7' };
   return         { icon: '🔴', label: 'À retravailler', color: '#DC2626', bg: '#FEE2E2' };
 }
 function relDate(iso) {
@@ -365,8 +367,8 @@ function VueCarte({ carte, recettes, parametres, onEdit, onBack, onAutoSave }) {
   const recos = [];
 
   if (globalFC !== null) {
-    if (globalFC > 35) recos.push({ type: 'danger',  msg: `🔴 Food cost global trop élevé (${globalFC.toFixed(1)}%) — votre seuil cible est dépassé` });
-    else if (globalFC < 25) recos.push({ type: 'success', msg: `⭐ Excellente rentabilité globale — food cost à ${globalFC.toFixed(1)}%` });
+    if (globalFC > fcCible + 5) recos.push({ type: 'danger',  msg: `🔴 Food cost global trop élevé (${globalFC.toFixed(1)}%) — votre seuil cible est dépassé` });
+    else if (globalFC < fcCible - 5) recos.push({ type: 'success', msg: `⭐ Excellente rentabilité globale — food cost à ${globalFC.toFixed(1)}%` });
   }
   if (nbTotal > 30) recos.push({ type: 'warning', msg: `⚠️ Carte trop longue (${nbTotal} plats) — au-delà de 30 plats la gestion des stocks devient complexe` });
 
@@ -553,7 +555,7 @@ ${sections}
                 {isOpen && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {section.platsData.map(plat => {
-                      const badge = plat.fc !== null ? fcBadge(plat.fc) : null;
+                      const badge = plat.fc !== null ? fcBadge(plat.fc, fcCible) : null;
                       return (
                         <div key={plat.recetteId} style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', padding: '0.875rem 1rem', background: '#FAFAF8', borderRadius: '10px', border: '1px solid #F3EFE8' }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
@@ -602,7 +604,7 @@ ${sections}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.625rem', marginBottom: '1rem' }}>
               <div style={{ background: '#F8F6F1', borderRadius: '8px', padding: '0.75rem' }}>
                 <div style={{ fontSize: '0.62rem', color: T.muted, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, marginBottom: '3px' }}>Food cost global</div>
-                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.3rem', fontWeight: 700, color: globalFC !== null ? fcColor(globalFC) : T.muted }}>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.3rem', fontWeight: 700, color: globalFC !== null ? fcColor(globalFC, fcCible) : T.muted }}>
                   {globalFC !== null ? globalFC.toFixed(1) + '%' : '—'}
                 </div>
                 {globalFC !== null && <div style={{ fontSize: '0.62rem', color: T.muted, marginTop: '2px' }}>cible {fcCible}%</div>}
@@ -623,7 +625,7 @@ ${sections}
                     <span style={{ color: T.text }}>{s.titre}</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontSize: '0.7rem', color: T.muted }}>{s.count} plat{s.count !== 1 ? 's' : ''}</span>
-                      <span style={{ fontWeight: 700, color: s.avgFC !== null ? fcColor(s.avgFC) : T.muted, minWidth: '40px', textAlign: 'right' }}>
+                      <span style={{ fontWeight: 700, color: s.avgFC !== null ? fcColor(s.avgFC, fcCible) : T.muted, minWidth: '40px', textAlign: 'right' }}>
                         {s.avgFC !== null ? s.avgFC.toFixed(1) + '%' : '—'}
                       </span>
                     </div>
@@ -799,6 +801,7 @@ function EditeurCarte({ carte, recettes, parametres, onSave, onBack, onAutoSave 
   }
 
   const inputSm = { ...inputStyle, padding: '0.35rem 0.6rem', fontSize: '0.82rem' };
+  const fcCibleEditeur = parametres?.foodCostCible || 30;
   const fcPct = (cp, pv) => { const fc = foodCostHT(cp, pv, parametres?.tva); return fc !== null ? fc.toFixed(1) : null; };
 
   return (
@@ -914,7 +917,7 @@ function EditeurCarte({ carte, recettes, parametres, onSave, onBack, onAutoSave 
                           {fc && (
                             <div style={{ textAlign: 'center', flexShrink: 0, minWidth: '48px' }}>
                               <div style={{ fontSize: '0.6rem', color: T.muted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>FC</div>
-                              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: fcColor(parseFloat(fc)) }}>{fc}%</span>
+                              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: fcColor(parseFloat(fc), fcCibleEditeur) }}>{fc}%</span>
                             </div>
                           )}
                           <button onClick={() => removePlat(section.titre, plat.recetteId)}
