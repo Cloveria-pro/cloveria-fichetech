@@ -6,6 +6,7 @@ import { api } from '../api.js';
 import { coutIng, coutPortionHT, coutPortionTTC, foodCostHT } from '../utils.js';
 import { uniteAVerifier, famillesIncompatibles, familleUnite } from '../conversions.js';
 import EtapesEditor from '../components/EtapesEditor.jsx';
+import DecimalInput from '../components/DecimalInput.jsx';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
 
@@ -688,7 +689,7 @@ export default function FicheTechnique() {
                     <td style={{ padding: '0.6rem 0.75rem' }}>
                       {editMode
                         ? <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                            <input type="number" step="0.001" min="0" value={ing.quantite} onChange={e => updateIngredient(idx, { quantite: parseFloat(e.target.value) || 0 })} style={{ ...inputStyle, width: '80px' }} />
+                            <DecimalInput value={ing.quantite} onValueChange={n => updateIngredient(idx, { quantite: n ?? 0 })} style={{ ...inputStyle, width: '80px' }} />
                             {ing.quantiteIncomplete && (
                               <span title="Quantité à compléter — le coût de cette ligne est à 0" style={{ cursor: 'help' }}>⚠️</span>
                             )}
@@ -718,7 +719,7 @@ export default function FicheTechnique() {
                     <td style={{ padding: '0.6rem 0.75rem' }}>
                       {editMode ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <input type="number" step="0.001" value={ing.prixUnitaire} onChange={e => updateIngredient(idx, { prixUnitaire: parseFloat(e.target.value) || 0, sousRecetteId: null })} style={{ ...inputStyle, width: '80px' }} disabled={ing.ligneSuivie} title={ing.ligneSuivie ? "Prix de la sous-recette : il se met à jour automatiquement" : undefined} />
+                          <DecimalInput value={ing.prixUnitaire} onValueChange={n => updateIngredient(idx, { prixUnitaire: n ?? 0, sousRecetteId: null })} style={{ ...inputStyle, width: '80px' }} disabled={ing.ligneSuivie} title={ing.ligneSuivie ? "Prix de la sous-recette : il se met à jour automatiquement" : undefined} />
                           {ing.prixUnitaire === 0 && ing.nom && (
                             <span title={ing.ligneSuivie ? "Prix manquant — la sous-recette n'a pas de prix : complétez les prix de ses ingrédients" : ing.estSousRecette ? "Prix manquant — ajoutez de nouveau la sous-recette depuis la liste pour copier son prix" : "Prix manquant — allez dans Ingrédients pour l'ajouter"} style={{ cursor: 'help' }}>⚠️</span>
                           )}
@@ -813,15 +814,14 @@ export default function FicheTechnique() {
             <div>
               <div style={{ fontSize: '0.7rem', color: T.muted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Prix de vente pratiqué TTC (€)</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <input
-                  type="number" step="0.01" min="0"
+                <DecimalInput
                   value={prixVentePratiqueTTCVal || ''}
-                  onChange={e => {
-                    const val = parseFloat(e.target.value) || 0;
+                  onValueChange={n => {
+                    const val = n ?? 0;
                     setForm(f => ({ ...f, prixVentePratiqueTTC: val }));
                   }}
-                  onBlur={e => {
-                    const val = parseFloat(e.target.value) || 0;
+                  onBlur={n => {
+                    const val = n ?? 0;
                     setForm(f => {
                       const updated = { ...f, prixVentePratiqueTTC: val };
                       savePrixVentePratiqueTTC(updated);

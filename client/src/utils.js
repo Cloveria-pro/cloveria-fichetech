@@ -21,6 +21,16 @@ export function coutPortionTTC(recette) {
   return recette.portions > 0 ? total / recette.portions : 0;
 }
 
+// Saisie décimale française ou anglaise : "12,5" | "12.5" | " 1 234,5 " → nombre ; vide, "abc", ".", "1,2,3" → null.
+export function parseDecimal(texte) {
+  if (texte === null || texte === undefined) return null;
+  if (typeof texte === 'number') return Number.isFinite(texte) ? texte : null;
+  const s = String(texte).trim().replace(/\s/g, '').replace(',', '.');
+  if (s === '' || s === '.' || !/^\d*\.?\d*$/.test(s)) return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
 // Food cost : coût matière HT par portion ÷ prix de vente HT × 100,
 // avec prix HT = prix TTC / (1 + TVA de vente). TVA de vente non numérique → 10.
 export function prixVenteHT(prixVenteTTC, tvaVentePct) {

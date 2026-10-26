@@ -4,6 +4,7 @@ import { api, API_URL, authHeaders } from '../api.js';
 import { calculerCoutIngredient } from '../conversions.js';
 import { foodCostHT } from '../utils.js';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
+import DecimalInput from '../components/DecimalInput.jsx';
 
 function norm(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim(); }
 
@@ -562,7 +563,7 @@ export default function Ingredients() {
                   </td>
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <input type="number" step="0.01" value={editForm.prixUnitaire} onChange={e => updateEditForm(f => ({ ...f, prixUnitaire: e.target.value }))} style={{ ...inputStyle, width: '90px' }} />
+                      <DecimalInput value={editForm.prixUnitaire} onValueChange={n => updateEditForm(f => ({ ...f, prixUnitaire: n === null ? '' : String(n) }))} style={{ ...inputStyle, width: '90px' }} />
                       <span style={{ color: T.muted, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>EUR HT / {baseUnit(editForm.unite)}</span>
                     </div>
                   </td>
@@ -714,8 +715,8 @@ export default function Ingredients() {
                 </td>
                 <td style={{ padding: '0.75rem 1rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <input type="number" step="0.01" placeholder="0.00" value={addForm.prixUnitaire}
-                      onChange={e => setAddForm(f => ({ ...f, prixUnitaire: e.target.value }))} style={{ ...inputStyle, width: '90px' }} />
+                    <DecimalInput placeholder="0.00" value={addForm.prixUnitaire}
+                      onValueChange={n => setAddForm(f => ({ ...f, prixUnitaire: n === null ? '' : String(n) }))} style={{ ...inputStyle, width: '90px' }} />
                     <span style={{ color: T.muted, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>EUR HT / {baseUnit(addForm.unite)}</span>
                   </div>
                 </td>
