@@ -3,6 +3,7 @@ import { api } from '../api.js';
 import { coutIng } from '../utils.js';
 import { uniteAVerifier } from '../conversions.js';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
+import DecimalInput from '../components/DecimalInput.jsx';
 
 const UNITES_SR = ['g', 'ml', 'piece'];
 const UNITES_ING = ['g', 'kg', 'ml', 'L', 'pièce', 'c.s', 'c.c'];
@@ -152,10 +153,9 @@ export default function SousRecettes() {
             </div>
             <div>
               <label style={labelStyle}>Quantité produite</label>
-              <input
-                type="number" min="0" step="1"
+              <DecimalInput
                 value={editForm.quantiteProduite}
-                onChange={e => setEditForm(f => ({ ...f, quantiteProduite: e.target.value }))}
+                onValueChange={n => setEditForm(f => ({ ...f, quantiteProduite: n === null ? '' : String(n) }))}
                 style={inputStyle}
               />
             </div>
@@ -209,10 +209,9 @@ export default function SousRecettes() {
                       </td>
                       <td style={{ padding: '0.5rem 0.75rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <input
-                            type="number" step="0.001" min="0"
+                          <DecimalInput
                             value={ing.quantite}
-                            onChange={e => updateIng(idx, { quantite: parseFloat(e.target.value) || 0 })}
+                            onValueChange={n => updateIng(idx, { quantite: n ?? 0 })}
                             style={{ ...inputStyle, width: '80px' }}
                           />
                           {quantiteIncomplete && (
@@ -231,11 +230,10 @@ export default function SousRecettes() {
                         </div>
                       </td>
                       <td style={{ padding: '0.5rem 0.75rem' }}>
-                        <input
-                          type="number" step="0.001" min="0"
+                        <DecimalInput
                           value={ing.prixUnitaire || ''}
                           placeholder="Prix/unité"
-                          onChange={e => updateIng(idx, { prixUnitaire: parseFloat(e.target.value) || 0 })}
+                          onValueChange={n => updateIng(idx, { prixUnitaire: n ?? 0 })}
                           style={{ ...inputStyle, width: '90px' }}
                         />
                       </td>

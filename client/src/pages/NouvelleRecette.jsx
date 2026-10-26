@@ -5,6 +5,7 @@ import { coutIng } from '../utils.js';
 import { uniteAVerifier } from '../conversions.js';
 import EtapesEditor from '../components/EtapesEditor.jsx';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
+import DecimalInput from '../components/DecimalInput.jsx';
 
 const UNITES = ['g', 'kg', 'ml', 'L', 'pièce', 'c.s', 'c.c'];
 const ALLERGENES_LIST = ['gluten', 'lait', 'oeufs', 'arachides', 'poisson', 'crustaces', 'soja', 'fruits_a_coque'];
@@ -242,7 +243,7 @@ export default function NouvelleRecette() {
                 </td>
                 <td style={{ padding: '0.5rem 0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <input type="number" step="0.001" min="0" value={ing.quantite} onChange={e => updateIngredient(idx, 'quantite', e.target.value)} style={{ ...inputStyle, width: '80px' }} />
+                    <DecimalInput value={ing.quantite} onValueChange={n => updateIngredient(idx, 'quantite', n)} style={{ ...inputStyle, width: '80px' }} />
                     {quantiteIncomplete && (
                       <span title="Quantité à compléter — le coût de cette ligne est à 0" style={{ cursor: 'help', flexShrink: 0 }}>⚠️</span>
                     )}
@@ -260,7 +261,7 @@ export default function NouvelleRecette() {
                 </td>
                 <td style={{ padding: '0.5rem 0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <input type="number" step="0.001" value={ing.prixUnitaire} onChange={e => updateIngredient(idx, 'prixUnitaire', e.target.value)} style={{ ...inputStyle, width: '90px' }} />
+                    <DecimalInput value={ing.prixUnitaire} onValueChange={n => updateIngredient(idx, 'prixUnitaire', n)} style={{ ...inputStyle, width: '90px' }} />
                     {ing.prixUnitaire === 0 && ing.nom.trim() && (
                       <span title="Prix manquant — allez dans Ingrédients pour l'ajouter" style={{ cursor: 'help', flexShrink: 0 }}>⚠️</span>
                     )}

@@ -6,6 +6,9 @@ import { foodCostHT } from '../utils.js';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
 import DecimalInput from '../components/DecimalInput.jsx';
 
+// Rendement saisi : vide ou inférieur à 1 → 100, sinon plafonné à 100.
+function rendementDepuis(n) { return n === null || n < 1 ? 100 : Math.min(100, n); }
+
 function norm(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim(); }
 
 function baseUnit(unite) {
@@ -582,8 +585,8 @@ export default function Ingredients() {
                   </td>
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <input type="number" min="1" max="100" step="1" value={editForm.rendement ?? 100}
-                        onChange={e => updateEditForm(f => ({ ...f, rendement: parseFloat(e.target.value) || 100 }))}
+                      <DecimalInput value={editForm.rendement ?? 100}
+                        onValueChange={n => updateEditForm(f => ({ ...f, rendement: rendementDepuis(n) }))}
                         style={{ ...inputStyle, width: '60px' }} />
                       <span style={{ color: T.muted, fontSize: '0.8rem' }}>%</span>
                     </div>
@@ -731,9 +734,9 @@ export default function Ingredients() {
                 </td>
                 <td style={{ padding: '0.75rem 1rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <input type="number" min="1" max="100" step="1" placeholder="100"
+                    <DecimalInput placeholder="100"
                       value={addForm.rendement === 100 ? '' : (addForm.rendement ?? '')}
-                      onChange={e => setAddForm(f => ({ ...f, rendement: parseFloat(e.target.value) || 100 }))}
+                      onValueChange={n => setAddForm(f => ({ ...f, rendement: rendementDepuis(n) }))}
                       style={{ ...inputStyle, width: '60px' }} />
                     <span style={{ color: T.muted, fontSize: '0.8rem' }}>%</span>
                   </div>
@@ -1109,7 +1112,7 @@ function ImportFacture({ items, setItems }) {
                       <input value={p.nom} onChange={e => updateResult(p._id, 'nom', e.target.value)} style={{ ...inStyle, width: '140px' }} />
                     </td>
                     <td style={{ padding: '0.6rem 1rem' }}>
-                      <input type="number" value={p.quantite} onChange={e => updateResult(p._id, 'quantite', e.target.value)} style={{ ...inStyle, width: '60px' }} />
+                      <DecimalInput value={p.quantite} onValueChange={n => updateResult(p._id, 'quantite', n)} style={{ ...inStyle, width: '60px' }} />
                     </td>
                     <td style={{ padding: '0.6rem 1rem' }}>
                       <select value={p.unite} onChange={e => updateResult(p._id, 'unite', e.target.value)} style={inStyle}>
@@ -1117,7 +1120,7 @@ function ImportFacture({ items, setItems }) {
                       </select>
                     </td>
                     <td style={{ padding: '0.6rem 1rem' }}>
-                      <input type="number" step="0.01" value={p.prix_unitaire} onChange={e => updateResult(p._id, 'prix_unitaire', e.target.value)} style={{ ...inStyle, width: '80px' }} />
+                      <DecimalInput value={p.prix_unitaire} onValueChange={n => updateResult(p._id, 'prix_unitaire', n)} style={{ ...inStyle, width: '80px' }} />
                     </td>
                     <td style={{ padding: '0.6rem 1rem' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
