@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { api } from '../api.js';
-import { coutPortionHT } from '../utils.js';
+import { coutPortionHT, prixVenteHT, recalculerLigneMargeHT } from '../utils.js';
 
 const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280' };
 
@@ -64,7 +64,7 @@ function computeQuadrant(rows) {
   return rows;
 }
 
-function aggregerRapports(rapports, debut, fin, cartesIds) {
+function aggregerRapports(rapports, debut, fin, cartesIds, tvaVente) {
   const all = cartesIds.includes('__all');
   const filtered = rapports.filter(r => {
     if (!all && r.cartesIds && r.cartesIds.length > 0) {
@@ -86,7 +86,8 @@ function aggregerRapports(rapports, debut, fin, cartesIds) {
   });
   const byKey = {};
   filtered.forEach(r => {
-    (r.lignes || []).forEach(l => {
+    (r.lignes || []).forEach(ligne => {
+      const l = recalculerLigneMargeHT(ligne, tvaVente);
       const key = l.recetteId || l.nomFiche || l.nomPOS;
       if (!byKey[key]) {
         byKey[key] = { ...l, quantite: 0, margeTotal: 0, dates: [], services: [], quadrant: null };
@@ -141,7 +142,7 @@ function CartesMultiSelect({ cartes, value, onChange }) {
   );
 }
 
-function DateReportViewer({ date, reports, loading, idx, onIdxChange, onRetour, onSave, onAddForDate }) {
+function DateReportViewer({ date, reports, loading, idx, onIdxChange, onRetour, onSave, onAddForDate, tvaVente }) {
   const VISIBLE = 20;
   const [showAll, setShowAll] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -226,10 +227,14 @@ function DateReportViewer({ date, reports, loading, idx, onIdxChange, onRetour, 
     );
   }
 
-  const rows = (rapport.validatedData?.length > 0 ? rapport.validatedData : null)
+  const rowsEnregistrees = (rapport.validatedData?.length > 0 ? rapport.validatedData : null)
     || rapport.extractedData?.lignes
     || [];
   const isRich = rapport.validatedData?.length > 0;
+  // Marges HT − HT et quadrants recalculés à l'affichage (les valeurs enregistrées ne changent pas).
+  const rows = isRich
+    ? computeQuadrant(rowsEnregistrees.map(l => recalculerLigneMargeHT({ ...l }, tvaVente)))
+    : rowsEnregistrees;
   const displayed = showAll ? rows : rows.slice(0, VISIBLE);
 
   return (
@@ -374,7 +379,7 @@ function DateReportViewer({ date, reports, loading, idx, onIdxChange, onRetour, 
                         {isRich ? 'Plat' : 'Nom POS'}
                       </th>
                       <th style={{ textAlign: 'right', padding: '6px 8px', color: T.muted, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Qté</th>
-                      {isRich && <th style={{ textAlign: 'right', padding: '6px 8px', color: T.muted, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Marge unit.</th>}
+                      {isRich && <th style={{ textAlign: 'right', padding: '6px 8px', color: T.muted, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Marge unit. HT</th>}
                       {isRich && <th style={{ textAlign: 'center', padding: '6px 8px', color: T.muted, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Quadrant</th>}
                     </tr>
                   </thead>
@@ -562,6 +567,7 @@ export default function MenuEngineering() {
   const [dateReportsLoading, setDateReportsLoading] = useState(false);
   const [dateReportIdx, setDateReportIdx] = useState(0);
   const [addingForDate, setAddingForDate] = useState(false);
+  const [tvaVente, setTvaVente] = useState(10);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
   const width = useWindowWidth();
@@ -570,6 +576,7 @@ export default function MenuEngineering() {
   useEffect(() => {
     api.recettes.list().then(setRecettes).catch(() => {});
     api.cartes.list().then(setCartes).catch(() => {});
+    api.parametres.get().catch(() => ({ tva: 10 })).then(p => setTvaVente(p?.tva ?? 10));
   }, []);
 
   useEffect(() => {
@@ -711,8 +718,8 @@ export default function MenuEngineering() {
         quantite: m.quantite,
         prixVente: pv,
         coutMat,
-        margeUnitaire: pv - coutMat,
-        margeTotal: (pv - coutMat) * m.quantite,
+        margeUnitaire: prixVenteHT(pv, tvaVente) - coutMat,
+        margeTotal: (prixVenteHT(pv, tvaVente) - coutMat) * m.quantite,
         recetteId: m.recetteId,
         dates: hasLineDates === true ? m.dates : [],
         services,
@@ -835,6 +842,7 @@ export default function MenuEngineering() {
           onModifier={handleModifier}
           onSupprimer={handleSupprimer}
           cartes={cartes}
+          tvaVente={tvaVente}
         />
       )}
 
@@ -844,6 +852,7 @@ export default function MenuEngineering() {
           historique={historique}
           loading={histLoading}
           cartes={cartes}
+          tvaVente={tvaVente}
         />
       )}
 
@@ -908,6 +917,7 @@ export default function MenuEngineering() {
                     api.ventes.dates(calMonth).then(r => setCalOccupied(r.dates || [])).catch(() => {});
                   }}
                   onAddForDate={handleAddForDate}
+                  tvaVente={tvaVente}
                 />
               )}
 
@@ -1201,7 +1211,7 @@ export default function MenuEngineering() {
 }
 
 /* ── Historique Tab ── */
-function HistoriqueTab({ historique, loading, onRecharger, onModifier, onSupprimer, cartes }) {
+function HistoriqueTab({ historique, loading, onRecharger, onModifier, onSupprimer, cartes, tvaVente }) {
   const [showAll, setShowAll] = useState(false);
 
   if (loading) {
@@ -1235,7 +1245,8 @@ function HistoriqueTab({ historique, loading, onRecharger, onModifier, onSupprim
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
       {visible.map((h, i) => {
-        const lignes = h.lignes || [];
+        // Marges HT − HT et quadrants recalculés à l'affichage (les valeurs enregistrées ne changent pas).
+        const lignes = computeQuadrant((h.lignes || []).map(l => recalculerLigneMargeHT({ ...l }, tvaVente)));
         const totalVentes = lignes.reduce((s, r) => s + (r.quantite || 0), 0);
         const totalMarge = lignes.reduce((s, r) => s + (r.margeTotal || 0), 0);
         const etoiles = lignes.filter(r => r.quadrant === 'etoile').length;
@@ -1316,7 +1327,7 @@ function HistoriqueTab({ historique, loading, onRecharger, onModifier, onSupprim
 }
 
 /* ── Analyse Tab ── */
-function AnalyseTab({ historique, loading, cartes }) {
+function AnalyseTab({ historique, loading, cartes, tvaVente }) {
   const [pendingDebut, setPendingDebut] = useState('');
   const [pendingFin, setPendingFin] = useState('');
   const [pendingCartes, setPendingCartes] = useState(['__all']);
@@ -1340,9 +1351,9 @@ function AnalyseTab({ historique, loading, cartes }) {
   }
 
   const analyseResultats = useMemo(() => {
-    const rows = aggregerRapports(historique, appliedDebut, appliedFin, appliedCartes);
+    const rows = aggregerRapports(historique, appliedDebut, appliedFin, appliedCartes, tvaVente);
     return computeQuadrant(rows.map(r => ({ ...r })));
-  }, [historique, appliedDebut, appliedFin, appliedCartes]);
+  }, [historique, appliedDebut, appliedFin, appliedCartes, tvaVente]);
 
   const nbRapports = useMemo(() => {
     const all = appliedCartes.includes('__all');
@@ -1637,7 +1648,7 @@ function ResultatsView({ resultats, onBack }) {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
             <thead>
               <tr style={{ background: '#F5F2EC' }}>
-                {['Plat', 'Catégorie', 'Ventes', 'Part', 'Prix TTC', 'Coût mat.', 'Marge/u', 'Marge tot.', 'Action recommandée'].map(h => (
+                {['Plat', 'Catégorie', 'Ventes', 'Part', 'Prix TTC', 'Coût mat. HT', 'Marge/u HT', 'Marge tot. HT', 'Action recommandée'].map(h => (
                   <th key={h} style={{
                     padding: '10px 14px',
                     textAlign: ['Plat', 'Catégorie', 'Action recommandée'].includes(h) ? 'left' : 'right',
