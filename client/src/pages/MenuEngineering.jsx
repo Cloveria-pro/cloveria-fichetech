@@ -45,8 +45,11 @@ function findBestMatch(nomPOS, recettes) {
 }
 
 function computeQuadrant(rows) {
-  rows.forEach(row => { if (row.margeUnitaire < 0) row.quadrant = 'poids_mort'; });
-  const positifs = rows.filter(r => r.margeUnitaire >= 0);
+  // Plats sans prix de vente : non classés (quadrant null), exclus des moyennes et du classement.
+  rows.forEach(row => { if (row.sansPrix) row.quadrant = null; });
+  const classables = rows.filter(r => !r.sansPrix);
+  classables.forEach(row => { if (row.margeUnitaire < 0) row.quadrant = 'poids_mort'; });
+  const positifs = classables.filter(r => r.margeUnitaire >= 0);
   const categories = [...new Set(positifs.map(r => r.categorieMenu))];
   categories.forEach(cat => {
     const catRows = positifs.filter(r => r.categorieMenu === cat);
@@ -90,20 +93,30 @@ function aggregerRapports(rapports, debut, fin, cartesIds, tvaVente) {
       const l = recalculerLigneMargeHT(ligne, tvaVente);
       const key = l.recetteId || l.nomFiche || l.nomPOS;
       if (!byKey[key]) {
-        byKey[key] = { ...l, quantite: 0, margeTotal: 0, dates: [], services: [], quadrant: null };
+        byKey[key] = { ...l, quantite: 0, quantitePrix: 0, aUnPrix: false, margeTotal: 0, dates: [], services: [], quadrant: null };
       }
       byKey[key].quantite += l.quantite || 0;
-      byKey[key].margeTotal += l.margeTotal || 0;
+      // Seules les lignes avec prix entrent dans la marge ; les ventes sans prix restent comptées dans quantite.
+      if (!l.sansPrix) {
+        byKey[key].aUnPrix = true;
+        byKey[key].quantitePrix += l.quantite || 0;
+        byKey[key].margeTotal += l.margeTotal || 0;
+      }
       if (l.dates) byKey[key].dates.push(...l.dates);
       if (l.services) byKey[key].services.push(...l.services);
     });
   });
-  return Object.values(byKey).map(r => ({
-    ...r,
-    dates: [...new Set(r.dates)],
-    services: [...new Set(r.services)],
-    margeUnitaire: r.quantite > 0 ? r.margeTotal / r.quantite : 0,
-  }));
+  return Object.values(byKey).map(r => {
+    const sansPrix = !r.aUnPrix;
+    return {
+      ...r,
+      dates: [...new Set(r.dates)],
+      services: [...new Set(r.services)],
+      sansPrix,
+      margeUnitaire: sansPrix ? null : (r.quantitePrix > 0 ? r.margeTotal / r.quantitePrix : 0),
+      margeTotal: sansPrix ? null : r.margeTotal,
+    };
+  });
 }
 
 const card = { background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' };
@@ -390,7 +403,7 @@ function DateReportViewer({ date, reports, loading, idx, onIdxChange, onRetour, 
                         <tr key={i} style={{ borderBottom: '1px solid #F5F1EC' }}>
                           <td style={{ padding: '6px 8px', color: T.text, fontWeight: 500 }}>{isRich ? (row.nomFiche || row.nomPOS) : row.nomPOS}</td>
                           <td style={{ padding: '6px 8px', textAlign: 'right', color: T.text }}>{row.quantite ?? '—'}</td>
-                          {isRich && <td style={{ padding: '6px 8px', textAlign: 'right', color: row.margeUnitaire >= 0 ? T.green : '#DC2626' }}>
+                          {isRich && <td style={{ padding: '6px 8px', textAlign: 'right', color: row.sansPrix || row.margeUnitaire == null ? T.muted : (row.margeUnitaire >= 0 ? T.green : '#DC2626') }}>
                             {row.margeUnitaire != null ? `${row.margeUnitaire.toFixed(2)} €` : '—'}
                           </td>}
                           {isRich && <td style={{ padding: '6px 8px', textAlign: 'center' }}>
@@ -718,8 +731,10 @@ export default function MenuEngineering() {
         quantite: m.quantite,
         prixVente: pv,
         coutMat,
-        margeUnitaire: prixVenteHT(pv, tvaVente) - coutMat,
-        margeTotal: (prixVenteHT(pv, tvaVente) - coutMat) * m.quantite,
+        // Sans prix de vente (pv ≤ 0) : marges null, plat signalé et non classé.
+        margeUnitaire: pv > 0 ? prixVenteHT(pv, tvaVente) - coutMat : null,
+        margeTotal: pv > 0 ? (prixVenteHT(pv, tvaVente) - coutMat) * m.quantite : null,
+        sansPrix: !(pv > 0),
         recetteId: m.recetteId,
         dates: hasLineDates === true ? m.dates : [],
         services,
@@ -1497,7 +1512,8 @@ function ResultatsView({ resultats, onBack }) {
   }, [resultats, filterService, filterCategorie]);
 
   const totalVentes = filtered.reduce((s, r) => s + r.quantite, 0);
-  const totalMarge = filtered.reduce((s, r) => s + r.margeTotal, 0);
+  const totalMarge = filtered.reduce((s, r) => s + (r.margeTotal || 0), 0);
+  const platsSansPrix = filtered.filter(r => r.sansPrix);
 
   const top10Bar = useMemo(() => (
     [...filtered].sort((a, b) => b.quantite - a.quantite).slice(0, 10)
@@ -1509,7 +1525,7 @@ function ResultatsView({ resultats, onBack }) {
     filtered.forEach(r => {
       (r.dates || []).forEach(d => {
         if (!byDate[d]) byDate[d] = { date: d, marge: 0, ventes: 0 };
-        byDate[d].marge += r.margeUnitaire * (r.quantite / Math.max(r.dates?.length || 1, 1));
+        byDate[d].marge += r.sansPrix ? 0 : r.margeUnitaire * (r.quantite / Math.max(r.dates?.length || 1, 1));
         byDate[d].ventes += r.quantite / Math.max(r.dates?.length || 1, 1);
       });
     });
@@ -1517,7 +1533,10 @@ function ResultatsView({ resultats, onBack }) {
   }, [filtered]);
 
   const hasLineData = lineData.length > 1;
-  const sortedRows = useMemo(() => [...filtered].sort((a, b) => b.margeTotal - a.margeTotal), [filtered]);
+  // Plats sans prix en fin de liste ; les autres par marge totale décroissante.
+  const sortedRows = useMemo(() => [...filtered].sort((a, b) =>
+    (a.sansPrix ? 1 : 0) - (b.sansPrix ? 1 : 0) || (b.margeTotal || 0) - (a.margeTotal || 0)
+  ), [filtered]);
 
 
   return (
@@ -1636,6 +1655,11 @@ function ResultatsView({ resultats, onBack }) {
           <div style={{ fontSize: '0.64rem', color: '#B0A898', textAlign: 'center' }}>← Peu populaire · Populaire →</div>
         </div>
         <div style={{ textAlign: 'center', fontSize: '0.64rem', color: '#B0A898', marginTop: '2px' }}>Axe vertical : Rentabilité (haut = marge élevée)</div>
+        {platsSansPrix.length > 0 && (
+          <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: '#F8F6F1', border: '1px solid #E8E2D9', borderRadius: '8px', fontSize: '0.8rem', color: T.muted }}>
+            Non classés, prix de vente manquant : {platsSansPrix.map(p => p.nomFiche).join(', ')}
+          </div>
+        )}
       </div>
 
       {/* ── 4. Tableau détaillé ── */}
@@ -1661,10 +1685,11 @@ function ResultatsView({ resultats, onBack }) {
             </thead>
             <tbody>
               {sortedRows.map((r, i) => {
+                const sansPrix = !!r.sansPrix;
                 const q = QUADRANTS[r.quadrant] || QUADRANTS.poids_mort;
                 const part = totalVentes > 0 ? (r.quantite / totalVentes * 100).toFixed(1) : '—';
                 const rowId = r.recetteId || r.nomFiche;
-                const isNeg = r.margeUnitaire < 0;
+                const isNeg = !sansPrix && r.margeUnitaire != null && r.margeUnitaire < 0;
                 return (
                   <tr key={i} id={`trow-${rowId}`}
                     style={{ borderBottom: '1px solid #F3EDE4', transition: 'background 0.1s' }}
@@ -1672,7 +1697,7 @@ function ResultatsView({ resultats, onBack }) {
                     onMouseLeave={e => { e.currentTarget.style.background = ''; }}
                   >
                     <td style={{ padding: '11px 14px', fontWeight: 700, color: T.text, whiteSpace: 'nowrap' }}>
-                      <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: q.color, marginRight: '8px', verticalAlign: 'middle', flexShrink: 0 }} />
+                      <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: sansPrix ? T.muted : q.color, marginRight: '8px', verticalAlign: 'middle', flexShrink: 0 }} />
                       {r.nomFiche}
                     </td>
                     <td style={{ padding: '11px 14px', color: T.muted, fontSize: '0.76rem' }}>{r.categorieMenu}</td>
@@ -1680,14 +1705,27 @@ function ResultatsView({ resultats, onBack }) {
                     <td style={{ padding: '11px 14px', textAlign: 'right', color: T.muted, fontSize: '0.78rem' }}>{part}%</td>
                     <td style={{ padding: '11px 14px', textAlign: 'right', color: T.text }}>{r.prixVente > 0 ? r.prixVente.toFixed(2) + ' €' : '—'}</td>
                     <td style={{ padding: '11px 14px', textAlign: 'right', color: '#DC2626' }}>{r.coutMat.toFixed(2)} €</td>
-                    <td style={{ padding: '11px 14px', textAlign: 'right', fontWeight: 700, fontFamily: "'Playfair Display', serif", color: isNeg ? '#DC2626' : T.green }}>
-                      {r.margeUnitaire >= 0 ? '+' : ''}{r.margeUnitaire.toFixed(2)} €
-                    </td>
-                    <td style={{ padding: '11px 14px', textAlign: 'right', fontWeight: 700, fontFamily: "'Playfair Display', serif", color: r.margeTotal >= 0 ? T.text : '#DC2626' }}>
-                      {r.margeTotal >= 0 ? '+' : ''}{r.margeTotal.toFixed(2)} €
-                    </td>
+                    {sansPrix ? (
+                      <>
+                        <td style={{ padding: '11px 14px', textAlign: 'right', color: T.muted }}>—</td>
+                        <td style={{ padding: '11px 14px', textAlign: 'right', color: T.muted }}>—</td>
+                      </>
+                    ) : (
+                      <>
+                        <td style={{ padding: '11px 14px', textAlign: 'right', fontWeight: 700, fontFamily: "'Playfair Display', serif", color: isNeg ? '#DC2626' : T.green }}>
+                          {r.margeUnitaire >= 0 ? '+' : ''}{r.margeUnitaire.toFixed(2)} €
+                        </td>
+                        <td style={{ padding: '11px 14px', textAlign: 'right', fontWeight: 700, fontFamily: "'Playfair Display', serif", color: r.margeTotal >= 0 ? T.text : '#DC2626' }}>
+                          {r.margeTotal >= 0 ? '+' : ''}{r.margeTotal.toFixed(2)} €
+                        </td>
+                      </>
+                    )}
                     <td style={{ padding: '11px 14px' }}>
-                      {isNeg ? (
+                      {sansPrix ? (
+                        <span style={{ display: 'inline-block', padding: '3px 9px', borderRadius: '5px', fontSize: '0.72rem', fontWeight: 600, color: T.muted, background: '#F8F6F1', border: '1px solid #E8E2D9', whiteSpace: 'nowrap' }}>
+                          Prix de vente manquant : marge non calculée
+                        </span>
+                      ) : isNeg ? (
                         <span style={{ display: 'inline-block', padding: '3px 9px', borderRadius: '5px', fontSize: '0.72rem', fontWeight: 700, color: '#fff', background: '#DC2626', whiteSpace: 'nowrap' }}>
                           ⚠ Urgent — vous perdez de l'argent à chaque vente
                         </span>
@@ -1722,6 +1760,15 @@ function ResultatsView({ resultats, onBack }) {
                   )}
                 </td>
               </tr>
+              {platsSansPrix.length > 0 && (
+                <tr>
+                  <td colSpan={9} style={{ padding: '6px 14px', fontSize: '0.72rem', color: T.muted }}>
+                    {platsSansPrix.length === 1
+                      ? '1 plat sans prix de vente, exclu de la marge'
+                      : `${platsSansPrix.length} plats sans prix de vente, exclus de la marge`}
+                  </td>
+                </tr>
+              )}
             </tfoot>
           </table>
         </div>

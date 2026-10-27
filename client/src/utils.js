@@ -54,10 +54,14 @@ export function foodCostHT(coutPortionHT, prixVenteTTC, tvaVentePct) {
 }
 
 // Menu Engineering : marge d'une ligne de rapport en HT − HT, recalculée depuis les valeurs enregistrées
-// (prixVente TTC, coutMat HT, quantite). Si l'une manque ou n'est pas numérique, la ligne est renvoyée
-// telle quelle (marges enregistrées conservées). Un prix à 0 donne une marge négative (−coût).
+// (prixVente TTC, coutMat HT, quantite). Un prixVente numérique ≤ 0 = plat sans prix : marges null et
+// sansPrix: true (même si coutMat ou quantite manque). Si prixVente, coutMat ou quantite manque ou n'est
+// pas numérique, la ligne est renvoyée telle quelle (marges enregistrées conservées).
 export function recalculerLigneMargeHT(ligne, tvaVentePct) {
   const estNombre = v => typeof v === 'number' && Number.isFinite(v);
+  if (ligne && estNombre(ligne.prixVente) && ligne.prixVente <= 0) {
+    return { ...ligne, margeUnitaire: null, margeTotal: null, sansPrix: true };
+  }
   if (!ligne || !estNombre(ligne.prixVente) || !estNombre(ligne.coutMat) || !estNombre(ligne.quantite)) return ligne;
   const margeUnitaire = prixVenteHT(ligne.prixVente, tvaVentePct) - ligne.coutMat;
   return { ...ligne, margeUnitaire, margeTotal: margeUnitaire * ligne.quantite };
