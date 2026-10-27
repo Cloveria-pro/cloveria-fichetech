@@ -3,3 +3,5 @@ node_modules/
 client/dist/
 *.log
 .DS_Store
+cloveria-backups/
+*.ejson
