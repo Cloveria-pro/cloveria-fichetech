@@ -87,13 +87,15 @@ function aggregerRapports(rapports, debut, fin, cartesIds, tvaVente) {
     }
     return true;
   });
+  const estNombre = v => typeof v === 'number' && Number.isFinite(v);
   const byKey = {};
   filtered.forEach(r => {
     (r.lignes || []).forEach(ligne => {
       const l = recalculerLigneMargeHT(ligne, tvaVente);
       const key = l.recetteId || l.nomFiche || l.nomPOS;
       if (!byKey[key]) {
-        byKey[key] = { ...l, quantite: 0, quantitePrix: 0, aUnPrix: false, margeTotal: 0, dates: [], services: [], quadrant: null };
+        byKey[key] = { ...l, quantite: 0, quantitePrix: 0, aUnPrix: false, margeTotal: 0, dates: [], services: [], quadrant: null,
+          poidsPrix: 0, sommePrix: 0, sommeCoutPrix: 0, poidsCout: 0, sommeCout: 0 };
       }
       byKey[key].quantite += l.quantite || 0;
       // Seules les lignes avec prix entrent dans la marge ; les ventes sans prix restent comptées dans quantite.
@@ -102,14 +104,36 @@ function aggregerRapports(rapports, debut, fin, cartesIds, tvaVente) {
         byKey[key].quantitePrix += l.quantite || 0;
         byKey[key].margeTotal += l.margeTotal || 0;
       }
+      // Prix et coût affichés : moyennes pondérées par la quantité. Les lignes à marges stockées
+      // (prixVente, coutMat ou quantite non numérique) restent dans la marge mais pas dans ces moyennes.
+      if (!l.sansPrix && estNombre(l.prixVente) && estNombre(l.coutMat) && estNombre(l.quantite)) {
+        byKey[key].poidsPrix += l.quantite;
+        byKey[key].sommePrix += l.prixVente * l.quantite;
+        byKey[key].sommeCoutPrix += l.coutMat * l.quantite;
+      }
+      if (estNombre(l.coutMat) && estNombre(l.quantite)) {
+        byKey[key].poidsCout += l.quantite;
+        byKey[key].sommeCout += l.coutMat * l.quantite;
+      }
       if (l.dates) byKey[key].dates.push(...l.dates);
       if (l.services) byKey[key].services.push(...l.services);
     });
   });
-  return Object.values(byKey).map(r => {
+  return Object.values(byKey).map(({ poidsPrix, sommePrix, sommeCoutPrix, poidsCout, sommeCout, ...r }) => {
     const sansPrix = !r.aUnPrix;
+    // Poids nul : prix et coût de la première ligne, comme avant.
+    let prixVente = r.prixVente;
+    let coutMat = r.coutMat;
+    if (!sansPrix && poidsPrix > 0) {
+      prixVente = sommePrix / poidsPrix;
+      coutMat = sommeCoutPrix / poidsPrix;
+    } else if (sansPrix && poidsCout > 0) {
+      coutMat = sommeCout / poidsCout;
+    }
     return {
       ...r,
+      prixVente,
+      coutMat: estNombre(coutMat) ? coutMat : 0,
       dates: [...new Set(r.dates)],
       services: [...new Set(r.services)],
       sansPrix,
