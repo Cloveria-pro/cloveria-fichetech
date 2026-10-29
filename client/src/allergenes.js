@@ -26,20 +26,31 @@ export function libelleAllergene(key) {
 // Mots-clés de la détection indicative, écrits sans accents. Pluriel en s ou x accepté sur chaque mot ;
 // dans un mot-clé, tiret et espace sont interchangeables.
 const ALLERGENES_MAPPING = {
-  gluten:       ['farine', 'ble', 'seigle', 'orge', 'avoine', 'pain', 'pate', 'crouton', 'chapelure', 'semoule', 'epeautre'],
-  crustaces:    ['crevette', 'homard', 'crabe', 'langouste', 'langoustine', 'ecrevisse'],
-  oeufs:        ['oeuf', 'oeufs', 'egg'],
-  poisson:      ['saumon', 'thon', 'cabillaud', 'sole', 'daurade', 'anchois', 'sardine', 'truite', 'filet de poisson'],
+  gluten:       ['farine', 'ble', 'seigle', 'orge', 'avoine', 'pain', 'pate', 'crouton', 'chapelure', 'semoule', 'epeautre',
+                 'brioche', 'biscuit', 'nouille', 'couscous', 'boulgour', 'panure', 'panko', 'pita', 'tortilla', 'crepe', 'gaufre',
+                 'genoise', 'biere', 'bechamel'],
+  crustaces:    ['crevette', 'homard', 'crabe', 'langouste', 'langoustine', 'ecrevisse', 'gambas', 'tourteau', 'bisque', 'scampi'],
+  oeufs:        ['oeuf', 'oeufs', 'egg', 'mayonnaise', 'meringue', 'aioli', 'sabayon', 'omelette'],
+  // Pas de « lieu » seul (« au lieu de »).
+  poisson:      ['saumon', 'thon', 'cabillaud', 'sole', 'daurade', 'anchois', 'sardine', 'truite', 'filet de poisson',
+                 'loup', 'lieu noir', 'lieu jaune', 'maquereau', 'merlu', 'colin', 'rouget', 'turbot', 'hareng', 'haddock',
+                 'fletan', 'espadon', 'sauce poisson', 'nuoc mam', 'worcestershire', 'bar', 'poisson'],
   arachides:    ['cacahuete', 'arachide', 'peanut'],
-  soja:         ['soja', 'tofu', 'edamame', 'miso'],
-  lait:         ['beurre', 'creme', 'lait', 'fromage', 'yaourt', 'parmesan', 'gruyere', 'feta', 'burrata', 'mozzarella', 'pecorino', 'mascarpone'],
-  fruits_a_coque: ['noix', 'amande', 'noisette', 'pistache', 'cajou', 'pecan', 'macadamia'],
+  soja:         ['soja', 'tofu', 'edamame', 'miso', 'shoyu', 'tamari', 'tempeh'],
+  lait:         ['beurre', 'creme', 'lait', 'fromage', 'yaourt', 'parmesan', 'gruyere', 'feta', 'burrata', 'mozzarella', 'pecorino', 'mascarpone',
+                 'ricotta', 'comte', 'emmental', 'cheddar', 'chevre', 'brie', 'camembert', 'roquefort', 'gorgonzola', 'chantilly',
+                 'bechamel', 'ghee', 'babeurre', 'lactose', 'skyr'],
+  fruits_a_coque: ['noix', 'amande', 'noisette', 'pistache', 'cajou', 'pecan', 'macadamia',
+                 'praline', 'frangipane', 'nougat', 'gianduja', 'massepain'],
   celeri:       ['celeri'],
   moutarde:     ['moutarde'],
-  sesame:       ['sesame', 'tahini'],
-  sulfites:     ['sulfite', 'anhydride sulfureux', 'vinaigre balsamique', 'vinaigre de vin', 'vin', 'vinaigre'],
+  sesame:       ['sesame', 'tahini', 'gomasio', 'halva'],
+  sulfites:     ['sulfite', 'anhydride sulfureux', 'vinaigre balsamique', 'vinaigre de vin', 'vin', 'vinaigre',
+                 'porto', 'madere', 'champagne', 'cidre', 'xeres', 'marsala', 'vinaigrette', 'cornichon', 'sauternes'],
   lupin:        ['lupin'],
-  mollusques:   ['moule', 'huitre', 'saint-jacques', 'calmar', 'seiche', 'escargot', 'poulpe'],
+  // Pas de « coque » ni de « couteau » (trop ambigus).
+  mollusques:   ['moule', 'huitre', 'saint-jacques', 'calmar', 'seiche', 'escargot', 'poulpe',
+                 'palourde', 'bulot', 'bigorneau', 'petoncle', 'praire', 'encornet', 'ormeau'],
 };
 
 const HORS_LETTRE_AVANT = '(?<!\\p{L})';
@@ -64,12 +75,20 @@ let expressions = null;
 function compiler() {
   if (expressions) return expressions;
   expressions = {
-    pate: motifGlobal('pâtés?'),
-    // Retirées avant l'analyse (faux positifs) ; « noix de saint-jacques » garde « saint-jacques ».
+    // « pâté » est retiré, sauf dans « pâté en croûte » : il reste alors « pate », qui donne gluten.
+    pate: motifGlobal('pâtés?(?![\\s-]+en[\\s-]+cro[uû]tes?(?!\\p{L}))'),
+    // Retirées avant l'analyse (faux positifs) ; le groupe capturé ($1) est conservé :
+    // « noix de saint-jacques » garde « saint-jacques », « noix de beurre » garde « beurre »,
+    // « beurre de cacahuète » garde « cacahuete », « beurre d'arachide » garde « arachide »,
+    // « crème de marrons / cassis » garde « marrons » / « cassis ».
     exclusions: [
       [motifGlobal('noix[\\s-]+de[\\s-]+(?:coco|muscade|veau)'), ' '],
       [motifGlobal('lait[\\s-]+de[\\s-]+coco'), ' '],
       [motifGlobal('noix[\\s-]+de[\\s-]+(saint[\\s-]+jacques)'), ' $1'],
+      [motifGlobal('noix[\\s-]+de[\\s-]+(beurre)'), ' $1'],
+      [motifGlobal('beurres?[\\s-]+de[\\s-]+(cacahuetes?)'), ' $1'],
+      [motifGlobal("beurres?[\\s-]+d['’]\\s*(arachides?)"), ' $1'],
+      [motifGlobal('cremes?[\\s-]+de[\\s-]+(marrons?|cassis)'), ' $1'],
     ],
     motifs: Object.fromEntries(
       Object.entries(ALLERGENES_MAPPING).map(([cle, motsCles]) => [cle, motsCles.map(motifMotCle)])
