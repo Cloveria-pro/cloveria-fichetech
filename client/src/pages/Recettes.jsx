@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { coutPortionHT, foodCostRecetteHT } from '../utils.js';
 import ImportFicheModal from '../components/ImportFicheModal.jsx';
+import { libelleAllergene } from '../allergenes.js';
 
 const T = { green: '#2D6A4F', text: '#1A1A1A', muted: '#9CA3AF' };
 const SECTIONS = ['Amuse-bouche', 'Entrée', 'Plat viande', 'Plat poisson', 'Plat végétarien', 'Dessert', 'Autre'];
@@ -261,7 +262,7 @@ export default function Recettes() {
           {allergenesDispo.length > 0 && (
             <select value={allergeneFilter} onChange={e => setAllergeneFilter(e.target.value)} style={selectStyle}>
               <option value="">Tous les allergènes</option>
-              {allergenesDispo.map(a => <option key={a} value={a}>{a.charAt(0).toUpperCase() + a.slice(1)}</option>)}
+              {allergenesDispo.map(a => <option key={a} value={a}>{libelleAllergene(a)}</option>)}
             </select>
           )}
           <input

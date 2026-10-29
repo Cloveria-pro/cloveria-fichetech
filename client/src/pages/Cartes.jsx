@@ -7,6 +7,7 @@ import { useWindowWidth } from '../hooks/useWindowWidth.js';
 import { coutIng, foodCostHT } from '../utils.js';
 import { api } from '../api.js';
 import DecimalInput from '../components/DecimalInput.jsx';
+import { ALLERGENES_14 } from '../allergenes.js';
 import html2pdf from 'html2pdf.js';
 
 const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280', red: '#DC2626' };
@@ -15,23 +16,6 @@ const inputStyle = { padding: '0.45rem 0.7rem', border: '1px solid #E5E0D8', bor
 
 const SECTIONS_DEFAULT = ['Amuse-bouche', 'Entrées', 'Plats', 'Desserts'];
 const CATEGORIES = ['Amuse-bouche', 'Entrée', 'Plat', 'Dessert', 'Boisson', 'Snack'];
-
-const ALLERGENES_14 = [
-  { code: 'G',   key: 'gluten',        label: 'Gluten' },
-  { code: 'C',   key: 'crustaces',     label: 'Crustacés' },
-  { code: 'O',   key: 'oeufs',         label: 'Œufs' },
-  { code: 'P',   key: 'poisson',       label: 'Poisson' },
-  { code: 'A',   key: 'arachides',     label: 'Arachides' },
-  { code: 'So',  key: 'soja',          label: 'Soja' },
-  { code: 'L',   key: 'lait',          label: 'Lait' },
-  { code: 'FN',  key: 'fruits_a_coque',label: 'Fruits à coque' },
-  { code: 'Ce',  key: 'celeri',        label: 'Céleri' },
-  { code: 'Mo',  key: 'moutarde',      label: 'Moutarde' },
-  { code: 'Se',  key: 'sesame',        label: 'Sésame' },
-  { code: 'Su',  key: 'sulfites',      label: 'Sulfites' },
-  { code: 'Lu',  key: 'lupin',         label: 'Lupin' },
-  { code: 'Mol', key: 'mollusques',    label: 'Mollusques' },
-];
 
 // Prix de vente d'un plat : le serveur met à jour la fiche et toutes les cartes qui la contiennent.
 function enregistrerPrixPlat(recetteId, prix) { return api.recettes.updatePrix(recetteId, prix); }

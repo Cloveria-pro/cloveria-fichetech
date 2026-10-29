@@ -6,9 +6,10 @@ import { uniteAVerifier } from '../conversions.js';
 import EtapesEditor from '../components/EtapesEditor.jsx';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
 import DecimalInput from '../components/DecimalInput.jsx';
+import { ALLERGENES_14 } from '../allergenes.js';
 
 const UNITES = ['g', 'kg', 'ml', 'L', 'pièce', 'c.s', 'c.c'];
-const ALLERGENES_LIST = ['gluten', 'lait', 'oeufs', 'arachides', 'poisson', 'crustaces', 'soja', 'fruits_a_coque'];
+const CLES_ALLERGENES = ALLERGENES_14.map(a => a.key);
 const CATEGORIES = ['Amuse-bouche', 'Entrée', 'Plat viande', 'Plat poisson', 'Plat végétarien', 'Dessert', 'Autre'];
 const TVA_OPTIONS = [
   { value: 5.5, label: '5.5%' },
@@ -88,7 +89,7 @@ export default function NouvelleRecette() {
         tempsPreparation: parseInt(data.tempsPreparation) || f.tempsPreparation,
         tempsCuisson: parseInt(data.tempsCuisson) || f.tempsCuisson,
         description: data.description || f.description,
-        allergenes: Array.isArray(data.allergenes) ? data.allergenes : f.allergenes,
+        allergenes: Array.isArray(data.allergenes) ? data.allergenes.filter(a => CLES_ALLERGENES.includes(a)) : f.allergenes,
         ingredients: Array.isArray(data.ingredients) && data.ingredients.length > 0
           ? data.ingredients.map(i => ({ nom: i.nom || '', quantite: parseFloat(i.quantite) || 0, unite: UNITES.includes(i.unite) ? i.unite : 'g', prixUnitaire: parseFloat(i.prixUnitaire) || 0, tva: i.tva ?? 10 }))
           : f.ingredients,
@@ -302,15 +303,15 @@ export default function NouvelleRecette() {
 
       {/* Etapes */}
       <div style={{ ...card, padding: '1.5rem', marginBottom: '1rem' }}>
-        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text, marginBottom: '1rem' }}>Etapes de preparation</h3>
+        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text, marginBottom: '1rem' }}>Étapes de préparation</h3>
         <EtapesEditor etapes={form.etapes} onChange={etapes => setField('etapes', etapes)} />
       </div>
 
       {/* Allergenes */}
       <div style={{ ...card, padding: '1.5rem' }}>
-        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text, marginBottom: '1rem' }}>Allergenes</h3>
+        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text, marginBottom: '1rem' }}>Allergènes</h3>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-          {ALLERGENES_LIST.map(a => {
+          {ALLERGENES_14.map(({ key: a, label }) => {
             const actif = form.allergenes.includes(a);
             return (
               <span
@@ -323,7 +324,7 @@ export default function NouvelleRecette() {
                   border: actif ? '1px solid #F6E8B8' : '1px solid #EDE8DF',
                   cursor: 'pointer', fontWeight: actif ? 600 : 400, transition: 'all 0.1s',
                 }}
-              >{a}</span>
+              >{label}</span>
             );
           })}
         </div>

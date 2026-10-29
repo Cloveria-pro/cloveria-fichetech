@@ -9,6 +9,7 @@ import EtapesEditor from '../components/EtapesEditor.jsx';
 import DecimalInput from '../components/DecimalInput.jsx';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
+import { ALLERGENES_14, libelleAllergene } from '../allergenes.js';
 
 async function downloadPDF(htmlString, filename) {
   const parser = new DOMParser();
@@ -59,11 +60,6 @@ function baseUnit(unite) {
   if (['L', 'l', 'ml', 'cl', 'c.c', 'c.s', 'c.c.', 'c.s.', 'càc', 'càs'].includes(unite)) return 'L';
   return unite;
 }
-const ALLERGENES_LIST = [
-  'gluten', 'crustaces', 'oeufs', 'poisson', 'arachides', 'soja', 'lait', 'fruits_a_coque',
-  'celeri', 'moutarde', 'sesame', 'sulfites', 'lupin', 'mollusques',
-];
-
 const ALLERGENES_MAPPING = {
   gluten:       ['farine', 'ble', 'seigle', 'orge', 'avoine', 'pain', 'pate', 'crouton', 'chapelure', 'semoule', 'epeautre'],
   crustaces:    ['crevette', 'homard', 'crabe', 'langouste', 'langoustine', 'ecrevisse'],
@@ -339,7 +335,7 @@ export default function FicheTechnique() {
     ).join('');
 
     const allergenesBadges = (recette.allergenes || []).map(a =>
-      '<span style="display:inline-block;background:#FEF9EC;color:#92400e;border:1px solid #F6E8B8;padding:3px 10px;border-radius:4px;font-size:0.8rem;font-weight:600;margin:3px">' + a + '</span>'
+      '<span style="display:inline-block;background:#FEF9EC;color:#92400e;border:1px solid #F6E8B8;padding:3px 10px;border-radius:4px;font-size:0.8rem;font-weight:600;margin:3px">' + libelleAllergene(a) + '</span>'
     ).join('');
 
     const financeCards = [
@@ -946,10 +942,10 @@ export default function FicheTechnique() {
       <div style={{ ...card, padding: '1.5rem' }}>
         <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text, marginBottom: '1rem' }}>Allergènes</h3>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-          {ALLERGENES_LIST.map(a => {
+          {ALLERGENES_14.map(({ key: a, label }) => {
             const actif = (form.allergenes || []).includes(a);
             return (
-              <span key={a} onClick={() => toggleAllergene(a)} style={{ padding: '0.35rem 0.9rem', borderRadius: '20px', fontSize: '0.8rem', background: actif ? '#FEF9EC' : '#F9F7F4', color: actif ? '#92400e' : T.muted, border: actif ? '1px solid #F6E8B8' : '1px solid #EDE8DF', cursor: 'pointer', fontWeight: actif ? 600 : 400, transition: 'all 0.1s' }}>{a}</span>
+              <span key={a} onClick={() => toggleAllergene(a)} style={{ padding: '0.35rem 0.9rem', borderRadius: '20px', fontSize: '0.8rem', background: actif ? '#FEF9EC' : '#F9F7F4', color: actif ? '#92400e' : T.muted, border: actif ? '1px solid #F6E8B8' : '1px solid #EDE8DF', cursor: 'pointer', fontWeight: actif ? 600 : 400, transition: 'all 0.1s' }}>{label}</span>
             );
           })}
         </div>
