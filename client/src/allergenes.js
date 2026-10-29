@@ -78,9 +78,33 @@ function compiler() {
   return expressions;
 }
 
-function texteAnalyse(ingredients, etapes, { pate, exclusions }) {
+// Nom comparable : minuscules, sans accents, œ/æ développés, espaces réduits.
+const nomNormalise = s => sansAccents(String(s || '').normalize('NFC').toLowerCase()).replace(/\s+/g, ' ').trim();
+
+// Sous-recette d'une ligne : par sousRecetteId exact, sinon par nom normalisé identique.
+function sousRecetteDeLigne(ligne, sousRecettes) {
+  if (!ligne || !Array.isArray(sousRecettes) || sousRecettes.length === 0) return null;
+  if (ligne.sousRecetteId) {
+    const parId = sousRecettes.find(sr => sr && sr.id === ligne.sousRecetteId);
+    if (parId) return parId;
+  }
+  const nom = nomNormalise(ligne.nom);
+  if (!nom) return null;
+  return sousRecettes.find(sr => sr && nomNormalise(sr.nom) === nom) || null;
+}
+
+const nomsIngredients = liste => (liste || []).map(i => (i && typeof i.nom === 'string' ? i.nom : ''));
+
+function texteAnalyse(ingredients, etapes, sousRecettes, { pate, exclusions }) {
+  // Un seul niveau : les noms des ingrédients d'une sous-recette sont ajoutés, sans développer
+  // une sous-recette citée à son tour par son nom (pas de récursion, donc pas de boucle).
+  const nomsSousRecettes = (ingredients || []).flatMap(ligne => {
+    const sr = sousRecetteDeLigne(ligne, sousRecettes);
+    return sr ? nomsIngredients(sr.ingredients) : [];
+  });
   const morceaux = [
-    ...(ingredients || []).map(i => (i && typeof i.nom === 'string' ? i.nom : '')),
+    ...nomsIngredients(ingredients),
+    ...nomsSousRecettes,
     ...(etapes || []).map(e => (typeof e === 'string' ? e : '')),
   ];
   // « | » sépare les morceaux pour qu'un mot-clé ou une exclusion ne chevauche pas deux lignes.
@@ -91,12 +115,13 @@ function texteAnalyse(ingredients, etapes, { pate, exclusions }) {
   return texte;
 }
 
-// Détection indicative depuis les noms des ingrédients et les étapes ; clés dans l'ordre de ALLERGENES_14.
+// Détection indicative depuis les noms des ingrédients (y compris ceux des sous-recettes utilisées) et les
+// étapes ; clés dans l'ordre de ALLERGENES_14.
 // Renvoie null si le navigateur ne sait pas compiler les expressions (détection indisponible).
-export function detecterAllergenes({ ingredients, etapes } = {}) {
+export function detecterAllergenes({ ingredients, etapes, sousRecettes = [] } = {}) {
   let exp;
   try { exp = compiler(); } catch { return null; }
-  const texte = texteAnalyse(ingredients, etapes, exp);
+  const texte = texteAnalyse(ingredients, etapes, sousRecettes, exp);
   return ALLERGENES_14
     .map(a => a.key)
     .filter(cle => (exp.motifs[cle] || []).some(motif => motif.test(texte)));

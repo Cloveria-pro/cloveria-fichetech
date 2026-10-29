@@ -146,8 +146,8 @@ export default function FicheTechnique() {
   // Ajoute seulement les allergènes nouvellement détectés du fait des modifications (version enregistrée
   // → formulaire) ; un allergène décoché à la main n'est jamais recoché. Détection indisponible : rien n'est ajouté.
   function sauvegarder() {
-    const avant = detecterAllergenes({ ingredients: recette.ingredients, etapes: recette.etapes });
-    const apres = detecterAllergenes({ ingredients: form.ingredients, etapes: form.etapes });
+    const avant = detecterAllergenes({ ingredients: recette.ingredients, etapes: recette.etapes, sousRecettes });
+    const apres = detecterAllergenes({ ingredients: form.ingredients, etapes: form.etapes, sousRecettes });
     const nouveaux = avant && apres ? apres.filter(a => !avant.includes(a)) : [];
     const coches = form.allergenes || [];
     const cles = ALLERGENES_14.map(a => a.key);
@@ -212,7 +212,7 @@ export default function FicheTechnique() {
   // « Recalculer depuis la fiche » : remplace la sélection par la détection (noms des ingrédients + étapes).
   // Même enregistrement que toggleAllergene : formulaire seulement en édition, immédiat hors édition.
   function recalculerAllergenes() {
-    const allergenes = detecterAllergenes({ ingredients: form.ingredients, etapes: form.etapes });
+    const allergenes = detecterAllergenes({ ingredients: form.ingredients, etapes: form.etapes, sousRecettes });
     if (allergenes === null) {
       setSaveToast('Détection indisponible sur ce navigateur.');
       setTimeout(() => setSaveToast(''), 2000);
