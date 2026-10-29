@@ -9,7 +9,7 @@ import EtapesEditor from '../components/EtapesEditor.jsx';
 import DecimalInput from '../components/DecimalInput.jsx';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
-import { ALLERGENES_14, libelleAllergene } from '../allergenes.js';
+import { ALLERGENES_14, libelleAllergene, detecterAllergenes } from '../allergenes.js';
 
 async function downloadPDF(htmlString, filename) {
   const parser = new DOMParser();
@@ -59,38 +59,6 @@ function baseUnit(unite) {
   if (['kg', 'g', 'mg'].includes(unite)) return 'kg';
   if (['L', 'l', 'ml', 'cl', 'c.c', 'c.s', 'c.c.', 'c.s.', 'càc', 'càs'].includes(unite)) return 'L';
   return unite;
-}
-const ALLERGENES_MAPPING = {
-  gluten:       ['farine', 'ble', 'seigle', 'orge', 'avoine', 'pain', 'pate', 'crouton', 'chapelure', 'semoule', 'epeautre'],
-  crustaces:    ['crevette', 'homard', 'crabe', 'langouste', 'langoustine', 'ecrevisse'],
-  oeufs:        ['oeuf', 'oeufs', 'egg'],
-  poisson:      ['saumon', 'thon', 'cabillaud', 'sole', 'daurade', 'anchois', 'sardine', 'truite', 'filet de poisson'],
-  arachides:    ['cacahuete', 'arachide', 'peanut'],
-  soja:         ['soja', 'tofu', 'edamame', 'miso'],
-  lait:         ['beurre', 'creme', 'lait', 'fromage', 'yaourt', 'parmesan', 'gruyere', 'feta', 'burrata', 'mozzarella', 'pecorino', 'mascarpone'],
-  fruits_a_coque: ['noix', 'amande', 'noisette', 'pistache', 'cajou', 'pecan', 'macadamia'],
-  celeri:       ['celeri'],
-  moutarde:     ['moutarde'],
-  sesame:       ['sesame', 'tahini'],
-  sulfites:     ['sulfite', 'anhydride sulfureux', 'vinaigre balsamique', 'vinaigre de vin'],
-  lupin:        ['lupin'],
-  mollusques:   ['moule', 'huitre', 'saint-jacques', 'calmar', 'seiche', 'escargot', 'poulpe'],
-};
-
-function scanAllergenesFromEtapes(etapes) {
-  const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-  const text = norm((etapes || []).join(' '));
-  const detected = [];
-  for (const [allergen, keywords] of Object.entries(ALLERGENES_MAPPING)) {
-    for (const kw of keywords) {
-      const pat = norm(kw).replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '[\\s-]+');
-      if (new RegExp(`(?<![a-z])${pat}(?![a-z])`).test(text)) {
-        detected.push(allergen);
-        break;
-      }
-    }
-  }
-  return detected;
 }
 const CHART_COLORS = ['#2D6A4F','#C9A84C','#4F86C6','#E05C5C','#7B5EA7','#E09F3E','#8DB580','#6E9EBF','#E8A87C','#B8B0A4'];
 const TVA_OPTIONS = [
@@ -223,6 +191,31 @@ export default function FicheTechnique() {
     }
     const ancienne = form.allergenes || [];
     const allergenes = basculer(ancienne);
+    setForm(f => ({ ...f, allergenes }));
+    api.recettes.update(id, { allergenes })
+      .then(() => {
+        setRecette(r => ({ ...r, allergenes }));
+        setForm(f => ({ ...f, allergenes }));
+      })
+      .catch(() => setForm(f => ({ ...f, allergenes: ancienne })));
+  }
+
+  // « Recalculer depuis la fiche » : remplace la sélection par la détection (noms des ingrédients + étapes).
+  // Même enregistrement que toggleAllergene : formulaire seulement en édition, immédiat hors édition.
+  function recalculerAllergenes() {
+    const allergenes = detecterAllergenes({ ingredients: form.ingredients, etapes: form.etapes });
+    if (allergenes === null) {
+      setSaveToast('Détection indisponible sur ce navigateur.');
+      setTimeout(() => setSaveToast(''), 2000);
+      return;
+    }
+    const ancienne = form.allergenes || [];
+    if (ancienne.some(a => !allergenes.includes(a))
+      && !window.confirm('Remplacer les allergènes actuels par ceux détectés ? Vos choix manuels seront perdus.')) return;
+    if (editMode) {
+      setForm(f => ({ ...f, allergenes }));
+      return;
+    }
     setForm(f => ({ ...f, allergenes }));
     api.recettes.update(id, { allergenes })
       .then(() => {
@@ -913,13 +906,7 @@ export default function FicheTechnique() {
         {editMode ? (
           <EtapesEditor
             etapes={form.etapes || []}
-            onChange={newEtapes => {
-              const detected = scanAllergenesFromEtapes(newEtapes);
-              setForm(f => {
-                const merged = [...new Set([...(f.allergenes || []), ...detected])];
-                return { ...f, etapes: newEtapes, allergenes: merged };
-              });
-            }}
+            onChange={newEtapes => setForm(f => ({ ...f, etapes: newEtapes }))}
           />
         ) : (
           <>
@@ -940,7 +927,13 @@ export default function FicheTechnique() {
 
       {/* Allergènes */}
       <div style={{ ...card, padding: '1.5rem' }}>
-        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text, marginBottom: '1rem' }}>Allergènes</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
+          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text }}>Allergènes</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontSize: '0.75rem', color: T.muted }}>Détection indicative, à vérifier.</span>
+            <button onClick={recalculerAllergenes} style={btnOutline}>Recalculer depuis la fiche</button>
+          </div>
+        </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
           {ALLERGENES_14.map(({ key: a, label }) => {
             const actif = (form.allergenes || []).includes(a);

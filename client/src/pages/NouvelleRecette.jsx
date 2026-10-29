@@ -6,7 +6,7 @@ import { uniteAVerifier } from '../conversions.js';
 import EtapesEditor from '../components/EtapesEditor.jsx';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
 import DecimalInput from '../components/DecimalInput.jsx';
-import { ALLERGENES_14 } from '../allergenes.js';
+import { ALLERGENES_14, detecterAllergenes } from '../allergenes.js';
 
 const UNITES = ['g', 'kg', 'ml', 'L', 'pièce', 'c.s', 'c.c'];
 const CLES_ALLERGENES = ALLERGENES_14.map(a => a.key);
@@ -76,25 +76,45 @@ export default function NouvelleRecette() {
     setField('allergenes', list.includes(a) ? list.filter(x => x !== a) : [...list, a]);
   }
 
+  // « Recalculer depuis la fiche » : remplace la sélection par la détection (noms des ingrédients + étapes).
+  function recalculerAllergenes() {
+    const allergenes = detecterAllergenes({ ingredients: form.ingredients, etapes: form.etapes });
+    if (allergenes === null) {
+      alert('Détection indisponible sur ce navigateur.');
+      return;
+    }
+    if (form.allergenes.some(a => !allergenes.includes(a))
+      && !window.confirm('Remplacer les allergènes actuels par ceux détectés ? Vos choix manuels seront perdus.')) return;
+    setField('allergenes', allergenes);
+  }
+
   async function structurerAvecIA() {
     if (!iaDescription.trim()) return;
     setIaLoading(true);
     try {
       const data = await api.ia.structurer(iaDescription);
-      setForm(f => ({
-        ...f,
-        nom: data.nom || f.nom,
-        categorie: CATEGORIES.includes(data.categorie) ? data.categorie : f.categorie,
-        portions: parseInt(data.portions) || f.portions,
-        tempsPreparation: parseInt(data.tempsPreparation) || f.tempsPreparation,
-        tempsCuisson: parseInt(data.tempsCuisson) || f.tempsCuisson,
-        description: data.description || f.description,
-        allergenes: Array.isArray(data.allergenes) ? data.allergenes.filter(a => CLES_ALLERGENES.includes(a)) : f.allergenes,
-        ingredients: Array.isArray(data.ingredients) && data.ingredients.length > 0
+      setForm(f => {
+        const ingredients = Array.isArray(data.ingredients) && data.ingredients.length > 0
           ? data.ingredients.map(i => ({ nom: i.nom || '', quantite: parseFloat(i.quantite) || 0, unite: UNITES.includes(i.unite) ? i.unite : 'g', prixUnitaire: parseFloat(i.prixUnitaire) || 0, tva: i.tva ?? 10 }))
-          : f.ingredients,
-        etapes: Array.isArray(data.etapes) ? data.etapes : (data.etapes ? [data.etapes] : f.etapes),
-      }));
+          : f.ingredients;
+        const etapes = Array.isArray(data.etapes) ? data.etapes : (data.etapes ? [data.etapes] : f.etapes);
+        const allergenesIA = Array.isArray(data.allergenes) ? data.allergenes.filter(a => CLES_ALLERGENES.includes(a)) : f.allergenes;
+        // Allergènes = réponse de l'IA (filtrée) + détection sur les ingrédients et les étapes, à vérifier avant l'enregistrement.
+        const detectes = detecterAllergenes({ ingredients, etapes }) || [];
+        const allergenes = CLES_ALLERGENES.filter(a => allergenesIA.includes(a) || detectes.includes(a));
+        return {
+          ...f,
+          nom: data.nom || f.nom,
+          categorie: CATEGORIES.includes(data.categorie) ? data.categorie : f.categorie,
+          portions: parseInt(data.portions) || f.portions,
+          tempsPreparation: parseInt(data.tempsPreparation) || f.tempsPreparation,
+          tempsCuisson: parseInt(data.tempsCuisson) || f.tempsCuisson,
+          description: data.description || f.description,
+          allergenes,
+          ingredients,
+          etapes,
+        };
+      });
     } catch (err) {
       const codesAvecMessage = ['quota_ia_atteint', 'ia_indisponible', 'ia_erreur'];
       alert(codesAvecMessage.includes(err?.code) ? err.message : "Erreur lors de l'appel à l'IA.");
@@ -309,7 +329,13 @@ export default function NouvelleRecette() {
 
       {/* Allergenes */}
       <div style={{ ...card, padding: '1.5rem' }}>
-        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text, marginBottom: '1rem' }}>Allergènes</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
+          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text }}>Allergènes</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontSize: '0.75rem', color: T.muted }}>Détection indicative, à vérifier.</span>
+            <button type="button" onClick={recalculerAllergenes} style={btnOutline}>Recalculer depuis la fiche</button>
+          </div>
+        </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
           {ALLERGENES_14.map(({ key: a, label }) => {
             const actif = form.allergenes.includes(a);
