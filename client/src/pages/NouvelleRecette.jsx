@@ -83,8 +83,6 @@ export default function NouvelleRecette() {
       alert('Détection indisponible sur ce navigateur.');
       return;
     }
-    if (form.allergenes.some(a => !allergenes.includes(a))
-      && !window.confirm('Remplacer les allergènes actuels par ceux détectés ? Vos choix manuels seront perdus.')) return;
     setField('allergenes', allergenes);
   }
 
@@ -127,9 +125,13 @@ export default function NouvelleRecette() {
     e.preventDefault();
     if (!form.nom.trim()) return alert('Le nom est obligatoire.');
     setSaving(true);
+    const etapes = Array.isArray(form.etapes) ? form.etapes.filter(Boolean) : [];
+    // Nouvelle fiche : les allergènes détectés s'ajoutent à ceux cochés (jamais de retrait).
+    const detectes = detecterAllergenes({ ingredients: form.ingredients, etapes }) || [];
     const payload = {
       ...form,
-      etapes: Array.isArray(form.etapes) ? form.etapes.filter(Boolean) : [],
+      etapes,
+      allergenes: CLES_ALLERGENES.filter(a => form.allergenes.includes(a) || detectes.includes(a)),
     };
     api.recettes.create(payload)
       .then(data => navigate('/fiches-techniques/' + data.id))

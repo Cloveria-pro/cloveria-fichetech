@@ -143,8 +143,17 @@ export default function FicheTechnique() {
     }).catch((err) => { console.error('[FicheTechnique] load error:', err); setLoading(false); navigate('/fiches-techniques'); });
   }, [id, navigate]);
 
+  // Ajoute seulement les allergènes nouvellement détectés du fait des modifications (version enregistrée
+  // → formulaire) ; un allergène décoché à la main n'est jamais recoché. Détection indisponible : rien n'est ajouté.
   function sauvegarder() {
-    api.recettes.update(id, form)
+    const avant = detecterAllergenes({ ingredients: recette.ingredients, etapes: recette.etapes });
+    const apres = detecterAllergenes({ ingredients: form.ingredients, etapes: form.etapes });
+    const nouveaux = avant && apres ? apres.filter(a => !avant.includes(a)) : [];
+    const coches = form.allergenes || [];
+    const cles = ALLERGENES_14.map(a => a.key);
+    // Une clé hors liste déjà enregistrée (ancienne fiche) est conservée, en fin de liste.
+    const allergenes = [...cles.filter(a => coches.includes(a) || nouveaux.includes(a)), ...coches.filter(a => !cles.includes(a))];
+    api.recettes.update(id, { ...form, allergenes })
       .then(data => { setRecette(data); setForm(data); setEditMode(false); });
   }
 
@@ -210,8 +219,6 @@ export default function FicheTechnique() {
       return;
     }
     const ancienne = form.allergenes || [];
-    if (ancienne.some(a => !allergenes.includes(a))
-      && !window.confirm('Remplacer les allergènes actuels par ceux détectés ? Vos choix manuels seront perdus.')) return;
     if (editMode) {
       setForm(f => ({ ...f, allergenes }));
       return;
