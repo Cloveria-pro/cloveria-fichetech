@@ -18,6 +18,8 @@ function baseUnit(unite) {
 }
 
 const CATEGORIES = ['viande', 'poisson', 'légume', 'produit laitier', 'épice', 'condiment', 'épicerie', 'épicerie fine', 'fruit', 'autre'];
+// Liste des ingrédients : lignes affichées au départ et ajoutées par « Afficher plus ».
+const PAS_LISTE = 30;
 const UNITES = ['kg', 'g', 'L', 'ml', 'pièce', 'c.s', 'c.c'];
 const TVA_OPTIONS = [
   { value: 5.5, label: '5,5%' },
@@ -296,6 +298,9 @@ export default function Ingredients() {
   const [catFilter, setCatFilter] = useState('');
   const [ficheFilter, setFicheFilter] = useState('');
   const [fournisseurFilter, setFournisseurFilter] = useState('');
+  const [limite, setLimite] = useState(PAS_LISTE);
+  // Ingrédient à garder visible après un enregistrement ou un ajout (sa place dans la liste peut changer).
+  const [idARendreVisible, setIdARendreVisible] = useState(null);
   const [editId, setEditId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [showAdd, setShowAdd] = useState(false);
@@ -316,6 +321,11 @@ export default function Ingredients() {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
     else { setSortField(field); setSortDir('asc'); }
   }
+
+  // Liste longue : PAS_LISTE lignes au départ, remises à PAS_LISTE à chaque changement de recherche, de filtre ou de tri.
+  useEffect(() => {
+    setLimite(PAS_LISTE);
+  }, [recherche, catFilter, fournisseurFilter, ficheFilter, sortField, sortDir]);
 
   useEffect(() => {
     Promise.all([
@@ -377,8 +387,26 @@ export default function Ingredients() {
       if (av > bv) return sortDir === 'asc' ? 1 : -1;
       return 0;
     });
+  // Coupure après recherche, filtres et tri ; la ligne en édition reste toujours affichée.
+  const affiches = filtered.filter((item, index) => index < limite || item.id === editId);
+  const restants = filtered.length - affiches.length;
+
+  // Une ligne ne disparaît jamais à cause de la limite : limite = max(limite, position + 1).
+  // Sans effet si l'ingrédient est masqué par la recherche ou un filtre (position -1).
+  function garderVisible(id, liste) {
+    const position = liste.findIndex(i => i.id === id);
+    if (position >= 0) setLimite(l => Math.max(l, position + 1));
+  }
+
+  // Après un enregistrement ou un ajout, la position n'est connue qu'avec la liste à jour.
+  useEffect(() => {
+    if (!idARendreVisible) return;
+    garderVisible(idARendreVisible, filtered);
+    setIdARendreVisible(null);
+  }, [items, idARendreVisible]);
 
   function startEdit(item) {
+    garderVisible(item.id, filtered);
     clearTimeout(autoSaveTimer.current);
     const form = {
       nom: item.nom, categorie: item.categorie, unite: item.unite,
@@ -408,6 +436,7 @@ export default function Ingredients() {
       .then(updated => {
         pushUndo(items);
         setItems(prev => prev.map(i => i.id === id ? updated : i));
+        setIdARendreVisible(id);
         cancelEdit();
       });
   }
@@ -429,6 +458,7 @@ export default function Ingredients() {
       .then(item => {
         pushUndo(items);
         setItems(prev => [...prev, item]);
+        setIdARendreVisible(item.id);
         setMissingFromCatalog(prev => prev.filter(n => n.toLowerCase() !== addForm.nom.toLowerCase()));
         setAddForm(EMPTY);
         setShowAdd(false);
@@ -445,6 +475,7 @@ export default function Ingredients() {
     api.ingredients.update(dupWarning.id, updatedData).then(updated => {
       pushUndo(items);
       setItems(prev => prev.map(i => i.id === dupWarning.id ? updated : i));
+      setIdARendreVisible(dupWarning.id);
       setDupWarning(null);
       setAddForm(EMPTY);
       setShowAdd(false);
@@ -570,7 +601,7 @@ export default function Ingredients() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map(item => (
+            {affiches.map(item => (
               editId === item.id ? (
                 <tr key={item.id} style={{ background: 'rgba(45,106,79,0.03)' }}>
                   <td style={tdStyle}><input value={editForm.nom} onChange={e => updateEditForm(f => ({ ...f, nom: e.target.value }))} style={inputStyle} /></td>
@@ -773,6 +804,12 @@ export default function Ingredients() {
         </table>
         </div>
       </div>
+
+      {restants > 0 && (
+        <button disabled={enEdition} onClick={() => setLimite(l => l + PAS_LISTE)} style={{ ...btnSm, ...styleBloque, marginTop: '0.75rem', border: '1px solid #E5E0D8', background: '#fff', color: T.muted }}>
+          Afficher plus ({restants} {restants === 1 ? 'restant' : 'restants'})
+        </button>
+      )}
 
       {!showAdd && (
         <button disabled={enEdition} onClick={() => { setShowAdd(true); setEditId(null); }} style={{ ...styleBloque, marginTop: '0.75rem', background: 'none', border: '1px dashed #C9A84C', color: T.muted, borderRadius: '8px', padding: '0.5rem 1.25rem', cursor: 'pointer', fontSize: '0.85rem', width: '100%' }}>
