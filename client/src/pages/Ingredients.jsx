@@ -381,8 +381,8 @@ export default function Ingredients() {
       (!ficheFilterNorms || ficheFilterNorms.has(norm(i.nom)))
     )
     .sort((a, b) => {
-      const av = sortField === 'prixUnitaire' ? a.prixUnitaire : (a[sortField] || '').toLowerCase();
-      const bv = sortField === 'prixUnitaire' ? b.prixUnitaire : (b[sortField] || '').toLowerCase();
+      const av = sortField === 'prixUnitaire' ? a.prixUnitaire : normaliserTexte(a[sortField]);
+      const bv = sortField === 'prixUnitaire' ? b.prixUnitaire : normaliserTexte(b[sortField]);
       if (av < bv) return sortDir === 'asc' ? -1 : 1;
       if (av > bv) return sortDir === 'asc' ? 1 : -1;
       return 0;
