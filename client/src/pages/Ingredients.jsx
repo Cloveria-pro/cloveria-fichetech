@@ -295,6 +295,7 @@ export default function Ingredients() {
   const [recherche, setRecherche] = useState('');
   const [catFilter, setCatFilter] = useState('');
   const [ficheFilter, setFicheFilter] = useState('');
+  const [fournisseurFilter, setFournisseurFilter] = useState('');
   const [editId, setEditId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [showAdd, setShowAdd] = useState(false);
@@ -351,10 +352,22 @@ export default function Ingredients() {
     ? new Set((recettes.find(r => r.id === ficheFilter)?.ingredients || []).map(fi => norm(fi.nom)))
     : null;
 
+  // Fournisseurs distincts (regroupés sans accents ni casse), libellé = première graphie rencontrée.
+  const fournisseursOptions = [...items.reduce((m, i) => {
+    const cle = normaliserTexte(i.fournisseur);
+    if (cle && !m.has(cle)) m.set(cle, String(i.fournisseur).trim());
+    return m;
+  }, new Map())]
+    .map(([cle, libelle]) => ({ cle, libelle }))
+    .sort((a, b) => a.libelle.localeCompare(b.libelle, 'fr'));
+  // Fournisseur choisi qui n'existe plus (ingrédient modifié ou supprimé) : aucun filtre.
+  const fournisseurActif = fournisseursOptions.some(o => o.cle === fournisseurFilter) ? fournisseurFilter : '';
+
   const filtered = items
     .filter(i =>
       (normaliserTexte(i.nom).includes(normaliserTexte(recherche)) || normaliserTexte(i.fournisseur).includes(normaliserTexte(recherche))) &&
       (catFilter === '' || i.categorie === catFilter) &&
+      (!fournisseurActif || normaliserTexte(i.fournisseur) === fournisseurActif) &&
       (!ficheFilterNorms || ficheFilterNorms.has(norm(i.nom)))
     )
     .sort((a, b) => {
@@ -502,7 +515,7 @@ export default function Ingredients() {
       {/* Filtres */}
       <div {...inertSiEdition} style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', ...styleBloque }}>
         <input
-          type="search" placeholder="Rechercher un ingrédient ou un fournisseur..."
+          type="search" placeholder="Rechercher un ingrédient..."
           value={recherche} onChange={e => setRecherche(e.target.value)}
           style={{ ...inputStyle, width: '260px' }}
         />
@@ -511,6 +524,13 @@ export default function Ingredients() {
           <option value="">Toutes les catégories</option>
           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
+        {fournisseursOptions.length > 0 && (
+          <select value={fournisseurActif} onChange={e => setFournisseurFilter(e.target.value)}
+            style={{ ...inputStyle, width: 'auto', cursor: 'pointer', borderColor: fournisseurActif ? '#2D6A4F' : '#E5E0D8' }}>
+            <option value="">Tous les fournisseurs</option>
+            {fournisseursOptions.map(f => <option key={f.cle} value={f.cle}>{f.libelle}</option>)}
+          </select>
+        )}
         {recettes.length > 0 && (
           <select value={ficheFilter} onChange={e => setFicheFilter(e.target.value)}
             style={{ ...inputStyle, width: 'auto', cursor: 'pointer', borderColor: ficheFilter ? '#2D6A4F' : '#E5E0D8' }}>
