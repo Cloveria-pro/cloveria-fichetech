@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
-import { coutPortionHT, foodCostRecetteHT } from '../utils.js';
+import { coutPortionHT, foodCostRecetteHT, normaliserTexte } from '../utils.js';
 import ImportFicheModal from '../components/ImportFicheModal.jsx';
 import { libelleAllergene } from '../allergenes.js';
 
@@ -209,7 +209,7 @@ export default function Recettes() {
   const allergenesDispo = [...new Set(recettes.flatMap(r => r.allergenes || []))].sort();
 
   const filtrees = recettes.filter(r => {
-    const matchRecherche = !recherche || r.nom.toLowerCase().includes(recherche.toLowerCase()) || (r.categorie || '').toLowerCase().includes(recherche.toLowerCase());
+    const matchRecherche = !recherche || normaliserTexte(r.nom).includes(normaliserTexte(recherche)) || normaliserTexte(r.categorie).includes(normaliserTexte(recherche));
     const matchCarte = !carteFilter || carteRecettesIds?.has(r.id);
     const matchStatus = !statusFilter || getStatus(r) === statusFilter;
     const matchCategorie = !categorieFilter || sectionFor(r.categorie) === categorieFilter;

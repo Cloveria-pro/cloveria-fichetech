@@ -31,6 +31,17 @@ export function parseDecimal(texte) {
   return Number.isFinite(n) ? n : null;
 }
 
+// Texte comparable pour les recherches : minuscules, œ/æ développés, accents retirés, espaces réduits.
+// Ne lève jamais d'exception : null, undefined et nombres donnent une chaîne.
+export function normaliserTexte(s) {
+  return String(s ?? '')
+    .toLowerCase()
+    .replace(/œ/g, 'oe').replace(/æ/g, 'ae')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // Affichage d'une quantité : jusqu'à 3 décimales sans zéros inutiles (0.008, 0.08, 1.25) ;
 // une petite quantité non nulle qui s'arrondirait à 0 garde 2 chiffres significatifs (0.0002).
 export function formatQuantite(q) {

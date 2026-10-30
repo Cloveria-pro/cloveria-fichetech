@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { calculerCoutIngredient } from '../conversions.js';
+import { normaliserTexte } from '../utils.js';
 
 const inputStyle = {
   padding: '0.45rem 0.7rem', border: '1px solid #E5E0D8', borderRadius: '6px',
@@ -38,11 +39,11 @@ export default function IngredientAutocomplete({ value, onChange, catalog, sousR
   }, []);
 
   const catSuggestions = query.length > 0
-    ? catalog.filter(c => c.nom.toLowerCase().includes(query.toLowerCase())).slice(0, 4)
+    ? catalog.filter(c => normaliserTexte(c.nom).includes(normaliserTexte(query))).slice(0, 4)
     : [];
 
   const srSuggestions = query.length > 0
-    ? sousRecettes.filter(sr => sr.nom.toLowerCase().includes(query.toLowerCase())).slice(0, 3)
+    ? sousRecettes.filter(sr => normaliserTexte(sr.nom).includes(normaliserTexte(query))).slice(0, 3)
     : [];
 
   const hasSuggestions = catSuggestions.length > 0 || srSuggestions.length > 0;

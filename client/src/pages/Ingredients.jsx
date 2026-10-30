@@ -2,7 +2,7 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { api, API_URL, authHeaders } from '../api.js';
 import { calculerCoutIngredient } from '../conversions.js';
-import { foodCostHT } from '../utils.js';
+import { foodCostHT, normaliserTexte } from '../utils.js';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
 import DecimalInput from '../components/DecimalInput.jsx';
 
@@ -353,7 +353,7 @@ export default function Ingredients() {
 
   const filtered = items
     .filter(i =>
-      i.nom.toLowerCase().includes(recherche.toLowerCase()) &&
+      (normaliserTexte(i.nom).includes(normaliserTexte(recherche)) || normaliserTexte(i.fournisseur).includes(normaliserTexte(recherche))) &&
       (catFilter === '' || i.categorie === catFilter) &&
       (!ficheFilterNorms || ficheFilterNorms.has(norm(i.nom)))
     )
@@ -439,11 +439,11 @@ export default function Ingredients() {
   }
 
   const nomSuggestions = missingFromCatalog.filter(n =>
-    addForm.nom.length === 0 || n.toLowerCase().includes(addForm.nom.toLowerCase())
+    addForm.nom.length === 0 || normaliserTexte(n).includes(normaliserTexte(addForm.nom))
   ).slice(0, 8);
 
   const catalogSimilar = (showNomSuggestions && addForm.nom.trim().length >= 2 && !dupWarning)
-    ? items.filter(i => i.nom.toLowerCase().includes(addForm.nom.toLowerCase().trim())).slice(0, 4)
+    ? items.filter(i => normaliserTexte(i.nom).includes(normaliserTexte(addForm.nom))).slice(0, 4)
     : [];
 
   const thStyle = { padding: '0.6rem 1rem', color: T.muted, fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', borderBottom: '1px solid #F3EFE8', whiteSpace: 'nowrap' };
@@ -502,7 +502,7 @@ export default function Ingredients() {
       {/* Filtres */}
       <div {...inertSiEdition} style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap', ...styleBloque }}>
         <input
-          type="search" placeholder="Rechercher un ingrédient..."
+          type="search" placeholder="Rechercher un ingrédient ou un fournisseur..."
           value={recherche} onChange={e => setRecherche(e.target.value)}
           style={{ ...inputStyle, width: '260px' }}
         />

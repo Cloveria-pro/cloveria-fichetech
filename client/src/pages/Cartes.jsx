@@ -4,7 +4,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from 
 import { SortableContext, verticalListSortingStrategy, rectSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
-import { coutIng, foodCostHT } from '../utils.js';
+import { coutIng, foodCostHT, normaliserTexte } from '../utils.js';
 import { api } from '../api.js';
 import DecimalInput from '../components/DecimalInput.jsx';
 import { ALLERGENES_14 } from '../allergenes.js';
@@ -67,7 +67,7 @@ function ListeCartes({ cartes, onNew, onOpen, onDelete }) {
   }, [cartes]);
 
   const filtered = search
-    ? localCartes.filter(c => c.nom.toLowerCase().includes(search.toLowerCase()))
+    ? localCartes.filter(c => normaliserTexte(c.nom).includes(normaliserTexte(search)))
     : localCartes;
 
   function handleDragEnd(event) {
@@ -729,7 +729,7 @@ function EditeurCarte({ carte, recettes, parametres, onSave, onBack, onAutoSave,
   const [showAddSection, setShowAddSection] = useState(false);
 
   const filteredRec = recettes.filter(r =>
-    r.nom.toLowerCase().includes(search.toLowerCase()) &&
+    normaliserTexte(r.nom).includes(normaliserTexte(search)) &&
     (catFilter === '' || (r.categorie || '').toLowerCase() === catFilter.toLowerCase())
   );
 
