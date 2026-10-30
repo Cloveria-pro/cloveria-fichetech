@@ -390,7 +390,7 @@ export default function FicheTechnique() {
     const portionLabel = couverts !== form.portions ? ' — ajusté pour ' + couverts + ' couverts' : '';
     const fmt = form.photoFormat || 'paysage';
     const photoContainerStyle = fmt === 'paysage'
-      ? 'width:100%;height:200px'
+      ? 'width:450px;height:300px;margin-left:auto;margin-right:auto'
       : fmt === 'carre'
       ? 'width:300px;height:300px;margin:0 auto'
       : 'width:200px;height:300px;margin:0 auto';
@@ -600,7 +600,7 @@ export default function FicheTechnique() {
       {!editMode && recette.photo && (() => {
         const fmt = recette.photoFormat || 'paysage';
         const containerStyle = fmt === 'paysage'
-          ? { width: '100%', height: '220px' }
+          ? { width: '100%', maxWidth: '600px', marginLeft: 'auto', marginRight: 'auto', aspectRatio: '3 / 2' }
           : fmt === 'carre'
           ? { width: '400px', height: '400px', margin: '0 auto' }
           : { width: '300px', height: '400px', margin: '0 auto' };
@@ -626,7 +626,7 @@ export default function FicheTechnique() {
               {(() => {
                 const fmt = form.photoFormat || 'paysage';
                 const containerStyle = fmt === 'paysage'
-                  ? { width: '100%', height: '220px' }
+                  ? { width: '100%', maxWidth: '600px', marginLeft: 'auto', marginRight: 'auto', aspectRatio: '3 / 2' }
                   : fmt === 'carre'
                   ? { width: '400px', height: '400px', margin: '0 auto' }
                   : { width: '300px', height: '400px', margin: '0 auto' };
