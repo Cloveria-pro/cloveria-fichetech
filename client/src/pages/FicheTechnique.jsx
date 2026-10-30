@@ -395,7 +395,7 @@ export default function FicheTechnique() {
       ? 'width:300px;height:300px;margin:0 auto'
       : 'width:200px;height:300px;margin:0 auto';
     const photoHtml = form.photo
-      ? '<div style="margin-bottom:20px;border-radius:8px;overflow:hidden;' + photoContainerStyle + '"><img src="' + form.photo + '" style="width:100%;height:100%;object-fit:cover;display:block;object-position:center" /></div>'
+      ? '<div style="margin-bottom:20px;border-radius:8px;overflow:hidden;' + photoContainerStyle + ';background-image:url(&quot;' + form.photo + '&quot;);background-size:cover;background-position:center;background-repeat:no-repeat"></div>'
       : '';
 
     const html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Fiche — ' + recette.nom + '</title><style>'
