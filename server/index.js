@@ -36,6 +36,9 @@ app.use(cors({
   credentials: true,
 }));
 app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), stripeWebhook);
+// Fiches : corps jusqu'à 1 Mo (photo réduite côté client). Monté avant le parseur global, qui ne relit
+// pas un corps déjà analysé ; au-delà, l'erreur 413 passe par le middleware d'erreurs habituel.
+app.use('/api/recettes', express.json({ limit: '1mb' }));
 app.use(express.json());
 
 // ── Routes publiques ────────────────────────────────────────────────────────

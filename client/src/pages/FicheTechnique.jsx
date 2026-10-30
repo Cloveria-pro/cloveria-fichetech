@@ -60,6 +60,38 @@ function baseUnit(unite) {
   if (['L', 'l', 'ml', 'cl', 'c.c', 'c.s', 'c.c.', 'c.s.', 'càc', 'càs'].includes(unite)) return 'L';
   return unite;
 }
+// Photo du plat réduite avant l'envoi : côté le plus long à 1000 px maximum (jamais agrandie), JPEG qualité 0,8,
+// fond blanc sous les zones transparentes. L'orientation EXIF est appliquée par le navigateur au décodage de
+// l'image (comportement par défaut, image-orientation: from-image). Rejet si l'image ne peut pas être décodée.
+function reduirePhoto(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const largeur = img.naturalWidth;
+        const hauteur = img.naturalHeight;
+        if (!largeur || !hauteur) throw new Error('image vide');
+        const echelle = Math.min(1, 1000 / Math.max(largeur, hauteur));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(largeur * echelle));
+        canvas.height = Math.max(1, Math.round(hauteur * echelle));
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      } catch (e) {
+        reject(e);
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image illisible')); };
+    img.src = url;
+  });
+}
+
 const CHART_COLORS = ['#2D6A4F','#C9A84C','#4F86C6','#E05C5C','#7B5EA7','#E09F3E','#8DB580','#6E9EBF','#E8A87C','#B8B0A4'];
 const TVA_OPTIONS = [
   { value: 5.5, label: '5.5% — Alim. bruts' },
@@ -154,26 +186,33 @@ export default function FicheTechnique() {
     // Une clé hors liste déjà enregistrée (ancienne fiche) est conservée, en fin de liste.
     const allergenes = [...cles.filter(a => coches.includes(a) || nouveaux.includes(a)), ...coches.filter(a => !cles.includes(a))];
     api.recettes.update(id, { ...form, allergenes })
-      .then(data => { setRecette(data); setForm(data); setEditMode(false); });
+      .then(data => { setRecette(data); setForm(data); setEditMode(false); })
+      .catch(() => {
+        setSaveToast('Enregistrement impossible. Vos modifications sont toujours à l\'écran : réessayez.');
+        setTimeout(() => setSaveToast(''), 4000);
+      });
   }
 
   function handlePhotoUpload(file, saveImmediately = false) {
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) { alert('Photo trop volumineuse (max 10 Mo)'); return; }
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { alert('Format non supporté. Utilisez JPEG, PNG ou WebP.'); return; }
-    const reader = new FileReader();
-    reader.onload = e => {
-      const photo = e.target.result;
+    reduirePhoto(file).then(photo => {
       if (saveImmediately) {
+        const ancienne = recette.photo;
         const updated = { ...form, photo };
         setForm(updated);
         setRecette(prev => ({ ...prev, photo }));
-        api.recettes.update(id, updated).catch(() => {});
+        api.recettes.update(id, updated).catch(() => {
+          setForm(f => ({ ...f, photo: ancienne }));
+          setRecette(prev => ({ ...prev, photo: ancienne }));
+          setSaveToast('Photo non enregistrée. Réessayez avec une autre photo.');
+          setTimeout(() => setSaveToast(''), 4000);
+        });
       } else {
         setForm(f => ({ ...f, photo }));
       }
-    };
-    reader.readAsDataURL(file);
+    }, () => alert('Format non supporté. Utilisez JPEG, PNG ou WebP.'));
   }
 
   function updateIngredient(idx, fields) {
