@@ -418,6 +418,7 @@ function VueCarte({ carte, recettes, parametres, onEdit, onBack, onAutoSave, onP
 <div style="margin-bottom:6px;font-size:9px;font-weight:600">${etablissement} · ${carte.nom} · ${date}</div>
 <table><thead><tr><th style="background:#2D6A4F;color:#fff;text-align:left;padding:4px 8px;font-size:8px;min-width:140px">Plat</th>${headers}</tr></thead><tbody>${rows}</tbody></table>
 <div style="margin-top:6px;font-size:6.5px;color:#666;line-height:1.8">${footer}</div>
+<div style="margin-top:2px;font-size:6.5px;color:#444;line-height:1.5">Information indicative établie à partir des fiches techniques de l'établissement, à vérifier avant service. Une case vide ne garantit pas l'absence d'allergène.</div>
 </body></html>`;
       await downloadPDF(html, `allergenes-serveurs-${(carte.nom || 'carte').replace(/[^a-z0-9]/gi, '-').toLowerCase()}.pdf`, true);
     } finally {

@@ -49,7 +49,7 @@ const FAQ = [
   },
   {
     q: "Comment exporter les allergènes ?",
-    a: "Dans une carte, cliquez \"Export Allergènes\" pour générer un tableau réglementaire (14 allergènes) prêt à imprimer ou afficher.",
+    a: "Dans une carte, cliquez sur \"Allergènes\" pour générer un tableau des 14 allergènes réglementaires, prêt à imprimer. Les allergènes viennent de vos fiches : vérifiez-les avant de l'utiliser.",
   },
 ];
 

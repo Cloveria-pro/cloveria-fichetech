@@ -383,7 +383,7 @@ export default function FicheTechnique() {
       + '</table></div>'
       + '<div class="section"><div class="section-title">Analyse financière</div><div style="display:flex;gap:10px">' + financeCards + '</div></div>'
       + (donutSVG ? '<div class="section"><div class="section-title">Répartition des coûts</div>' + donutSVG + '</div>' : '')
-      + (allergenesBadges ? '<div class="section"><div class="section-title">Allergènes</div><div>' + allergenesBadges + '</div></div>' : '')
+      + (allergenesBadges ? '<div class="section"><div class="section-title">Allergènes</div><div style="font-size:0.75rem;color:#9CA3AF;margin:-4px 0 6px">Indicatif, à vérifier</div><div>' + allergenesBadges + '</div></div>' : '')
       + ((recette.etapes || []).length > 0 ? '<div class="section"><div class="section-title">Étapes de préparation</div>' + etapesHtml + '</div>' : '')
       + '<div style="position:fixed;bottom:12mm;left:15mm;right:15mm;border-top:1px solid #E5E0D8;padding-top:6px;display:flex;justify-content:space-between;font-size:0.68rem;color:#9CA3AF"><span>Document confidentiel — ' + (parametres.etablissement || 'Restaurant CloverIA') + '</span><span>CloverIA FicheTech · ' + date + '</span></div>'
       + '</body></html>';
