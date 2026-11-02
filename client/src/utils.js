@@ -42,6 +42,13 @@ export function normaliserTexte(s) {
     .trim();
 }
 
+// Unité de base d'un prix unitaire (kg, L, ou l'unité elle-même) ; copie de baseUnit de pages/Ingredients.jsx.
+export function baseUnit(unite) {
+  if (['kg', 'g', 'mg'].includes(unite)) return 'kg';
+  if (['L', 'l', 'ml', 'cl', 'c.c', 'c.s', 'c.c.', 'c.s.', 'càc', 'càs'].includes(unite)) return 'L';
+  return unite;
+}
+
 // Affichage d'une quantité : jusqu'à 3 décimales sans zéros inutiles (0.008, 0.08, 1.25) ;
 // une petite quantité non nulle qui s'arrondirait à 0 garde 2 chiffres significatifs (0.0002).
 export function formatQuantite(q) {

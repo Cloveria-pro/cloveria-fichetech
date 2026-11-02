@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { ItemModal } from './Organisation.jsx';
-import { foodCostRecetteHT, prixVenteHT } from '../utils.js';
+import { foodCostRecetteHT, prixVenteHT, normaliserTexte, baseUnit } from '../utils.js';
 import { getAnecdoteDuJour } from '../data/anecdotes.js';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
+
+// Fenêtre d'historique de la page Ingrédients, chargée seulement au premier clic (la page Ingrédients reste un chunk séparé).
+const HistoriqueModal = lazy(() => import('./Ingredients.jsx').then(m => ({ default: m.HistoriqueModal })));
 
 const T = { green: '#2D6A4F', orange: '#D97706', red: '#DC2626', text: '#1C2B1E', muted: '#6B7280' };
 const card = { background: '#fff', borderRadius: '16px', boxShadow: '0 2px 16px rgba(0,0,0,0.07)' };
@@ -28,6 +31,8 @@ export default function Dashboard() {
   const [cartes, setCartes] = useState([]);
   const [selectedCarteId, setSelectedCarteId] = useState(null);
   const [drawerItem, setDrawerItem] = useState(undefined);
+  // Ingrédient dont la fenêtre d'historique est ouverte (« Prix qui bougent »).
+  const [histItem, setHistItem] = useState(null);
   const [loading, setLoading] = useState(true);
   // Seul le chargement des fiches peut échouer ici (les autres appels ont leur propre catch).
   const [erreurChargement, setErreurChargement] = useState(false);
@@ -123,6 +128,45 @@ export default function Dashboard() {
     return actions.slice(0, 3);
   })();
 
+  // ── Prix qui bougent : 30 derniers jours, historique regroupé par nom normalisé (majuscules et accents ignorés) ──
+  // Référence = prix en vigueur à J-30 (dernière entrée avant la fenêtre), sinon première entrée de la fenêtre.
+  // « Nouveau » : pas de référence, unité de base différente ou prix de référence nul. 5 lignes au plus, les plus récentes d'abord.
+  const prixQuiBougent = (() => {
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
+    const parNom = new Map();
+    historique.forEach(h => {
+      const date = new Date(h.date);
+      const cle = normaliserTexte(h.nom);
+      // Comme la fenêtre d'historique : les prix à 0 (ou absents) sont ignorés.
+      if (isNaN(date) || !cle || !(h.prix > 0)) return;
+      if (!parNom.has(cle)) parNom.set(cle, []);
+      parNom.get(cle).push({ ...h, date });
+    });
+    const lignes = [];
+    parNom.forEach((entrees, cle) => {
+      entrees.sort((a, b) => a.date - b.date);
+      const last = entrees[entrees.length - 1];
+      if (last.date < cutoff) return;
+      const avant = entrees.filter(e => e.date < cutoff);
+      const dansFenetre = entrees.filter(e => e.date >= cutoff);
+      const ref = avant.length > 0 ? avant[avant.length - 1] : dansFenetre.length >= 2 ? dansFenetre[0] : null;
+      const nouveau = !ref || baseUnit(ref.unite) !== baseUnit(last.unite) || !(ref.prix > 0);
+      if (!nouveau && last.prix === ref.prix) return;
+      const nbFiches = recettes.filter(r => (r.ingredients || []).some(i => normaliserTexte(i.nom) === cle)).length;
+      if (nbFiches === 0) return;
+      lignes.push({
+        nom: last.nom,
+        unite: baseUnit(last.unite),
+        prix: last.prix,
+        ancienPrix: nouveau ? null : ref.prix,
+        variation: nouveau ? null : (last.prix - ref.prix) / ref.prix * 100,
+        nbFiches,
+        date: last.date,
+      });
+    });
+    return lignes.sort((a, b) => b.date - a.date).slice(0, 5);
+  })();
+
   const metaStyle = { fontSize: '0.65rem', fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '3px' };
   const lienStyle = { fontSize: '0.8rem', fontWeight: 700, textDecoration: 'none' };
   const survolLien = {
@@ -169,6 +213,56 @@ export default function Dashboard() {
       <p style={{ fontSize: '0.78rem', color: T.muted, lineHeight: 1.6, fontStyle: 'italic', margin: 0 }}>
         {anecdote}
       </p>
+    </div>
+  );
+
+  // Chaque ligne est un bouton (clavier) qui ouvre la fenêtre d'historique de l'ingrédient.
+  const prixWidget = (
+    <div style={{ ...card, overflow: 'hidden' }}>
+      <style>{'.dash-prix:hover { background: #FAFAF8; } .dash-prix:focus-visible { outline: 2px solid #2D6A4F; outline-offset: -2px; }'}</style>
+      <div style={{ padding: '1.1rem 1.5rem', borderBottom: '1px solid #F3EFE8', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={metaStyle}>Prix qui bougent</div>
+        <div style={metaStyle}>30 jours</div>
+      </div>
+      {prixQuiBougent.length === 0 ? (
+        <div style={{ padding: '1.75rem 1.5rem', fontSize: '0.82rem', color: T.muted, textAlign: 'center', lineHeight: 1.6 }}>
+          Aucun prix n'a changé ces 30 derniers jours.
+        </div>
+      ) : (
+        <div>
+          {prixQuiBougent.map((p, i) => {
+            const hausse = p.variation !== null && p.variation > 0;
+            const pastille = p.variation === null
+              ? { texte: 'Nouveau', couleur: T.muted, fond: '#F3EFE8' }
+              : hausse
+                ? { texte: `▲ ${p.variation.toFixed(1)}%`, couleur: T.red, fond: 'rgba(220,38,38,0.08)' }
+                : { texte: `▼ ${Math.abs(p.variation).toFixed(1)}%`, couleur: T.green, fond: 'rgba(45,106,79,0.08)' };
+            return (
+              <button key={p.nom} type="button" className="dash-prix" onClick={() => setHistItem({ nom: p.nom, unite: p.unite, prixUnitaire: p.prix })} style={{
+                display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%',
+                padding: '0.8rem 1.5rem', background: 'none', border: 'none',
+                borderBottom: i < prixQuiBougent.length - 1 ? '1px solid #F9F7F4' : 'none',
+                cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 600, color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {p.nom}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: T.muted, marginTop: '2px' }}>
+                    {p.ancienPrix !== null ? `${p.ancienPrix.toFixed(2)} → ` : ''}{p.prix.toFixed(2)} € / {p.unite} · {p.nbFiches} fiche{p.nbFiches > 1 ? 's' : ''}
+                  </div>
+                </div>
+                <span title={p.variation === null ? "Premier prix enregistré : pas encore d'ancien prix à comparer" : undefined} style={{
+                  fontSize: '0.7rem', fontWeight: 700, color: pastille.couleur, background: pastille.fond,
+                  borderRadius: '20px', padding: '2px 8px', flexShrink: 0, whiteSpace: 'nowrap',
+                }}>
+                  {pastille.texte}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 
@@ -458,6 +552,7 @@ export default function Dashboard() {
 
           {uneColonne && (
             <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {prixWidget}
               {agendaWidget}
               {anecdoteWidget}
             </div>
@@ -467,6 +562,7 @@ export default function Dashboard() {
 
         {!uneColonne && (
           <div style={{ position: 'sticky', top: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {prixWidget}
             {agendaWidget}
             {anecdoteWidget}
           </div>
@@ -480,6 +576,12 @@ export default function Dashboard() {
           onSave={handleAgendaSave}
           onClose={() => setDrawerItem(undefined)}
         />
+      )}
+
+      {histItem && (
+        <Suspense fallback={null}>
+          <HistoriqueModal item={histItem} onClose={() => setHistItem(null)} recettes={recettes} params={params} />
+        </Suspense>
       )}
 
     </div>

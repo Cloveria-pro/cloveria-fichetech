@@ -84,7 +84,7 @@ function ingredientModifie(form, reference) {
 }
 
 /* ─── Modal historique des prix ─────────────────────────────────────────── */
-function HistoriqueModal({ item, onClose, recettes, params }) {
+export function HistoriqueModal({ item, onClose, recettes, params }) {
   const [data, setData] = useState([]);
 
   useEffect(() => {
