@@ -17,7 +17,7 @@ function baseUnit(unite) {
   return unite;
 }
 
-const CATEGORIES = ['viande', 'poisson', 'légume', 'produit laitier', 'épice', 'condiment', 'épicerie', 'épicerie fine', 'fruit', 'autre'];
+const CATEGORIES = ['viande', 'poisson', 'légume', 'produit laitier', 'épice', 'condiment', 'épicerie', 'épicerie fine', 'fruit', 'boisson', 'autre'];
 // Liste des ingrédients : lignes affichées au départ et ajoutées par « Afficher plus ».
 const PAS_LISTE = 30;
 const UNITES = ['kg', 'g', 'L', 'ml', 'pièce', 'c.s', 'c.c'];
@@ -398,7 +398,7 @@ export default function Ingredients() {
   const filtered = items
     .filter(i =>
       (normaliserTexte(i.nom).includes(normaliserTexte(recherche)) || normaliserTexte(i.fournisseur).includes(normaliserTexte(recherche))) &&
-      (catFilter === '' || i.categorie === catFilter) &&
+      (catFilter === '' || (catFilter === '__aucune__' ? !String(i.categorie ?? '').trim() : i.categorie === catFilter)) &&
       (!fournisseurActif || normaliserTexte(i.fournisseur) === fournisseurActif) &&
       (!ficheFilterNorms || ficheFilterNorms.has(norm(i.nom)))
     )
@@ -431,7 +431,7 @@ export default function Ingredients() {
     garderVisible(item.id, filtered);
     clearTimeout(autoSaveTimer.current);
     const form = {
-      nom: item.nom, categorie: item.categorie, unite: item.unite,
+      nom: item.nom, categorie: item.categorie ?? '', unite: item.unite,
       prixUnitaire: item.prixUnitaire, tva: item.tva ?? 10,
       fournisseur: item.fournisseur || '',
       fournisseurs: item.fournisseurs || [],
@@ -578,6 +578,7 @@ export default function Ingredients() {
           style={{ ...inputStyle, width: 'auto', cursor: 'pointer' }}>
           <option value="">Toutes les catégories</option>
           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          <option value="__aucune__">Non classé</option>
         </select>
         {fournisseursOptions.length > 0 && (
           <select value={fournisseurActif} onChange={e => setFournisseurFilter(e.target.value)}
@@ -645,7 +646,8 @@ export default function Ingredients() {
                   <td style={tdStyle} colSpan={2}><input value={editForm.nom} onChange={e => updateEditForm(f => ({ ...f, nom: e.target.value }))} style={inputStyle} /></td>
                   <td style={tdStyle}>
                     <select value={editForm.categorie} onChange={e => updateEditForm(f => ({ ...f, categorie: e.target.value }))} style={{ ...inputStyle, minWidth: '136px' }}>
-                      {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      <option value="">non classé</option>
+                      {(editForm.categorie === '' || CATEGORIES.includes(editForm.categorie) ? CATEGORIES : [...CATEGORIES, editForm.categorie]).map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </td>
                   <td style={tdStyle}>
@@ -800,6 +802,7 @@ export default function Ingredients() {
                 </td>
                 <td style={{ padding: '0.75rem 0.7rem' }}>
                   <select value={addForm.categorie} onChange={e => setAddForm(f => ({ ...f, categorie: e.target.value }))} style={{ ...inputStyle, minWidth: '136px' }}>
+                    <option value="">non classé</option>
                     {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </td>
