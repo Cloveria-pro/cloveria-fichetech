@@ -90,7 +90,7 @@ function HistoriqueModal({ item, onClose, recettes, params }) {
 
   function varSince(isoDate) {
     if (!last) return null;
-    const ref = [...data].find(d => d.date >= isoDate);
+    const ref = [...data].reverse().find(d => d.date <= isoDate);
     if (!ref || ref.prix === 0) return null;
     return (last.prix - ref.prix) / ref.prix * 100;
   }
@@ -101,10 +101,10 @@ function HistoriqueModal({ item, onClose, recettes, params }) {
   const m6 = new Date(); m6.setMonth(m6.getMonth() - 6);
 
   const stats = [
-    { label: 'vs précédent', val: data.length >= 2 && data[data.length - 2].prix > 0 ? (last.prix - data[data.length - 2].prix) / data[data.length - 2].prix * 100 : null },
-    { label: '1 mois', val: varSince(m1.toISOString().slice(0, 10)) },
-    { label: '3 mois', val: varSince(m3.toISOString().slice(0, 10)) },
-    { label: '6 mois', val: varSince(m6.toISOString().slice(0, 10)) },
+    { label: 'Dernier changement', val: data.length >= 2 && data[data.length - 2].prix > 0 ? (last.prix - data[data.length - 2].prix) / data[data.length - 2].prix * 100 : null },
+    { label: 'Sur 1 mois', val: varSince(m1.toISOString().slice(0, 10)) },
+    { label: 'Sur 3 mois', val: varSince(m3.toISOString().slice(0, 10)) },
+    { label: 'Sur 6 mois', val: varSince(m6.toISOString().slice(0, 10)) },
   ].filter(s => s.val !== null);
 
   return (
@@ -124,10 +124,10 @@ function HistoriqueModal({ item, onClose, recettes, params }) {
             {stats.length > 0 && (
               <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
                 {stats.map(({ label, val }) => (
-                  <div key={label} style={{ background: val <= 0 ? '#DCFCE7' : '#FEE2E2', borderRadius: '8px', padding: '0.5rem 0.875rem', textAlign: 'center', minWidth: '80px' }}>
+                  <div key={label} style={{ background: val === 0 ? '#F3EFE8' : val < 0 ? '#DCFCE7' : '#FEE2E2', borderRadius: '8px', padding: '0.5rem 0.875rem', textAlign: 'center', minWidth: '80px' }}>
                     <div style={{ fontSize: '0.65rem', color: T.muted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '2px' }}>{label}</div>
-                    <div style={{ fontSize: '1rem', fontWeight: 700, color: val <= 0 ? '#16a34a' : '#dc2626' }}>
-                      {val <= 0 ? '▼' : '▲'} {Math.abs(val).toFixed(1)}%
+                    <div style={{ fontSize: '1rem', fontWeight: 700, color: val === 0 ? T.muted : val < 0 ? '#16a34a' : '#dc2626' }}>
+                      {val === 0 ? '' : val < 0 ? '▼ ' : '▲ '}{Math.abs(val).toFixed(1)}%
                     </div>
                   </div>
                 ))}
@@ -136,12 +136,12 @@ function HistoriqueModal({ item, onClose, recettes, params }) {
             <ResponsiveContainer width="100%" height={180}>
               <LineChart data={data} margin={{ top: 4, right: 12, left: 0, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3EFE8" />
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: T.muted }} tickFormatter={v => {
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: T.muted }} minTickGap={16} tickFormatter={v => {
                   const d = new Date(v);
-                  return isNaN(d) ? v : `${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+                  return isNaN(d) ? v : `${d.getDate()}/${d.getMonth()+1}`;
                 }} />
                 <YAxis tick={{ fontSize: 10, fill: T.muted }} domain={['auto', 'auto']} width={48} />
-                <Tooltip formatter={(v, n, p) => [`${v.toFixed(2)} EUR/${p.payload.unite}`, 'Prix']} />
+                <Tooltip formatter={(v, n, p) => [`${v.toFixed(2)} EUR/${baseUnit(p.payload.unite)}`, 'Prix']} />
                 <Line type="monotone" dataKey="prix" stroke={T.green} strokeWidth={2} dot={{ r: 3, fill: T.green }} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
@@ -157,7 +157,7 @@ function HistoriqueModal({ item, onClose, recettes, params }) {
                 {[...data].reverse().map((d, i) => (
                   <tr key={i} style={{ borderBottom: '1px solid #F9F7F4' }}>
                     <td style={{ padding: '4px 8px', color: T.muted }}>{d.date.length > 10 ? d.date.slice(0, 19).replace('T', ' ') : d.date}</td>
-                    <td style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 700, color: T.green }}>{d.prix.toFixed(2)} EUR/{d.unite}</td>
+                    <td style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 700, color: T.green }}>{d.prix.toFixed(2)} EUR/{baseUnit(d.unite)}</td>
                     <td style={{ padding: '4px 8px', color: T.muted }}>{d.fournisseur || '—'}</td>
                     <td style={{ padding: '4px 8px', textAlign: 'right' }}>
                       <button onClick={() => supprimerEntree(d)}
@@ -215,7 +215,7 @@ function HistoriqueModal({ item, onClose, recettes, params }) {
                         {fc !== null && (
                           <span style={{ fontSize: '0.78rem', fontWeight: 700, color: fcColor }}>FC {fc.toFixed(1)}%</span>
                         )}
-                        {perteMarge !== null && perteMarge > 0 && (
+                        {perteMarge !== null && perteMarge >= 0.0005 && (
                           <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#dc2626', background: '#FEE2E2', padding: '1px 6px', borderRadius: '4px', border: '1px solid #FECACA', whiteSpace: 'nowrap' }}>
                             −{perteMarge.toFixed(3)} EUR/couvert
                           </span>
