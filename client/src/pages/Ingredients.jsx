@@ -512,8 +512,8 @@ export default function Ingredients() {
     ? items.filter(i => normaliserTexte(i.nom).includes(normaliserTexte(addForm.nom))).slice(0, 4)
     : [];
 
-  const thStyle = { padding: '0 1rem', height: '50px', background: '#1C2B1E', color: '#F3EEDC', fontWeight: 600, fontSize: '11.5px', textTransform: 'uppercase', letterSpacing: '0.07em', textAlign: 'left', whiteSpace: 'nowrap' };
-  const tdStyle = { padding: '0.65rem 1rem', fontSize: '0.875rem', color: T.text, borderBottom: '1px solid #F9F7F4' };
+  const thStyle = { padding: '0 0.7rem', height: '50px', background: '#1C2B1E', color: '#F3EEDC', fontWeight: 600, fontSize: '11.5px', textTransform: 'uppercase', letterSpacing: '0.07em', textAlign: 'left', whiteSpace: 'nowrap' };
+  const tdStyle = { padding: '0.65rem 0.7rem', fontSize: '0.875rem', color: T.text, borderBottom: '1px solid #F9F7F4' };
   // Lignes de lecture du tableau (la ligne en édition et « Aucun ingrédient trouvé » gardent tdStyle).
   const tdLecture = { ...tdStyle, height: '56px', paddingTop: 0, paddingBottom: 0, borderBottom: '1px solid #F1EDE4', fontSize: '14px', color: '#4A463E' };
   const btnSm = { padding: '0.3rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" };
@@ -644,18 +644,18 @@ export default function Ingredients() {
                 <tr key={item.id} style={{ background: 'rgba(45,106,79,0.03)' }}>
                   <td style={tdStyle} colSpan={2}><input value={editForm.nom} onChange={e => updateEditForm(f => ({ ...f, nom: e.target.value }))} style={inputStyle} /></td>
                   <td style={tdStyle}>
-                    <select value={editForm.categorie} onChange={e => updateEditForm(f => ({ ...f, categorie: e.target.value }))} style={inputStyle}>
+                    <select value={editForm.categorie} onChange={e => updateEditForm(f => ({ ...f, categorie: e.target.value }))} style={{ ...inputStyle, minWidth: '136px' }}>
                       {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </td>
                   <td style={tdStyle}>
-                    <select value={editForm.unite} onChange={e => updateEditForm(f => ({ ...f, unite: e.target.value }))} style={inputStyle}>
+                    <select value={editForm.unite} onChange={e => updateEditForm(f => ({ ...f, unite: e.target.value }))} style={{ ...inputStyle, minWidth: '84px' }}>
                       {(UNITES.includes(editForm.unite) ? UNITES : [...UNITES, editForm.unite]).map(u => <option key={u} value={u}>{u}</option>)}
                     </select>
                   </td>
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <DecimalInput value={editForm.prixUnitaire} onValueChange={n => updateEditForm(f => ({ ...f, prixUnitaire: n === null ? '' : String(n) }))} style={{ ...inputStyle, width: '90px' }} />
+                      <DecimalInput value={editForm.prixUnitaire} onValueChange={n => updateEditForm(f => ({ ...f, prixUnitaire: n === null ? '' : String(n) }))} style={{ ...inputStyle, width: '80px', boxSizing: 'border-box' }} />
                       <span style={{ color: T.muted, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>EUR HT / {baseUnit(editForm.unite)}</span>
                     </div>
                   </td>
@@ -664,11 +664,11 @@ export default function Ingredients() {
                       placeholder="ex: Metro"
                       value={editForm.fournisseur}
                       onChange={e => updateEditForm(f => ({ ...f, fournisseur: e.target.value }))}
-                      style={{ ...inputStyle, width: '110px' }}
+                      style={{ ...inputStyle, width: '90px', boxSizing: 'border-box' }}
                     />
                   </td>
                   <td style={tdStyle}>
-                    <select value={editForm.tva ?? 10} onChange={e => updateEditForm(f => ({ ...f, tva: parseFloat(e.target.value) }))} style={{ ...inputStyle, width: '70px' }}>
+                    <select value={editForm.tva ?? 10} onChange={e => updateEditForm(f => ({ ...f, tva: parseFloat(e.target.value) }))} style={{ ...inputStyle, width: '64px', boxSizing: 'border-box' }}>
                       {TVA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                   </td>
@@ -676,14 +676,14 @@ export default function Ingredients() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <DecimalInput value={editForm.rendement ?? 100}
                         onValueChange={n => updateEditForm(f => ({ ...f, rendement: rendementDepuis(n) }))}
-                        style={{ ...inputStyle, width: '60px' }} />
+                        style={{ ...inputStyle, width: '64px', boxSizing: 'border-box' }} />
                       <span style={{ color: T.muted, fontSize: '0.8rem' }}>%</span>
                     </div>
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                      <button onClick={cancelEdit} style={{ ...btnSm, border: '1px solid #E5E0D8', background: '#fff' }}>Annuler</button>
-                      <button onClick={() => saveEdit(item.id)} style={{ ...btnSm, border: 'none', background: T.green, color: '#fff', fontWeight: 600 }}>Sauver</button>
+                    <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                      <button onClick={cancelEdit} style={{ ...btnSm, padding: '0.3rem 0.6rem', border: '1px solid #E5E0D8', background: '#fff' }}>Annuler</button>
+                      <button onClick={() => saveEdit(item.id)} style={{ ...btnSm, padding: '0.3rem 0.6rem', border: 'none', background: T.green, color: '#fff', fontWeight: 600 }}>Sauver</button>
                     </div>
                   </td>
                 </tr>
@@ -694,7 +694,7 @@ export default function Ingredients() {
                   <td style={tdLecture}><span style={{ fontSize: '15px', fontWeight: 600, color: '#1C2B1E' }}>{item.nom}</span></td>
                   <td style={tdLecture} onClick={e => e.stopPropagation()}>
                     <button type="button" onClick={() => setHistItem(item)} className="ing-prix" title="Historique des prix"
-                      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px', height: '34px', padding: '0 14px', border: '1.5px solid #2D6A4F', borderRadius: '8px', background: '#E8F1EC', color: '#1F5A3F', fontWeight: 700, fontSize: '13.5px', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap', cursor: 'pointer' }}>
+                      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', height: '34px', padding: '0 12px', border: '1.5px solid #2D6A4F', borderRadius: '8px', background: '#E8F1EC', color: '#1F5A3F', fontWeight: 700, fontSize: '13.5px', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap', cursor: 'pointer' }}>
                       <svg width="15" height="15" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <path d="M2 11l3-3.5 2.5 2L12 3.5" />
                       </svg>
@@ -791,52 +791,52 @@ export default function Ingredients() {
                 </tr>
               )}
               <tr style={{ background: 'rgba(45,106,79,0.04)', borderTop: '2px solid #E5E0D8' }}>
-                <td style={{ padding: '0.75rem 1rem' }} colSpan={2}>
+                <td style={{ padding: '0.75rem 0.7rem' }} colSpan={2}>
                   <input placeholder="Nom *" value={addForm.nom}
                     onChange={e => { setAddForm(f => ({ ...f, nom: e.target.value })); setShowNomSuggestions(true); setDupWarning(null); }}
                     onFocus={() => setShowNomSuggestions(true)}
                     onBlur={() => setTimeout(() => setShowNomSuggestions(false), 150)}
                     style={inputStyle} autoFocus />
                 </td>
-                <td style={{ padding: '0.75rem 1rem' }}>
-                  <select value={addForm.categorie} onChange={e => setAddForm(f => ({ ...f, categorie: e.target.value }))} style={inputStyle}>
+                <td style={{ padding: '0.75rem 0.7rem' }}>
+                  <select value={addForm.categorie} onChange={e => setAddForm(f => ({ ...f, categorie: e.target.value }))} style={{ ...inputStyle, minWidth: '136px' }}>
                     {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </td>
-                <td style={{ padding: '0.75rem 1rem' }}>
-                  <select value={addForm.unite} onChange={e => setAddForm(f => ({ ...f, unite: e.target.value }))} style={inputStyle}>
+                <td style={{ padding: '0.75rem 0.7rem' }}>
+                  <select value={addForm.unite} onChange={e => setAddForm(f => ({ ...f, unite: e.target.value }))} style={{ ...inputStyle, minWidth: '84px' }}>
                     {UNITES.map(u => <option key={u} value={u}>{u}</option>)}
                   </select>
                 </td>
-                <td style={{ padding: '0.75rem 1rem' }}>
+                <td style={{ padding: '0.75rem 0.7rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <DecimalInput placeholder="0.00" value={addForm.prixUnitaire}
-                      onValueChange={n => setAddForm(f => ({ ...f, prixUnitaire: n === null ? '' : String(n) }))} style={{ ...inputStyle, width: '90px' }} />
+                      onValueChange={n => setAddForm(f => ({ ...f, prixUnitaire: n === null ? '' : String(n) }))} style={{ ...inputStyle, width: '80px', boxSizing: 'border-box' }} />
                     <span style={{ color: T.muted, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>EUR HT / {baseUnit(addForm.unite)}</span>
                   </div>
                 </td>
-                <td style={{ padding: '0.75rem 1rem' }}>
+                <td style={{ padding: '0.75rem 0.7rem' }}>
                   <input placeholder="Fournisseur" value={addForm.fournisseur}
-                    onChange={e => setAddForm(f => ({ ...f, fournisseur: e.target.value }))} style={{ ...inputStyle, width: '110px' }} />
+                    onChange={e => setAddForm(f => ({ ...f, fournisseur: e.target.value }))} style={{ ...inputStyle, width: '90px', boxSizing: 'border-box' }} />
                 </td>
-                <td style={{ padding: '0.75rem 1rem' }}>
-                  <select value={addForm.tva ?? 10} onChange={e => setAddForm(f => ({ ...f, tva: parseFloat(e.target.value) }))} style={{ ...inputStyle, width: '70px' }}>
+                <td style={{ padding: '0.75rem 0.7rem' }}>
+                  <select value={addForm.tva ?? 10} onChange={e => setAddForm(f => ({ ...f, tva: parseFloat(e.target.value) }))} style={{ ...inputStyle, width: '64px', boxSizing: 'border-box' }}>
                     {TVA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                 </td>
-                <td style={{ padding: '0.75rem 1rem' }}>
+                <td style={{ padding: '0.75rem 0.7rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <DecimalInput placeholder="100"
                       value={addForm.rendement === 100 ? '' : (addForm.rendement ?? '')}
                       onValueChange={n => setAddForm(f => ({ ...f, rendement: rendementDepuis(n) }))}
-                      style={{ ...inputStyle, width: '60px' }} />
+                      style={{ ...inputStyle, width: '64px', boxSizing: 'border-box' }} />
                     <span style={{ color: T.muted, fontSize: '0.8rem' }}>%</span>
                   </div>
                 </td>
-                <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
-                  <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                    <button onClick={() => setShowAdd(false)} style={{ ...btnSm, border: '1px solid #E5E0D8', background: '#fff' }}>Annuler</button>
-                    <button onClick={ajouter} style={{ ...btnSm, border: 'none', background: T.green, color: '#fff', fontWeight: 600 }}>Ajouter</button>
+                <td style={{ padding: '0.75rem 0.7rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                    <button onClick={() => setShowAdd(false)} style={{ ...btnSm, padding: '0.3rem 0.6rem', border: '1px solid #E5E0D8', background: '#fff' }}>Annuler</button>
+                    <button onClick={ajouter} style={{ ...btnSm, padding: '0.3rem 0.6rem', border: 'none', background: T.green, color: '#fff', fontWeight: 600 }}>Ajouter</button>
                   </div>
                 </td>
               </tr>
