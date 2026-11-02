@@ -201,6 +201,7 @@ export default function App() {
   const mainStyle = {
     marginLeft: isMobile ? 0 : SIDEBAR_W,
     flex: 1,
+    minWidth: 0, // sans cela, un contenu large (tableau) élargit toute la page au lieu de défiler dans son cadre
     padding: isMobile ? '1rem' : isTablet ? '1.75rem' : '2.5rem',
     background: '#F8F6F1',
     minHeight: '100vh',

@@ -627,7 +627,14 @@ export default function Ingredients() {
                 </th>
               ))}
               <th style={thStyle}>TVA</th>
-              <th style={thStyle}>Rendement matière (%)</th>
+              <th style={thStyle}>
+                Rend. (%)
+                <span
+                  title="Rendement matière : part utilisable après épluchage, parage ou cuisson. Exemple : 90 % = sur 1 kg acheté, 900 g sont utilisables."
+                  aria-label="Rendement matière : part utilisable après épluchage, parage ou cuisson. Exemple : 90 % = sur 1 kg acheté, 900 g sont utilisables."
+                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '16px', height: '16px', marginLeft: '6px', border: '1px solid #F3EEDC', borderRadius: '50%', color: '#F3EEDC', fontSize: '11px', fontWeight: 700, lineHeight: 1, cursor: 'help', verticalAlign: 'middle', textTransform: 'none', letterSpacing: 0 }}
+                >?</span>
+              </th>
               <th style={{ ...thStyle, textAlign: 'right' }} aria-label="Actions" />
             </tr>
           </thead>
@@ -635,8 +642,7 @@ export default function Ingredients() {
             {affiches.map((item, index) => (
               editId === item.id ? (
                 <tr key={item.id} style={{ background: 'rgba(45,106,79,0.03)' }}>
-                  <td style={tdStyle}><input value={editForm.nom} onChange={e => updateEditForm(f => ({ ...f, nom: e.target.value }))} style={inputStyle} /></td>
-                  <td style={tdStyle} />
+                  <td style={tdStyle} colSpan={2}><input value={editForm.nom} onChange={e => updateEditForm(f => ({ ...f, nom: e.target.value }))} style={inputStyle} /></td>
                   <td style={tdStyle}>
                     <select value={editForm.categorie} onChange={e => updateEditForm(f => ({ ...f, categorie: e.target.value }))} style={inputStyle}>
                       {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -674,7 +680,7 @@ export default function Ingredients() {
                       <span style={{ color: T.muted, fontSize: '0.8rem' }}>%</span>
                     </div>
                   </td>
-                  <td style={{ ...tdStyle, textAlign: 'right' }}>
+                  <td style={{ ...tdStyle, textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
                       <button onClick={cancelEdit} style={{ ...btnSm, border: '1px solid #E5E0D8', background: '#fff' }}>Annuler</button>
                       <button onClick={() => saveEdit(item.id)} style={{ ...btnSm, border: 'none', background: T.green, color: '#fff', fontWeight: 600 }}>Sauver</button>
@@ -785,14 +791,13 @@ export default function Ingredients() {
                 </tr>
               )}
               <tr style={{ background: 'rgba(45,106,79,0.04)', borderTop: '2px solid #E5E0D8' }}>
-                <td style={{ padding: '0.75rem 1rem' }}>
+                <td style={{ padding: '0.75rem 1rem' }} colSpan={2}>
                   <input placeholder="Nom *" value={addForm.nom}
                     onChange={e => { setAddForm(f => ({ ...f, nom: e.target.value })); setShowNomSuggestions(true); setDupWarning(null); }}
                     onFocus={() => setShowNomSuggestions(true)}
                     onBlur={() => setTimeout(() => setShowNomSuggestions(false), 150)}
                     style={inputStyle} autoFocus />
                 </td>
-                <td style={{ padding: '0.75rem 1rem' }} />
                 <td style={{ padding: '0.75rem 1rem' }}>
                   <select value={addForm.categorie} onChange={e => setAddForm(f => ({ ...f, categorie: e.target.value }))} style={inputStyle}>
                     {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
