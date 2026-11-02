@@ -21,8 +21,9 @@ const CATEGORIES = ['viande', 'poisson', 'légume', 'produit laitier', 'épice',
 // Liste des ingrédients : lignes affichées au départ et ajoutées par « Afficher plus ».
 const PAS_LISTE = 30;
 // En-tête du tableau collé en haut de la fenêtre, à partir de cette largeur de fenêtre seulement (en lecture).
-// 1200 (tableau en lecture) + 224 (SIDEBAR_W) + 80 (2 × 2.5rem de <main>) + 17 (barre de défilement Windows) + 40 (marge) = 1561, arrondi à 1600 par prudence.
-const LARGEUR_COLLANT_PX = 1600;
+// Valeur en pixels CSS : un écran Full HD à 125 % de mise à l'échelle Windows vaut ≈ 1536 px ; à cette largeur,
+// le tableau en lecture tient dans la carte (contenu ≈ 1213 px).
+const LARGEUR_COLLANT_PX = 1500;
 const UNITES = ['kg', 'g', 'L', 'ml', 'pièce', 'c.s', 'c.c'];
 const TVA_OPTIONS = [
   { value: 5.5, label: '5,5%' },
