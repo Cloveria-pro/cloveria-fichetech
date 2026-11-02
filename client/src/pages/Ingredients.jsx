@@ -34,7 +34,7 @@ const inputStyle = { padding: '0.4rem 0.6rem', border: '1px solid #E5E0D8', bord
 const COULEURS_CATEGORIE = {
   'viande': '#C0392B', 'poisson': '#2B7BB9', 'legume': '#3E9B4F', 'produit laitier': '#E3B505',
   'condiment': '#E67E22', 'epicerie': '#8B5E3C', 'epice': '#7D3C98', 'epicerie fine': '#D6428A',
-  'fruit': '#1BA39C', 'boisson': '#5B6EE1', 'autre': '#64748B',
+  'fruit': '#1BA39C', 'boisson': '#8E1B3A', 'autre': '#64748B',
 };
 const COULEUR_CATEGORIE_INCONNUE = '#B9B4A8';
 
