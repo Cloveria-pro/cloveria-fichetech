@@ -30,15 +30,37 @@ const TVA_OPTIONS = [
 const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280', red: '#DC2626' };
 const card = { background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' };
 const inputStyle = { padding: '0.4rem 0.6rem', border: '1px solid #E5E0D8', borderRadius: '6px', fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif", outline: 'none', color: T.text, width: '100%' };
-const BADGE_COLORS = {
-  'viande': ['#FEE2E2','#991B1B'], 'poisson': ['#DBEAFE','#1E40AF'], 'légume': ['#DCFCE7','#166534'],
-  'produit laitier': ['#FEF3C7','#92400E'], 'épice': ['#F3E8FF','#6B21A8'], 'condiment': ['#FFE4E6','#9F1239'],
-  'épicerie': ['#F0FDF4','#14532D'], 'épicerie fine': ['#FDF4FF','#701A75'], 'fruit': ['#FFF7ED','#9A3412'], 'autre': ['#F1F5F9','#334155'],
+// Couleur du point de catégorie (clés comparées sans accents ni casse) ; absente ou hors liste : gris.
+const COULEURS_CATEGORIE = {
+  'viande': '#C0392B', 'poisson': '#2B7BB9', 'legume': '#3E9B4F', 'produit laitier': '#E3B505',
+  'condiment': '#E67E22', 'epicerie': '#8B5E3C', 'epice': '#7D3C98', 'epicerie fine': '#D6428A',
+  'fruit': '#1BA39C', 'boisson': '#5B6EE1', 'autre': '#64748B',
 };
+const COULEUR_CATEGORIE_INCONNUE = '#B9B4A8';
 
-function Badge({ cat }) {
-  const [bg, color] = BADGE_COLORS[cat] || ['#F1F5F9','#334155'];
-  return <span style={{ fontSize: '0.7rem', fontWeight: 600, padding: '2px 8px', borderRadius: '99px', background: bg, color }}>{cat}</span>;
+function couleurCategorie(cat) {
+  return COULEURS_CATEGORIE[normaliserTexte(cat)] || COULEUR_CATEGORIE_INCONNUE;
+}
+
+// Prix à 0 ou vide : ligne signalée en ambre.
+function prixAZero(item) {
+  return !item.prixUnitaire;
+}
+
+// Fond d'une ligne de lecture : ambre si le prix est à 0 ou vide, sinon blanc (paire) / #FBFAF6 (impaire).
+function fondLigne(item, index) {
+  if (prixAZero(item)) return '#FFF6E5';
+  return index % 2 === 0 ? '#FFFFFF' : '#FBFAF6';
+}
+
+function PointCategorie({ cat }) {
+  const texte = String(cat ?? '').trim();
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '13.5px', color: '#4A463E' }}>
+      <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: couleurCategorie(cat), flexShrink: 0 }} />
+      {texte || '—'}
+    </span>
+  );
 }
 
 const EMPTY = { nom: '', categorie: 'épicerie', unite: 'kg', prixUnitaire: '', tva: 10, fournisseur: '', fournisseurs: [], rendement: 100 };
@@ -490,8 +512,10 @@ export default function Ingredients() {
     ? items.filter(i => normaliserTexte(i.nom).includes(normaliserTexte(addForm.nom))).slice(0, 4)
     : [];
 
-  const thStyle = { padding: '0.6rem 1rem', color: T.muted, fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', borderBottom: '1px solid #F3EFE8', whiteSpace: 'nowrap' };
+  const thStyle = { padding: '0 1rem', height: '50px', background: '#1C2B1E', color: '#F3EEDC', fontWeight: 600, fontSize: '11.5px', textTransform: 'uppercase', letterSpacing: '0.07em', textAlign: 'left', whiteSpace: 'nowrap' };
   const tdStyle = { padding: '0.65rem 1rem', fontSize: '0.875rem', color: T.text, borderBottom: '1px solid #F9F7F4' };
+  // Lignes de lecture du tableau (la ligne en édition et « Aucun ingrédient trouvé » gardent tdStyle).
+  const tdLecture = { ...tdStyle, height: '56px', paddingTop: 0, paddingBottom: 0, borderBottom: '1px solid #F1EDE4', fontSize: '14px', color: '#4A463E' };
   const btnSm = { padding: '0.3rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" };
 
   // Ligne en édition : tout le reste de l'écran est bloqué (clic et clavier) jusqu'à « Annuler » ou « Sauver ».
@@ -574,10 +598,13 @@ export default function Ingredients() {
       </div>
 
       {/* Tableau */}
-      <div style={{ ...card, overflow: 'hidden' }}>
+      {/* Survol des lignes de lecture : revient seul au fond propre de la ligne (variable --fond). */}
+      <style>{'.ing-ligne { background: var(--fond); } .ing-ligne:hover { background: #F3EFE3; }'}</style>
+      <div style={{ ...card, borderRadius: '14px', boxShadow: '0 4px 20px rgba(28,43,30,0.10)', overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
-          <thead {...inertSiEdition} style={{ background: '#FAFAF8', ...styleBloque }}>
+          {/* En-tête sombre : bloqué pendant l'édition, mais estompé à 0,8 seulement pour rester lisible. */}
+          <thead {...inertSiEdition} style={{ background: '#1C2B1E', ...(enEdition ? { opacity: 0.8, pointerEvents: 'none' } : {}) }}>
             <tr>
               {[
                 { label: 'Nom', field: 'nom' },
@@ -590,7 +617,7 @@ export default function Ingredients() {
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                     {label}
                     {sortField === field && (
-                      <span style={{ color: T.green, fontSize: '0.85rem', lineHeight: 1 }}>{sortDir === 'asc' ? '↑' : '↓'}</span>
+                      <span style={{ color: '#C9A84C', fontSize: '0.85rem', lineHeight: 1 }}>{sortDir === 'asc' ? '↑' : '↓'}</span>
                     )}
                   </span>
                 </th>
@@ -601,7 +628,7 @@ export default function Ingredients() {
             </tr>
           </thead>
           <tbody>
-            {affiches.map(item => (
+            {affiches.map((item, index) => (
               editId === item.id ? (
                 <tr key={item.id} style={{ background: 'rgba(45,106,79,0.03)' }}>
                   <td style={tdStyle}><input value={editForm.nom} onChange={e => updateEditForm(f => ({ ...f, nom: e.target.value }))} style={inputStyle} /></td>
@@ -650,24 +677,23 @@ export default function Ingredients() {
                   </td>
                 </tr>
               ) : (
-                <tr key={item.id} {...inertSiEdition} onClick={() => startEdit(item)} style={{ cursor: 'pointer', transition: 'background 0.1s', ...styleBloque }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#FAFAF8'}
-                  onMouseLeave={e => e.currentTarget.style.background = ''}
+                <tr key={item.id} {...inertSiEdition} onClick={() => startEdit(item)} className="ing-ligne"
+                  style={{ '--fond': fondLigne(item, index), cursor: 'pointer', transition: 'background 0.1s', ...styleBloque }}
                 >
-                  <td style={tdStyle}><span style={{ fontWeight: 500 }}>{item.nom}</span></td>
-                  <td style={tdStyle}><Badge cat={item.categorie} /></td>
-                  <td style={{ ...tdStyle, color: T.muted }}>{item.unite}</td>
-                  <td style={tdStyle}>
-                    <span style={{ fontWeight: 700, color: T.green }}>{item.prixUnitaire.toFixed(2)}</span>
-                    <span style={{ color: T.muted, fontSize: '0.8rem', marginLeft: '4px' }}>EUR HT / {baseUnit(item.unite)}</span>
+                  <td style={tdLecture}><span style={{ fontSize: '15px', fontWeight: 600, color: '#1C2B1E' }}>{item.nom}</span></td>
+                  <td style={tdLecture}><PointCategorie cat={item.categorie} /></td>
+                  <td style={tdLecture}>{item.unite}</td>
+                  <td style={tdLecture}>
+                    <span style={{ fontSize: '15px', fontWeight: 700, color: prixAZero(item) ? '#B45309' : '#1F5A3F' }}>{item.prixUnitaire.toFixed(2)}</span>
+                    <span style={{ color: '#6B665C', fontSize: '13px', marginLeft: '4px' }}>EUR HT / {baseUnit(item.unite)}</span>
                   </td>
-                  <td style={{ ...tdStyle, color: T.muted, fontSize: '0.82rem' }}>
+                  <td style={{ ...tdLecture, color: '#6B665C' }}>
                     {item.fournisseur || <span style={{ color: '#D1C4B0' }}>—</span>}
                   </td>
-                  <td style={{ ...tdStyle, color: T.muted, fontSize: '0.82rem' }}>
+                  <td style={tdLecture}>
                     {(item.tva ?? 10) + '%'}
                   </td>
-                  <td style={{ ...tdStyle, fontSize: '0.82rem' }}>
+                  <td style={{ ...tdLecture, color: '#6B665C' }}>
                     {(item.rendement ?? 100) < 100
                       ? <span style={{ fontWeight: 600, color: '#d97706' }}>{item.rendement}%</span>
                       : <span style={{ color: '#D1C4B0' }}>—</span>
