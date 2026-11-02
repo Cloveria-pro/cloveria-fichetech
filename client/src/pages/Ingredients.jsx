@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useRef } from 'react';
+﻿import { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { api, API_URL, authHeaders } from '../api.js';
 import { calculerCoutIngredient } from '../conversions.js';
@@ -20,7 +20,8 @@ function baseUnit(unite) {
 const CATEGORIES = ['viande', 'poisson', 'légume', 'produit laitier', 'épice', 'condiment', 'épicerie', 'épicerie fine', 'fruit', 'boisson', 'autre'];
 // Liste des ingrédients : lignes affichées au départ et ajoutées par « Afficher plus ».
 const PAS_LISTE = 30;
-// En-tête du tableau collé en haut de la fenêtre, à partir de cette largeur de fenêtre seulement (en lecture).
+// En-tête du tableau collé en haut de la fenêtre, à partir de cette largeur de fenêtre seulement, et seulement si
+// la mesure du tableau montre qu'il tient dans la carte (état debordement à false), en lecture comme en modification ou en ajout.
 // Valeur en pixels CSS : un écran Full HD à 125 % de mise à l'échelle Windows vaut ≈ 1536 px ; à cette largeur,
 // le tableau en lecture tient dans la carte (contenu ≈ 1213 px).
 const LARGEUR_COLLANT_PX = 1500;
@@ -342,6 +343,23 @@ export default function Ingredients() {
   const [params, setParams] = useState({ foodCostCible: 30, tva: 10 });
   const autoSaveTimer = useRef(null);
   const latestEdit = useRef({ id: null, form: {} });
+  // Le tableau déborde-t-il de la carte ? Si oui, l'en-tête n'est pas collé et le cadre garde sa barre horizontale.
+  const [debordement, setDebordement] = useState(false);
+  const carteRef = useRef(null);
+  const tableRef = useRef(null);
+
+  // offsetWidth du tableau ne dépend pas de l'overflow de la carte (clip ou hidden) : basculer la classe ne change pas la mesure.
+  useLayoutEffect(() => {
+    const carte = carteRef.current;
+    const table = tableRef.current;
+    if (!carte || !table) return;
+    const mesurer = () => setDebordement(table.offsetWidth > carte.clientWidth + 1);
+    mesurer();
+    const observateur = new ResizeObserver(mesurer);
+    observateur.observe(carte);
+    observateur.observe(table);
+    return () => observateur.disconnect();
+  }, []);
 
   function handleSort(field) {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -605,12 +623,12 @@ export default function Ingredients() {
 
       {/* Tableau */}
       {/* Survol des lignes de lecture : revient seul au fond propre de la ligne (variable --fond). */}
-      {/* En-tête collé à la fenêtre (grand écran, en lecture) : la carte coupe sans défiler (clip) et le cadre ne défile plus. */}
+      {/* En-tête collé à la fenêtre (fenêtre d'au moins LARGEUR_COLLANT_PX et tableau mesuré sans débordement) : la carte coupe sans défiler (clip) et le cadre ne défile plus. */}
       <style>{'.ing-ligne { background: var(--fond); } .ing-ligne:hover { background: #F3EFE3; } .ing-plus:hover:not(:disabled) { background: #244F3B !important; } .ing-prix:hover { background: #2D6A4F !important; color: #fff !important; }' +
         ` @media (min-width: ${LARGEUR_COLLANT_PX}px) { .ing-carte.ing-collant { overflow: clip !important; } .ing-carte.ing-collant .ing-cadre { overflow: visible !important; } }`}</style>
-      <div className={'ing-carte' + (!enEdition && !showAdd ? ' ing-collant' : '')} style={{ ...card, borderRadius: '14px', boxShadow: '0 4px 20px rgba(28,43,30,0.10)', overflow: 'hidden' }}>
+      <div ref={carteRef} className={'ing-carte' + (!debordement ? ' ing-collant' : '')} style={{ ...card, borderRadius: '14px', boxShadow: '0 4px 20px rgba(28,43,30,0.10)', overflow: 'hidden' }}>
         <div className="ing-cadre" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '960px' }}>
+        <table ref={tableRef} style={{ width: '100%', borderCollapse: 'collapse', minWidth: '960px' }}>
           {/* En-tête sombre et opaque (collé, il ne doit pas laisser voir les lignes) : bloqué pendant l'édition, texte plus terne. */}
           <thead {...inertSiEdition} style={{ background: '#1C2B1E', color: enEdition ? '#8F978E' : '#F3EEDC', ...(enEdition ? { pointerEvents: 'none' } : {}) }}>
             <tr>
