@@ -599,20 +599,24 @@ export default function Ingredients() {
 
       {/* Tableau */}
       {/* Survol des lignes de lecture : revient seul au fond propre de la ligne (variable --fond). */}
-      <style>{'.ing-ligne { background: var(--fond); } .ing-ligne:hover { background: #F3EFE3; } .ing-plus:hover:not(:disabled) { background: #244F3B !important; }'}</style>
+      <style>{'.ing-ligne { background: var(--fond); } .ing-ligne:hover { background: #F3EFE3; } .ing-plus:hover:not(:disabled) { background: #244F3B !important; } .ing-prix:hover { background: #2D6A4F !important; color: #fff !important; }'}</style>
       <div style={{ ...card, borderRadius: '14px', boxShadow: '0 4px 20px rgba(28,43,30,0.10)', overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '960px' }}>
           {/* En-tête sombre : bloqué pendant l'édition, mais estompé à 0,8 seulement pour rester lisible. */}
           <thead {...inertSiEdition} style={{ background: '#1C2B1E', ...(enEdition ? { opacity: 0.8, pointerEvents: 'none' } : {}) }}>
             <tr>
               {[
                 { label: 'Nom', field: 'nom' },
+                { colonne: 'evolution-prix' },
                 { label: 'Catégorie', field: 'categorie' },
                 { label: 'Unité', field: 'unite' },
                 { label: 'Prix unitaire', field: 'prixUnitaire' },
                 { label: 'Fournisseur', field: 'fournisseur' },
-              ].map(({ label, field }) => (
+              ].map(({ label, field, colonne }) => colonne ? (
+                // Colonne du bouton « Évolution prix » : sans titre ni tri.
+                <th key={colonne} style={thStyle} />
+              ) : (
                 <th key={field} style={{ ...thStyle, cursor: 'pointer', userSelect: 'none' }} onClick={() => handleSort(field)}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                     {label}
@@ -624,7 +628,7 @@ export default function Ingredients() {
               ))}
               <th style={thStyle}>TVA</th>
               <th style={thStyle}>Rendement matière (%)</th>
-              <th style={{ ...thStyle, textAlign: 'right' }}>Actions</th>
+              <th style={{ ...thStyle, textAlign: 'right' }} aria-label="Actions" />
             </tr>
           </thead>
           <tbody>
@@ -632,6 +636,7 @@ export default function Ingredients() {
               editId === item.id ? (
                 <tr key={item.id} style={{ background: 'rgba(45,106,79,0.03)' }}>
                   <td style={tdStyle}><input value={editForm.nom} onChange={e => updateEditForm(f => ({ ...f, nom: e.target.value }))} style={inputStyle} /></td>
+                  <td style={tdStyle} />
                   <td style={tdStyle}>
                     <select value={editForm.categorie} onChange={e => updateEditForm(f => ({ ...f, categorie: e.target.value }))} style={inputStyle}>
                       {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -681,9 +686,18 @@ export default function Ingredients() {
                   style={{ '--fond': fondLigne(item, index), cursor: 'pointer', transition: 'background 0.1s', ...styleBloque }}
                 >
                   <td style={tdLecture}><span style={{ fontSize: '15px', fontWeight: 600, color: '#1C2B1E' }}>{item.nom}</span></td>
-                  <td style={tdLecture}><PointCategorie cat={item.categorie} /></td>
+                  <td style={tdLecture} onClick={e => e.stopPropagation()}>
+                    <button type="button" onClick={() => setHistItem(item)} className="ing-prix" title="Historique des prix"
+                      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px', height: '34px', padding: '0 14px', border: '1.5px solid #2D6A4F', borderRadius: '8px', background: '#E8F1EC', color: '#1F5A3F', fontWeight: 700, fontSize: '13.5px', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap', cursor: 'pointer' }}>
+                      <svg width="15" height="15" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M2 11l3-3.5 2.5 2L12 3.5" />
+                      </svg>
+                      Évolution prix
+                    </button>
+                  </td>
+                  <td style={{ ...tdLecture, whiteSpace: 'nowrap' }}><PointCategorie cat={item.categorie} /></td>
                   <td style={tdLecture}>{item.unite}</td>
-                  <td style={tdLecture}>
+                  <td style={{ ...tdLecture, whiteSpace: 'nowrap' }}>
                     <span style={{ fontSize: '15px', fontWeight: 700, color: prixAZero(item) ? '#B45309' : '#1F5A3F' }}>{item.prixUnitaire.toFixed(2)}</span>
                     <span style={{ color: '#6B665C', fontSize: '13px', marginLeft: '4px' }}>EUR HT / {baseUnit(item.unite)}</span>
                   </td>
@@ -699,13 +713,8 @@ export default function Ingredients() {
                       : <span style={{ color: '#D1C4B0' }}>—</span>
                     }
                   </td>
-                  <td style={{ ...tdStyle, textAlign: 'right' }} onClick={e => e.stopPropagation()}>
+                  <td style={{ ...tdLecture, textAlign: 'right' }} onClick={e => e.stopPropagation()}>
                     <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', alignItems: 'center' }}>
-                      <button
-                        onClick={() => setHistItem(item)}
-                        style={{ ...btnSm, border: '1px solid #E5E0D8', background: '#fff', color: T.muted, fontSize: '0.75rem' }}
-                        title="Historique des prix"
-                      >📈 Prix</button>
                       <button onClick={() => supprimer(item.id)} style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '1rem', padding: '2px 6px', borderRadius: '4px' }}
                         onMouseEnter={e => e.currentTarget.style.color = '#DC2626'}
                         onMouseLeave={e => e.currentTarget.style.color = '#D1C4B0'}
@@ -716,7 +725,7 @@ export default function Ingredients() {
               )
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={8} style={{ ...tdStyle, textAlign: 'center', color: T.muted, padding: '2rem' }}>Aucun ingrédient trouvé</td></tr>
+              <tr><td colSpan={9} style={{ ...tdStyle, textAlign: 'center', color: T.muted, padding: '2rem' }}>Aucun ingrédient trouvé</td></tr>
             )}
           </tbody>
           {/* Formulaire ajout */}
@@ -724,7 +733,7 @@ export default function Ingredients() {
             <tfoot {...bloqueSiEdition}>
               {dupWarning && (
                 <tr style={{ background: '#FFF7ED', borderTop: '2px solid #FED7AA' }}>
-                  <td colSpan={8} style={{ padding: '0.75rem 1rem' }}>
+                  <td colSpan={9} style={{ padding: '0.75rem 1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '0.85rem', color: '#92400e', flex: 1 }}>
                         ⚠️ Un ingrédient similaire existe déjà : <strong>{dupWarning.nom}</strong> ({dupWarning.prixUnitaire} EUR HT/{dupWarning.unite}
@@ -745,7 +754,7 @@ export default function Ingredients() {
               )}
               {catalogSimilar.length > 0 && (
                 <tr style={{ background: '#F0FDF4', borderTop: '1px solid #BBF7D0' }}>
-                  <td colSpan={8} style={{ padding: '0.5rem 1rem' }}>
+                  <td colSpan={9} style={{ padding: '0.5rem 1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '0.72rem', color: '#166534', fontWeight: 600, whiteSpace: 'nowrap' }}>Déjà dans le catalogue :</span>
                       {catalogSimilar.map(it => (
@@ -762,7 +771,7 @@ export default function Ingredients() {
               )}
               {showNomSuggestions && nomSuggestions.length > 0 && (
                 <tr style={{ background: '#FFFBF5', borderTop: '1px solid #F3EFE8' }}>
-                  <td colSpan={8} style={{ padding: '0.5rem 1rem' }}>
+                  <td colSpan={9} style={{ padding: '0.5rem 1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '0.72rem', color: '#9CA3AF', whiteSpace: 'nowrap' }}>Utilisé dans des fiches :</span>
                       {nomSuggestions.map(name => (
@@ -783,6 +792,7 @@ export default function Ingredients() {
                     onBlur={() => setTimeout(() => setShowNomSuggestions(false), 150)}
                     style={inputStyle} autoFocus />
                 </td>
+                <td style={{ padding: '0.75rem 1rem' }} />
                 <td style={{ padding: '0.75rem 1rem' }}>
                   <select value={addForm.categorie} onChange={e => setAddForm(f => ({ ...f, categorie: e.target.value }))} style={inputStyle}>
                     {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
