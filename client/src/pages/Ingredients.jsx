@@ -20,6 +20,9 @@ function baseUnit(unite) {
 const CATEGORIES = ['viande', 'poisson', 'légume', 'produit laitier', 'épice', 'condiment', 'épicerie', 'épicerie fine', 'fruit', 'boisson', 'autre'];
 // Liste des ingrédients : lignes affichées au départ et ajoutées par « Afficher plus ».
 const PAS_LISTE = 30;
+// En-tête du tableau collé en haut de la fenêtre, à partir de cette largeur de fenêtre seulement (en lecture).
+// 1200 (tableau en lecture) + 224 (SIDEBAR_W) + 80 (2 × 2.5rem de <main>) + 17 (barre de défilement Windows) + 40 (marge) = 1561, arrondi à 1600 par prudence.
+const LARGEUR_COLLANT_PX = 1600;
 const UNITES = ['kg', 'g', 'L', 'ml', 'pièce', 'c.s', 'c.c'];
 const TVA_OPTIONS = [
   { value: 5.5, label: '5,5%' },
@@ -512,7 +515,7 @@ export default function Ingredients() {
     ? items.filter(i => normaliserTexte(i.nom).includes(normaliserTexte(addForm.nom))).slice(0, 4)
     : [];
 
-  // En-tête collé en haut du cadre qui défile ; couleur du texte héritée du <thead> (plus terne en édition).
+  // En-tête collé en haut de la fenêtre (voir LARGEUR_COLLANT_PX) ; couleur du texte héritée du <thead> (plus terne en édition).
   const thStyle = { position: 'sticky', top: 0, zIndex: 1, padding: '0 0.7rem', height: '50px', background: '#1C2B1E', color: 'inherit', fontWeight: 600, fontSize: '11.5px', textTransform: 'uppercase', letterSpacing: '0.07em', textAlign: 'left', whiteSpace: 'nowrap' };
   const tdStyle = { padding: '0.65rem 0.7rem', fontSize: '0.875rem', color: T.text, borderBottom: '1px solid #F9F7F4' };
   // Lignes de lecture du tableau (la ligne en édition et « Aucun ingrédient trouvé » gardent tdStyle).
@@ -601,10 +604,11 @@ export default function Ingredients() {
 
       {/* Tableau */}
       {/* Survol des lignes de lecture : revient seul au fond propre de la ligne (variable --fond). */}
-      <style>{'.ing-ligne { background: var(--fond); } .ing-ligne:hover { background: #F3EFE3; } .ing-plus:hover:not(:disabled) { background: #244F3B !important; } .ing-prix:hover { background: #2D6A4F !important; color: #fff !important; }'}</style>
-      <div style={{ ...card, borderRadius: '14px', boxShadow: '0 4px 20px rgba(28,43,30,0.10)', overflow: 'hidden' }}>
-        {/* Cadre qui défile dans les deux sens : l'en-tête reste collé en haut ; hauteur limitée pour garder le pied « Afficher plus » visible. */}
-        <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 160px)', WebkitOverflowScrolling: 'touch' }}>
+      {/* En-tête collé à la fenêtre (grand écran, en lecture) : la carte coupe sans défiler (clip) et le cadre ne défile plus. */}
+      <style>{'.ing-ligne { background: var(--fond); } .ing-ligne:hover { background: #F3EFE3; } .ing-plus:hover:not(:disabled) { background: #244F3B !important; } .ing-prix:hover { background: #2D6A4F !important; color: #fff !important; }' +
+        ` @media (min-width: ${LARGEUR_COLLANT_PX}px) { .ing-carte.ing-collant { overflow: clip !important; } .ing-carte.ing-collant .ing-cadre { overflow: visible !important; } }`}</style>
+      <div className={'ing-carte' + (!enEdition && !showAdd ? ' ing-collant' : '')} style={{ ...card, borderRadius: '14px', boxShadow: '0 4px 20px rgba(28,43,30,0.10)', overflow: 'hidden' }}>
+        <div className="ing-cadre" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '960px' }}>
           {/* En-tête sombre et opaque (collé, il ne doit pas laisser voir les lignes) : bloqué pendant l'édition, texte plus terne. */}
           <thead {...inertSiEdition} style={{ background: '#1C2B1E', color: enEdition ? '#8F978E' : '#F3EEDC', ...(enEdition ? { pointerEvents: 'none' } : {}) }}>
