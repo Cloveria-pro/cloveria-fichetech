@@ -599,7 +599,7 @@ export default function Ingredients() {
 
       {/* Tableau */}
       {/* Survol des lignes de lecture : revient seul au fond propre de la ligne (variable --fond). */}
-      <style>{'.ing-ligne { background: var(--fond); } .ing-ligne:hover { background: #F3EFE3; }'}</style>
+      <style>{'.ing-ligne { background: var(--fond); } .ing-ligne:hover { background: #F3EFE3; } .ing-plus:hover:not(:disabled) { background: #244F3B !important; }'}</style>
       <div style={{ ...card, borderRadius: '14px', boxShadow: '0 4px 20px rgba(28,43,30,0.10)', overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
@@ -829,13 +829,22 @@ export default function Ingredients() {
           )}
         </table>
         </div>
+        {/* Pied de carte : hors de la table et de la zone qui défile horizontalement. */}
+        {restants > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '22px 24px 24px', background: '#FBFAF6', borderTop: '1px solid #F1EDE4' }}>
+            <button disabled={enEdition} onClick={() => setLimite(l => l + PAS_LISTE)} className="ing-plus"
+              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', height: '46px', padding: '0 28px', background: '#2D6A4F', color: '#fff', fontWeight: 700, fontSize: '15px', fontFamily: "'DM Sans', sans-serif", border: 'none', borderRadius: '999px', boxShadow: '0 2px 8px rgba(45,106,79,0.30)', cursor: 'pointer', ...styleBloque, ...(enEdition ? { opacity: 0.7 } : {}) }}>
+              {Math.min(PAS_LISTE, restants) === 1 ? 'Afficher 1 ingrédient de plus' : `Afficher ${Math.min(PAS_LISTE, restants)} ingrédients de plus`}
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 5.5L7 9.5l4-4" />
+              </svg>
+            </button>
+            <span style={{ fontSize: '13px', color: '#6B665C' }}>
+              {affiches.length} {affiches.length === 1 ? 'affiché' : 'affichés'} · {restants} {restants === 1 ? 'restant' : 'restants'}
+            </span>
+          </div>
+        )}
       </div>
-
-      {restants > 0 && (
-        <button disabled={enEdition} onClick={() => setLimite(l => l + PAS_LISTE)} style={{ ...btnSm, ...styleBloque, marginTop: '0.75rem', border: '1px solid #E5E0D8', background: '#fff', color: T.muted }}>
-          Afficher plus ({restants} {restants === 1 ? 'restant' : 'restants'})
-        </button>
-      )}
 
       {!showAdd && (
         <button disabled={enEdition} onClick={() => { setShowAdd(true); setEditId(null); }} style={{ ...styleBloque, marginTop: '0.75rem', background: 'none', border: '1px dashed #C9A84C', color: T.muted, borderRadius: '8px', padding: '0.5rem 1.25rem', cursor: 'pointer', fontSize: '0.85rem', width: '100%' }}>
