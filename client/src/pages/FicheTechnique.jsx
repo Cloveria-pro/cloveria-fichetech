@@ -9,6 +9,7 @@ import EtapesEditor from '../components/EtapesEditor.jsx';
 import DecimalInput from '../components/DecimalInput.jsx';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
+import { useAvertirAvantDepart } from '../hooks/useAvertirAvantDepart.js';
 import { ALLERGENES_14, libelleAllergene, detecterAllergenes } from '../allergenes.js';
 
 async function downloadPDF(htmlString, filename) {
@@ -104,6 +105,14 @@ const card = { background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px 
 const inputStyle = { padding: '0.45rem 0.7rem', border: '1px solid #E5E0D8', borderRadius: '6px', fontSize: '0.875rem', width: '100%', fontFamily: "'DM Sans', sans-serif", outline: 'none', color: T.text };
 const labelStyle = { fontSize: '0.78rem', color: T.muted, display: 'block', marginBottom: '5px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' };
 
+// Formulaire de fiche différent de la version enregistrée, clé par clé ; prixVentePratiqueTTC est ignoré
+// (enregistré à la perte du focus). Une clé identique (même objet, même texte) n'est pas sérialisée (photo).
+function ficheModifiee(form, recette) {
+  const cles = new Set([...Object.keys(form), ...Object.keys(recette)]);
+  cles.delete('prixVentePratiqueTTC');
+  return [...cles].some(k => form[k] !== recette[k] && JSON.stringify(form[k]) !== JSON.stringify(recette[k]));
+}
+
 function buildDonutSVG(ingredients) {
   const items = ingredients.filter(i => coutIng(i) > 0);
   if (items.length < 2) return '';
@@ -149,6 +158,8 @@ export default function FicheTechnique() {
   const [saveToast, setSaveToast] = useState('');
   const width = useWindowWidth();
   const isMobile = width < 768;
+  // Avertissement avant de quitter : en modification, seulement si le formulaire diffère de la version enregistrée.
+  useAvertirAvantDepart(editMode && !!form && !!recette && ficheModifiee(form, recette));
 
   useEffect(() => {
     Promise.all([

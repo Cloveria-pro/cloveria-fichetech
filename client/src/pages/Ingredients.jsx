@@ -4,6 +4,7 @@ import { api, API_URL, authHeaders } from '../api.js';
 import { calculerCoutIngredient } from '../conversions.js';
 import { foodCostHT, normaliserTexte } from '../utils.js';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
+import { useAvertirAvantDepart } from '../hooks/useAvertirAvantDepart.js';
 import DecimalInput from '../components/DecimalInput.jsx';
 
 // Rendement saisi : vide ou inférieur à 1 → 100, sinon plafonné à 100.
@@ -69,6 +70,18 @@ function PointCategorie({ cat }) {
 }
 
 const EMPTY = { nom: '', categorie: 'épicerie', unite: 'kg', prixUnitaire: '', tva: 10, fournisseur: '', fournisseurs: [], rendement: 100 };
+
+// Formulaire différent de la référence (ingrédient d'origine ou EMPTY), champs de startEdit, après normalisation :
+// textes trimés, nombres comparés comme nombres ("12.5" = 12.5), valeurs absentes remplacées comme dans startEdit et saveEdit.
+function ingredientModifie(form, reference) {
+  const texte = v => String(v ?? '').trim();
+  const nombre = (v, defaut) => { const n = parseFloat(v); return Number.isFinite(n) ? n : defaut; };
+  return ['nom', 'categorie', 'unite', 'fournisseur'].some(k => texte(form[k]) !== texte(reference[k]))
+    || nombre(form.prixUnitaire, 0) !== nombre(reference.prixUnitaire, 0)
+    || nombre(form.tva, 10) !== nombre(reference.tva, 10)
+    || nombre(form.rendement, 100) !== nombre(reference.rendement, 100)
+    || JSON.stringify(form.fournisseurs || []) !== JSON.stringify(reference.fournisseurs || []);
+}
 
 /* ─── Modal historique des prix ─────────────────────────────────────────── */
 function HistoriqueModal({ item, onClose, recettes, params }) {
@@ -546,6 +559,12 @@ export default function Ingredients() {
   const styleBloque = enEdition ? { opacity: 0.5, pointerEvents: 'none' } : {};
   const inertSiEdition = enEdition ? { inert: '' } : {};
   const bloqueSiEdition = { ...inertSiEdition, style: styleBloque };
+
+  // Avertissement avant de quitter : ligne réellement modifiée, ou formulaire d'ajout ouvert et rempli.
+  const ingredientEnEdition = enEdition ? items.find(i => i.id === editId) : undefined;
+  const saisieNonEnregistree = (!!ingredientEnEdition && ingredientModifie(editForm, ingredientEnEdition))
+    || (showAdd && ingredientModifie(addForm, EMPTY));
+  useAvertirAvantDepart(saisieNonEnregistree);
 
   return (
     <div>

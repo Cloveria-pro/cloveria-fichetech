@@ -7,6 +7,7 @@ import EtapesEditor from '../components/EtapesEditor.jsx';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
 import DecimalInput from '../components/DecimalInput.jsx';
 import { ALLERGENES_14, detecterAllergenes } from '../allergenes.js';
+import { useAvertirAvantDepart } from '../hooks/useAvertirAvantDepart.js';
 
 const UNITES = ['g', 'kg', 'ml', 'L', 'pièce', 'c.s', 'c.c'];
 const CLES_ALLERGENES = ALLERGENES_14.map(a => a.key);
@@ -36,6 +37,12 @@ export default function NouvelleRecette() {
   const [iaLoading, setIaLoading] = useState(false);
   const [catalog, setCatalog] = useState([]);
   const navigate = useNavigate();
+
+  // Avertissement avant de quitter : formulaire différent des valeurs de départ ou description IA saisie ;
+  // levé dès l'enregistrement (saving), qui redirige vers la fiche créée.
+  const formModifie = Object.keys({ ...defaultForm, ...form })
+    .some(k => form[k] !== defaultForm[k] && JSON.stringify(form[k]) !== JSON.stringify(defaultForm[k]));
+  useAvertirAvantDepart(!saving && (formModifie || iaDescription.trim() !== ''));
 
   useEffect(() => {
     api.ingredients.list().catch(() => []).then(setCatalog);
