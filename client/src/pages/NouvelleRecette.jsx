@@ -167,14 +167,14 @@ export default function NouvelleRecette() {
           onMouseEnter={e => { if (!saving) e.currentTarget.style.background = '#1e4d38'; }}
           onMouseLeave={e => e.currentTarget.style.background = T.green}
         >
-          {saving ? 'Sauvegarde...' : 'Creer la fiche'}
+          {saving ? 'Sauvegarde...' : 'Créer la fiche'}
         </button>
       </div>
 
       {/* Zone IA */}
       <div style={{ ...card, padding: '1.5rem', marginBottom: '1rem', border: '1px solid #d1fae5' }}>
         <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.green, marginBottom: '0.75rem' }}>
-          Decrire votre recette
+          Décrire votre recette
         </h3>
         <textarea
           value={iaDescription}
@@ -204,7 +204,7 @@ export default function NouvelleRecette() {
       {/* Separateur */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '1.5rem 0', color: T.muted, fontSize: '0.82rem' }}>
         <div style={{ flex: 1, height: '1px', background: '#E5E0D8' }} />
-        <span>— ou creer manuellement —</span>
+        <span>— ou créer manuellement —</span>
         <div style={{ flex: 1, height: '1px', background: '#E5E0D8' }} />
       </div>
 
@@ -212,7 +212,7 @@ export default function NouvelleRecette() {
 
       {/* Informations */}
       <div style={{ ...card, padding: '1.5rem', marginBottom: '1rem' }}>
-        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text, marginBottom: '1.25rem' }}>Informations generales</h3>
+        <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text, marginBottom: '1.25rem' }}>Informations générales</h3>
         <div style={{ marginBottom: '1rem' }}>
           <label style={labelStyle}>Nom de la recette *</label>
           <input value={form.nom} onChange={e => setField('nom', e.target.value)}
@@ -221,7 +221,7 @@ export default function NouvelleRecette() {
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
           <div>
-            <label style={labelStyle}>Categorie</label>
+            <label style={labelStyle}>Catégorie</label>
             <select value={form.categorie} onChange={e => setField('categorie', e.target.value)} style={inputStyle}>
               {CATEGORIES.map(c => <option key={c}>{c}</option>)}
             </select>
@@ -231,7 +231,7 @@ export default function NouvelleRecette() {
             <input type="number" min="1" value={form.portions} onChange={e => setField('portions', parseInt(e.target.value) || 1)} style={inputStyle} />
           </div>
           <div>
-            <label style={labelStyle}>Prep (min)</label>
+            <label style={labelStyle}>Prép. (min)</label>
             <input type="number" min="0" value={form.tempsPreparation} onChange={e => setField('tempsPreparation', parseInt(e.target.value) || 0)} style={inputStyle} />
           </div>
           <div>
@@ -243,7 +243,7 @@ export default function NouvelleRecette() {
           <label style={labelStyle}>Description</label>
           <textarea value={form.description} onChange={e => setField('description', e.target.value)}
             style={{ ...inputStyle, minHeight: '80px', resize: 'vertical' }}
-            placeholder="Decrivez brievement la recette..." />
+            placeholder="Décrivez brièvement la recette..." />
         </div>
       </div>
 
@@ -256,7 +256,7 @@ export default function NouvelleRecette() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #F3EFE8' }}>
-              {['Ingredient', 'Qte', 'Unite', 'Prix/unite (EUR)', 'TVA', 'Cout', ''].map(h => (
+              {['Ingrédient', 'Qté', 'Unité', 'Prix/unité (EUR)', 'TVA', 'Coût', ''].map(h => (
                 <th key={h} style={{ padding: '0.5rem 0.75rem', color: T.muted, fontWeight: 600, textAlign: 'left', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
               ))}
             </tr>
@@ -328,12 +328,12 @@ export default function NouvelleRecette() {
           </tbody>
           <tfoot>
             <tr style={{ borderTop: '2px solid #F3EFE8' }}>
-              <td colSpan={5} style={{ padding: '0.75rem 0.75rem', textAlign: 'right', color: T.muted, fontSize: '0.85rem', fontWeight: 600 }}>Total matieres</td>
+              <td colSpan={5} style={{ padding: '0.75rem 0.75rem', textAlign: 'right', color: T.muted, fontSize: '0.85rem', fontWeight: 600 }}>Total matières</td>
               <td style={{ padding: '0.75rem 0.75rem', fontWeight: 700, color: T.green }}>{cout.toFixed(2)} EUR</td>
               <td></td>
             </tr>
             <tr>
-              <td colSpan={5} style={{ padding: '0.25rem 0.75rem', textAlign: 'right', color: T.muted, fontSize: '0.85rem', fontWeight: 600 }}>Cout / portion</td>
+              <td colSpan={5} style={{ padding: '0.25rem 0.75rem', textAlign: 'right', color: T.muted, fontSize: '0.85rem', fontWeight: 600 }}>Coût / portion</td>
               <td style={{ padding: '0.25rem 0.75rem', fontWeight: 700, fontSize: '1.1rem', color: T.green }}>{coutPortion.toFixed(2)} EUR</td>
               <td></td>
             </tr>
