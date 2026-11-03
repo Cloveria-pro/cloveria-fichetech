@@ -822,6 +822,10 @@ export default function FicheTechnique() {
                       {editMode ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                           <DecimalInput value={ing.prixUnitaire} onValueChange={n => updateIngredient(idx, { prixUnitaire: n ?? 0, sousRecetteId: null })} style={{ ...inputStyle, width: '80px' }} disabled={ing.ligneSuivie} title={ing.ligneSuivie ? "Prix de la sous-recette : il se met à jour automatiquement" : undefined} />
+                          {/* Unité du prix, même règle qu'en lecture : ligne suivie → unité de base de la ligne ; sinon unité du catalogue ; sinon unité de base de la ligne. */}
+                          <span style={{ color: T.muted, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                            EUR HT&nbsp;/&nbsp;{ing.ligneSuivie ? baseUnit(ing.unite) : ing.catUnite ? ing.catUnite : baseUnit(ing.unite)}
+                          </span>
                           {ing.prixUnitaire === 0 && ing.nom && (
                             <span title={ing.ligneSuivie ? "Prix manquant — la sous-recette n'a pas de prix : complétez les prix de ses ingrédients" : ing.estSousRecette ? "Prix manquant — ajoutez de nouveau la sous-recette depuis la liste pour copier son prix" : "Prix manquant — allez dans Ingrédients pour l'ajouter"} style={{ cursor: 'help' }}>⚠️</span>
                           )}
