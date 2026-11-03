@@ -80,6 +80,8 @@ function compiler() {
     // Retirées avant l'analyse (faux positifs) ; le groupe capturé ($1) est conservé :
     // « noix de saint-jacques » garde « saint-jacques », « noix de beurre » garde « beurre »,
     // « beurre de cacahuète » garde « cacahuete », « beurre d'arachide » garde « arachide »,
+    // « beurre d'amande / de noisette / de (noix de) cajou » garde le fruit à coque
+    // (« beurre noisette », sans « de », reste du beurre),
     // « crème de marrons / cassis » garde « marrons » / « cassis ».
     exclusions: [
       [motifGlobal('noix[\\s-]+de[\\s-]+(?:coco|muscade|veau)'), ' '],
@@ -88,6 +90,8 @@ function compiler() {
       [motifGlobal('noix[\\s-]+de[\\s-]+(beurre)'), ' $1'],
       [motifGlobal('beurres?[\\s-]+de[\\s-]+(cacahuetes?)'), ' $1'],
       [motifGlobal("beurres?[\\s-]+d['’]\\s*(arachides?)"), ' $1'],
+      [motifGlobal("beurres?[\\s-]+d['’]\\s*(amandes?)"), ' $1'],
+      [motifGlobal('beurres?[\\s-]+de[\\s-]+(noisettes?|(?:noix[\\s-]+de[\\s-]+)?cajous?)'), ' $1'],
       [motifGlobal('cremes?[\\s-]+de[\\s-]+(marrons?|cassis)'), ' $1'],
     ],
     motifs: Object.fromEntries(
