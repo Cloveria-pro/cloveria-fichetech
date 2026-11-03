@@ -14,7 +14,11 @@ const CAT_LABELS = { fournisseur: 'Fournisseur', production: 'Production', servi
 const CATEGORIES = Object.entries(CAT_LABELS);
 const TYPES = Object.entries(TYPE_LABELS);
 
-function today() { return new Date().toISOString().slice(0, 10); }
+// Date du jour locale du navigateur (« aaaa-mm-jj »), comme les jours du calendrier.
+function today() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 function formatGroupDate(dateStr) {
   if (!dateStr) return 'Sans date';
@@ -48,11 +52,12 @@ function MiniCalendar({ items, selectedDay, onDayClick }) {
     if (!i.date) return [];
     if (i.type === 'evenement' && i.dateFin && i.dateFin > i.date) {
       const days = [];
-      const cur = new Date(i.date + 'T00:00:00');
-      const end = new Date(i.dateFin + 'T00:00:00');
+      // Calcul entièrement en UTC : les jours ne dépendent pas du fuseau du navigateur.
+      const cur = new Date(i.date.slice(0, 10) + 'T00:00:00Z');
+      const end = new Date(i.dateFin.slice(0, 10) + 'T00:00:00Z');
       while (cur <= end) {
         days.push(cur.toISOString().slice(0, 10));
-        cur.setDate(cur.getDate() + 1);
+        cur.setUTCDate(cur.getUTCDate() + 1);
       }
       return days;
     }
