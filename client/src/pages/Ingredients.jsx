@@ -83,6 +83,15 @@ function ingredientModifie(form, reference) {
     || JSON.stringify(form.fournisseurs || []) !== JSON.stringify(reference.fournisseurs || []);
 }
 
+// Date d'une entrée d'historique : « aaaa-mm-jj[Thh:mm:ss…] » réordonnée en « jj/mm/aaaa hh:mm:ss », heure
+// recopiée telle quelle (aucune conversion de fuseau). Autre valeur : affichage d'avant (null donne '').
+function dateHistorique(date) {
+  const s = typeof date === 'string' ? date : '';
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}:\d{2}:\d{2}))?/);
+  if (!m || (s.length > 10 && !m[4])) return s.length > 10 ? s.slice(0, 19).replace('T', ' ') : s;
+  return `${m[3]}/${m[2]}/${m[1]}${m[4] ? ' ' + m[4] : ''}`;
+}
+
 /* ─── Modal historique des prix ─────────────────────────────────────────── */
 export function HistoriqueModal({ item, onClose, recettes, params }) {
   const [data, setData] = useState([]);
@@ -169,7 +178,7 @@ export function HistoriqueModal({ item, onClose, recettes, params }) {
               <tbody>
                 {[...data].reverse().map((d, i) => (
                   <tr key={i} style={{ borderBottom: '1px solid #F9F7F4' }}>
-                    <td style={{ padding: '4px 8px', color: T.muted }}>{d.date.length > 10 ? d.date.slice(0, 19).replace('T', ' ') : d.date}</td>
+                    <td style={{ padding: '4px 8px', color: T.muted }}>{dateHistorique(d.date)}</td>
                     <td style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 700, color: T.green }}>{d.prix.toFixed(2)} EUR/{baseUnit(d.unite)}</td>
                     <td style={{ padding: '4px 8px', color: T.muted }}>{d.fournisseur || '—'}</td>
                     <td style={{ padding: '4px 8px', textAlign: 'right' }}>
