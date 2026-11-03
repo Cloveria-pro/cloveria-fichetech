@@ -511,7 +511,10 @@ export default function FicheTechnique() {
     const estSousRecette = nomRempli && !cat && !!(sousRecettes || []).find(sr => (sr.nom || '').toLowerCase() === (ing.nom || '').toLowerCase());
     const srSuivie = ing.sousRecetteId ? (sousRecettes || []).find(sr => sr.id === ing.sousRecetteId) : null;
     const ligneSuivie = nomRempli && !!ing.sousRecetteId && !!srSuivie && familleUnite(ing.unite) !== null && familleUnite(ing.unite) === familleUnite(srSuivie.unite);
-    return { ...ing, ingTva, coutHT, coutTTC, catUnite: cat ? baseUnit(cat.unite) : null, quantiteIncomplete, uniteIncomplete, familleIncoherente, catUniteBrute: cat ? cat.unite : null, estSousRecette, ligneSuivie };
+    // Le prix du catalogue (> 0) remplace celui de la ligne au rechargement : une valeur différente saisie ici sera ignorée.
+    const prixIgnore = !!cat && cat.prixUnitaire > 0 && !estSousRecette && !ligneSuivie
+      && Math.abs((parseFloat(ing.prixUnitaire) || 0) - cat.prixUnitaire) > 0.005;
+    return { ...ing, ingTva, coutHT, coutTTC, catUnite: cat ? baseUnit(cat.unite) : null, quantiteIncomplete, uniteIncomplete, familleIncoherente, catUniteBrute: cat ? cat.unite : null, estSousRecette, ligneSuivie, prixIgnore };
   });
   const totalHTScaled = ingData.reduce((a, i) => a + i.coutHT, 0);
   const totalTTCScaled = ingData.reduce((a, i) => a + i.coutTTC, 0);
@@ -827,14 +830,22 @@ export default function FicheTechnique() {
                     </td>
                     <td style={{ padding: '0.6rem 0.75rem' }}>
                       {editMode ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <DecimalInput value={ing.prixUnitaire} onValueChange={n => updateIngredient(idx, { prixUnitaire: n ?? 0, sousRecetteId: null })} style={{ ...inputStyle, width: '80px' }} disabled={ing.ligneSuivie} title={ing.ligneSuivie ? "Prix de la sous-recette : il se met à jour automatiquement" : undefined} />
-                          {/* Unité du prix, même règle qu'en lecture : ligne suivie → unité de base de la ligne ; sinon unité du catalogue ; sinon unité de base de la ligne. */}
-                          <span style={{ color: T.muted, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
-                            EUR HT&nbsp;/&nbsp;{ing.ligneSuivie ? baseUnit(ing.unite) : ing.catUnite ? ing.catUnite : baseUnit(ing.unite)}
-                          </span>
-                          {ing.prixUnitaire === 0 && ing.nom && (
-                            <span title={ing.ligneSuivie ? "Prix manquant — la sous-recette n'a pas de prix : complétez les prix de ses ingrédients" : ing.estSousRecette ? "Prix manquant — ajoutez de nouveau la sous-recette depuis la liste pour copier son prix" : "Prix manquant — allez dans Ingrédients pour l'ajouter"} style={{ cursor: 'help' }}>⚠️</span>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <DecimalInput value={ing.prixUnitaire} onValueChange={n => updateIngredient(idx, { prixUnitaire: n ?? 0, sousRecetteId: null })} style={{ ...inputStyle, width: '80px' }} disabled={ing.ligneSuivie} title={ing.ligneSuivie ? "Prix de la sous-recette : il se met à jour automatiquement" : undefined} />
+                            {/* Unité du prix, même règle qu'en lecture : ligne suivie → unité de base de la ligne ; sinon unité du catalogue ; sinon unité de base de la ligne. */}
+                            <span style={{ color: T.muted, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                              EUR HT&nbsp;/&nbsp;{ing.ligneSuivie ? baseUnit(ing.unite) : ing.catUnite ? ing.catUnite : baseUnit(ing.unite)}
+                            </span>
+                            {ing.prixUnitaire === 0 && ing.nom && (
+                              <span title={ing.ligneSuivie ? "Prix manquant — la sous-recette n'a pas de prix : complétez les prix de ses ingrédients" : ing.estSousRecette ? "Prix manquant — ajoutez de nouveau la sous-recette depuis la liste pour copier son prix" : "Prix manquant — allez dans Ingrédients pour l'ajouter"} style={{ cursor: 'help' }}>⚠️</span>
+                            )}
+                          </div>
+                          {/* Largeur nulle + minWidth 100 % : le texte passe à la ligne sans élargir la colonne. */}
+                          {ing.prixIgnore && (
+                            <div style={{ width: 0, minWidth: '100%', marginTop: '4px', fontSize: '0.78rem', color: T.muted, lineHeight: 1.35 }}>
+                              Prix géré dans Ingrédients : modifiez-le là-bas, cette valeur sera ignorée.
+                            </div>
                           )}
                         </div>
                       ) : (
