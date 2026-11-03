@@ -481,7 +481,14 @@ export default function Organisation() {
       {undated.length > 0 && (
         <div style={{ ...card, padding: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '1rem' }}>
-            <div style={metaStyle}>À organiser</div>
+            <div style={metaStyle}>
+              Pense-bête
+              <span
+                title="Rappels et notes sans date"
+                aria-label="Rappels et notes sans date"
+                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '16px', height: '16px', marginLeft: '6px', border: '1px solid currentColor', borderRadius: '50%', color: 'currentColor', fontSize: '11px', fontWeight: 700, lineHeight: 1, cursor: 'help', verticalAlign: 'middle', textTransform: 'none', letterSpacing: 0 }}
+              >?</span>
+            </div>
             {undated.filter(i => (i.statut || 'a_faire') !== 'fait').length > 0 && (
               <span style={{ fontSize: '0.7rem', color: T.muted }}>
                 {undated.filter(i => (i.statut || 'a_faire') !== 'fait').length} en cours
