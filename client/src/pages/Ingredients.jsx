@@ -1,7 +1,7 @@
 ﻿import { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { api, API_URL, authHeaders } from '../api.js';
-import { calculerCoutIngredient } from '../conversions.js';
+import { calculerCoutIngredient, convertirEnUniteBase, familleUnite, famillesIncompatibles } from '../conversions.js';
 import { foodCostHT, normaliserTexte } from '../utils.js';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
 import { useAvertirAvantDepart } from '../hooks/useAvertirAvantDepart.js';
@@ -919,6 +919,42 @@ export default function Ingredients() {
 }
 
 /* ─── Import Facture IA ──────────────────────────────────────────────────── */
+// ── Import de facture : le prix d'une ligne est toujours un prix par unité de base (EUR HT / kg, / L ou / pièce) ──
+// Les cuillères ne sont pas des unités de facture : traitées comme inconnues (unité à vérifier).
+const CUILLERES = ['c.s', 'c.c', 'c.s.', 'c.c.', 'càs', 'càc'];
+function familleFacture(unite) {
+  if (CUILLERES.includes(String(unite ?? '').trim().toLowerCase())) return null;
+  return familleUnite(unite);
+}
+
+// Prix lu sur la facture (par unité de la ligne, ING-FACT-1b) → prix par unité de base, arrondi à 4 décimales.
+// Masse et volume seulement (g → /kg, ml → /L, cl → /L, mg → /kg) ; pièce, unité absente ou inconnue : inchangé.
+function prixFactureEnBase(prix, unite) {
+  const famille = familleFacture(unite);
+  const n = parseFloat(prix);
+  if ((famille !== 'masse' && famille !== 'volume') || !Number.isFinite(n)) return prix;
+  return Math.round(n / convertirEnUniteBase(1, unite) * 10000) / 10000;
+}
+
+// Unités proposées dans le menu de l'import.
+const UNITES_IA = ['kg', 'L', 'piece', 'g', 'ml', 'botte', 'c.s.', 'c.c.'];
+
+// Unité absente, ou inconnue sur la facture et pas encore choisie par l'utilisateur. Une unité du menu hors cuillères
+// (botte) est valide même sans famille : prix gardé tel quel, sans contrôle avec le total.
+function uniteFactureAVerifier(p) {
+  const uniteDuMenu = UNITES_IA.includes(p.unite) && !CUILLERES.includes(String(p.unite).trim().toLowerCase());
+  return !p.unite || (familleFacture(p.unite) === null && !uniteDuMenu && !p._uniteChoisie);
+}
+
+// Prix par unité de base attendu d'après le total de la ligne ; null si le total ou la quantité manque.
+function prixAttenduDepuisTotal(p) {
+  if (familleFacture(p.unite) === null) return null;
+  const total = parseFloat(p.prix_total);
+  const quantiteBase = convertirEnUniteBase(p.quantite, p.unite);
+  if (!(total > 0) || !(quantiteBase > 0)) return null;
+  return total / quantiteBase;
+}
+
 function ImportFacture({ items, setItems }) {
   const [file, setFile] = useState(null);
   const [fournisseur, setFournisseur] = useState('');
@@ -936,7 +972,6 @@ function ImportFacture({ items, setItems }) {
   const width = useWindowWidth();
   const isMobile = width < 768;
 
-  const UNITES_IA = ['kg', 'L', 'piece', 'g', 'ml', 'botte', 'c.s.', 'c.c.'];
   const inStyle = { border: '1px solid #E5E0D8', borderRadius: '4px', padding: '0.3rem 0.5rem', fontSize: '0.82rem', fontFamily: "'DM Sans', sans-serif", outline: 'none' };
 
   useEffect(() => {
@@ -983,6 +1018,7 @@ function ImportFacture({ items, setItems }) {
         const match = items.find(it => it.nom.toLowerCase() === resolvedNom.toLowerCase());
         return {
           ...p,
+          prix_unitaire: prixFactureEnBase(p.prix_unitaire, p.unite),
           _id: i,
           _action: match ? 'associate' : 'create',
           _associateId: match?.id || null,
@@ -1000,13 +1036,22 @@ function ImportFacture({ items, setItems }) {
   function updateResult(id, field, value) {
     const strFields = ['nom', 'unite', '_action', '_associateId'];
     setResults(prev => prev.map(p =>
-      p._id === id ? { ...p, [field]: strFields.includes(field) ? value : parseFloat(value) || 0 } : p
+      p._id === id ? { ...p, [field]: strFields.includes(field) ? value : parseFloat(value) || 0, ...(field === 'unite' ? { _uniteChoisie: true } : {}) } : p
     ));
   }
 
   // Une ligne cochée en « Associer » sans ingrédient choisi bloque la validation.
   const associationIncomplete = !!results && results.some(p => selected.includes(p._id) && p._action === 'associate' && !p._associateId);
-  const validerImpossible = selected.length === 0 || associationIncomplete;
+  // Ligne cochée « Associer » à un ingrédient de famille d'unité incompatible (pièce contre poids ou volume).
+  function familleAssocieeIncompatible(p) {
+    if (p._action !== 'associate' || !p._associateId) return false;
+    const existant = items.find(i => i.id === p._associateId);
+    return !!existant && famillesIncompatibles(p.unite, existant.unite);
+  }
+  const lignesCochees = results ? results.filter(p => selected.includes(p._id)) : [];
+  const uniteIncomplete = lignesCochees.some(uniteFactureAVerifier);
+  const familleIncompatible = lignesCochees.some(familleAssocieeIncompatible);
+  const validerImpossible = selected.length === 0 || associationIncomplete || uniteIncomplete || familleIncompatible;
 
   function toggleSelect(id) {
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -1244,6 +1289,16 @@ function ImportFacture({ items, setItems }) {
               Choisissez l'ingrédient existant pour chaque ligne cochée en « Associer à un existant ».
             </div>
           )}
+          {uniteIncomplete && (
+            <div style={{ padding: '0.5rem 1.25rem', borderBottom: '1px solid #F3EFE8', background: '#FFFBF0', fontSize: '0.8rem', color: '#92400E' }}>
+              Choisissez l'unité de chaque ligne cochée marquée ⚠️ (unité illisible ou inconnue sur la facture), puis vérifiez son prix.
+            </div>
+          )}
+          {familleIncompatible && (
+            <div style={{ padding: '0.5rem 1.25rem', borderBottom: '1px solid #F3EFE8', background: '#FFFBF0', fontSize: '0.8rem', color: '#92400E' }}>
+              Une ligne cochée est associée à un ingrédient dont l'unité n'est pas de la même famille (pièce contre poids ou volume) : choisissez un autre ingrédient ou « Créer comme nouveau ».
+            </div>
+          )}
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: '700px' }}>
               <thead style={{ background: '#FAFAF8' }}>
@@ -1269,12 +1324,33 @@ function ImportFacture({ items, setItems }) {
                       <DecimalInput value={p.quantite} onValueChange={n => updateResult(p._id, 'quantite', n)} style={{ ...inStyle, width: '60px' }} />
                     </td>
                     <td style={{ padding: '0.6rem 1rem' }}>
-                      <select value={p.unite} onChange={e => updateResult(p._id, 'unite', e.target.value)} style={inStyle}>
-                        {(!p.unite || UNITES_IA.includes(p.unite) ? UNITES_IA : [...UNITES_IA, p.unite]).map(u => <option key={u}>{u}</option>)}
-                      </select>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        {/* Unité absente : choix vide (« — ») tant que l'utilisateur n'a pas choisi, jamais « kg » par défaut. */}
+                        <select value={p.unite || ''} onChange={e => updateResult(p._id, 'unite', e.target.value)} style={inStyle}>
+                          {!p.unite && <option value="">—</option>}
+                          {(!p.unite || UNITES_IA.includes(p.unite) ? UNITES_IA : [...UNITES_IA, p.unite]).map(u => <option key={u}>{u}</option>)}
+                        </select>
+                        {uniteFactureAVerifier(p) && (
+                          <span title="Unité illisible ou inconnue sur la facture : choisissez l'unité et vérifiez le prix." style={{ cursor: 'help', flexShrink: 0 }}>⚠️</span>
+                        )}
+                      </div>
                     </td>
                     <td style={{ padding: '0.6rem 1rem' }}>
-                      <DecimalInput value={p.prix_unitaire} onValueChange={n => updateResult(p._id, 'prix_unitaire', n)} style={{ ...inStyle, width: '80px' }} />
+                      {(() => {
+                        // Prix par unité de base ; ⚠️ s'il s'écarte de plus de 15 % du prix déduit du total de la ligne.
+                        const attendu = prixAttenduDepuisTotal(p);
+                        const prix = parseFloat(p.prix_unitaire) || 0;
+                        const ecart = attendu !== null && Math.abs(prix - attendu) / attendu > 0.15;
+                        return (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <DecimalInput value={p.prix_unitaire} onValueChange={n => updateResult(p._id, 'prix_unitaire', n)} style={{ ...inStyle, width: '80px' }} />
+                            <span style={{ color: T.muted, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>EUR HT&nbsp;/&nbsp;{baseUnit(p.unite) || '—'}</span>
+                            {ecart && (
+                              <span title={`Le prix ne correspond pas au total de la ligne (${attendu.toFixed(2)} EUR HT / ${baseUnit(p.unite)} attendu) : vérifiez.`} style={{ cursor: 'help', flexShrink: 0 }}>⚠️</span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td style={{ padding: '0.6rem 1rem' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -1304,6 +1380,11 @@ function ImportFacture({ items, setItems }) {
                               <option key={it.id} value={it.id}>{it.nom} ({it.prixUnitaire} EUR HT/{it.unite})</option>
                             ))}
                           </select>
+                        )}
+                        {familleAssocieeIncompatible(p) && (
+                          <span style={{ fontSize: '0.75rem', color: '#92400E', maxWidth: '240px' }}>
+                            ⚠️ Facture en {p.unite}, ingrédient en {items.find(i => i.id === p._associateId)?.unite} : le prix du catalogue n'est pas modifié. Choisissez un autre ingrédient ou « Créer comme nouveau ».
+                          </span>
                         )}
                       </div>
                     </td>
