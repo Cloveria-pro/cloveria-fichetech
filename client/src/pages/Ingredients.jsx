@@ -2,7 +2,7 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { api, API_URL, authHeaders } from '../api.js';
 import { calculerCoutIngredient, convertirEnUniteBase, familleUnite, famillesIncompatibles } from '../conversions.js';
-import { foodCostHT, normaliserTexte } from '../utils.js';
+import { coutIng, foodCostHT, normaliserTexte } from '../utils.js';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
 import { useAvertirAvantDepart } from '../hooks/useAvertirAvantDepart.js';
 import DecimalInput from '../components/DecimalInput.jsx';
@@ -1109,7 +1109,7 @@ function ImportFacture({ items, setItems }) {
           const portions = r.portions || 1;
           const calc = (prixFn) => (r.ingredients || []).reduce((acc, ing) => {
             const upd = updatedIngredients.find(u => u.nom.toLowerCase() === (ing.nom || '').toLowerCase());
-            return acc + ing.quantite * (upd ? prixFn(upd) : ing.prixUnitaire);
+            return acc + coutIng({ ...ing, prixUnitaire: upd ? prixFn(upd) : ing.prixUnitaire });
           }, 0);
           const oldCout = calc(u => u.oldPrix);
           const newCout = calc(u => u.newPrix);
