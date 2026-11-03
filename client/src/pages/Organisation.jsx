@@ -111,6 +111,11 @@ function MiniCalendar({ items, selectedDay, onDayClick }) {
   );
 }
 
+// Un événement doit avoir une date (sinon il n'apparaît pas dans le calendrier) ; rappel et note : date optionnelle.
+function dateEvenementManquante(form) {
+  return form.type === 'evenement' && !String(form.date || '').trim();
+}
+
 /* ── Modal create/edit ── */
 export function ItemModal({ item, onSave, onClose }) {
   const isNew = !item?.id;
@@ -132,6 +137,7 @@ export function ItemModal({ item, onSave, onClose }) {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.titre.trim()) { setError('Le titre est obligatoire.'); return; }
+    if (dateEvenementManquante(form)) { setError("Indiquez la date de l'événement."); return; }
     setSaving(true);
     setError('');
     try {
@@ -193,7 +199,7 @@ export function ItemModal({ item, onSave, onClose }) {
           {/* Date + heure */}
           <div style={{ display: 'grid', gridTemplateColumns: form.type === 'evenement' ? '1fr 1fr 1fr' : '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
             <div>
-              <label style={labelStyle}>{form.type === 'note' ? 'Date (optionnelle)' : 'Date'}</label>
+              <label style={labelStyle}>{form.type === 'note' ? 'Date (optionnelle)' : form.type === 'evenement' ? 'Date *' : 'Date'}</label>
               <input type="date" value={form.date} onChange={set('date')} style={inputSm} />
             </div>
             {form.type === 'evenement' && (
