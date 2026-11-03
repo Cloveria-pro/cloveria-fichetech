@@ -744,7 +744,7 @@ export default function FicheTechnique() {
       {/* Stats rapides + Couverts */}
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${isMobile ? 2 : 4}, 1fr)`, gap: '1rem', marginBottom: '1.5rem' }}>
         {[
-          { label: 'Temps prep', field: 'tempsPreparation', display: (form.tempsPreparation || 0) + ' min' },
+          { label: 'Temps prép.', field: 'tempsPreparation', display: (form.tempsPreparation || 0) + ' min' },
           { label: 'Temps cuisson', field: 'tempsCuisson', display: (form.tempsCuisson || 0) + ' min' },
           { label: 'Portions recette', field: 'portions', display: String(form.portions || '—') },
         ].map(({ label, field, display }) => (
