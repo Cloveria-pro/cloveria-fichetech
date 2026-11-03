@@ -156,7 +156,7 @@ export default function NouvelleRecette() {
   const btnOutline = { fontSize: '0.82rem', color: T.green, background: 'none', border: '1px solid #2D6A4F', borderRadius: '6px', padding: '0.35rem 0.9rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 500 };
 
   return (
-    <form onSubmit={sauvegarder} style={{ maxWidth: '820px' }}>
+    <form onSubmit={sauvegarder} style={{ maxWidth: '940px' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
         <Link to="/" style={{ color: T.muted, textDecoration: 'none', fontSize: '0.875rem', flexShrink: 0 }}>← Retour</Link>
@@ -272,11 +272,14 @@ export default function NouvelleRecette() {
               return (
               <tr key={idx} style={{ borderBottom: '1px solid #F9F7F4' }}>
                 <td style={{ padding: '0.5rem 0.75rem' }}>
-                  <IngredientAutocomplete
-                    value={ing.nom}
-                    catalog={catalog}
-                    onChange={fields => updateIngredientFields(idx, fields)}
-                  />
+                  {/* Largeur minimale : le nom et la liste de suggestions (même largeur que ce bloc) restent lisibles. */}
+                  <div style={{ minWidth: '200px' }}>
+                    <IngredientAutocomplete
+                      value={ing.nom}
+                      catalog={catalog}
+                      onChange={fields => updateIngredientFields(idx, fields)}
+                    />
+                  </div>
                 </td>
                 <td style={{ padding: '0.5rem 0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
