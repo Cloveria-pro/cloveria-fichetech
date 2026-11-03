@@ -806,7 +806,7 @@ export default function FicheTechnique() {
                     <td style={{ padding: '0.6rem 0.75rem' }}>
                       {editMode
                         ? <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                            <select value={ing.unite} onChange={e => updateIngredient(idx, { unite: e.target.value })} style={inputStyle}>{(UNITES.includes(ing.unite) ? UNITES : [...UNITES, ing.unite]).map(u => <option key={u}>{u}</option>)}</select>
+                            <select value={ing.unite} onChange={e => updateIngredient(idx, { unite: e.target.value })} style={{ ...inputStyle, minWidth: '84px', flexShrink: 0 }}>{(UNITES.includes(ing.unite) ? UNITES : [...UNITES, ing.unite]).map(u => <option key={u}>{u}</option>)}</select>
                             {(ing.uniteIncomplete || ing.familleIncoherente) && !ing.ligneSuivie && (
                               <span title={ing.uniteIncomplete ? "Unité à vérifier — le coût de cette ligne peut être inexact" : `Unité de la ligne (${ing.unite}) et unité du catalogue (${ing.catUniteBrute}) de familles différentes — le coût peut être faux. Vérifiez le prix dans Ingrédients`} style={{ cursor: 'help' }}>⚠️</span>
                             )}
