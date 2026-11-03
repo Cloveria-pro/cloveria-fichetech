@@ -182,7 +182,7 @@ export default function NouvelleRecette() {
           disabled={iaLoading}
           rows={4}
           style={{ ...inputStyle, minHeight: '110px', resize: 'vertical', marginBottom: '0.75rem' }}
-          placeholder="Decrivez votre recette librement : nom du plat, ingredients, technique de cuisson, nombre de couverts..."
+          placeholder="Décrivez votre recette librement : nom du plat, ingrédients, technique de cuisson, nombre de couverts..."
         />
         <button
           type="button"
