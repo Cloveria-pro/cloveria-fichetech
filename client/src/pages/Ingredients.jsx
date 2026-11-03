@@ -83,10 +83,21 @@ function ingredientModifie(form, reference) {
     || JSON.stringify(form.fournisseurs || []) !== JSON.stringify(reference.fournisseurs || []);
 }
 
-// Date d'une entrée d'historique : « aaaa-mm-jj[Thh:mm:ss…] » réordonnée en « jj/mm/aaaa hh:mm:ss », heure
-// recopiée telle quelle (aucune conversion de fuseau). Autre valeur : affichage d'avant (null donne '').
+// Date d'une entrée d'historique en « jj/mm/aaaa hh:mm:ss ». Chaîne ISO avec heure et fuseau (« Z » ou ±hh:mm) :
+// convertie en heure de Paris, quel que soit le fuseau du navigateur. Sans fuseau : réordonnée, heure recopiée
+// telle quelle ; date seule : « jj/mm/aaaa ». Autre valeur : affichage d'avant (null donne '').
 function dateHistorique(date) {
   const s = typeof date === 'string' ? date : '';
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(s)) {
+    const d = new Date(s);
+    if (!isNaN(d)) {
+      const p = Object.fromEntries(new Intl.DateTimeFormat('fr-FR', {
+        timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+      }).formatToParts(d).map(x => [x.type, x.value]));
+      return `${p.day}/${p.month}/${p.year} ${p.hour}:${p.minute}:${p.second}`;
+    }
+  }
   const m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}:\d{2}:\d{2}))?/);
   if (!m || (s.length > 10 && !m[4])) return s.length > 10 ? s.slice(0, 19).replace('T', ' ') : s;
   return `${m[3]}/${m[2]}/${m[1]}${m[4] ? ' ' + m[4] : ''}`;
