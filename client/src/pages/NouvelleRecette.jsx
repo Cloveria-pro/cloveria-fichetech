@@ -141,7 +141,11 @@ export default function NouvelleRecette() {
       allergenes: CLES_ALLERGENES.filter(a => form.allergenes.includes(a) || detectes.includes(a)),
     };
     api.recettes.create(payload)
-      .then(data => navigate('/fiches-techniques/' + data.id))
+      .then(data => {
+        // Ingrédients créés au catalogue par le serveur : affichés par la page de la fiche (état de navigation).
+        const crees = Array.isArray(data.ingredientsCrees) ? data.ingredientsCrees : [];
+        navigate('/fiches-techniques/' + data.id, crees.length > 0 ? { state: { ingredientsCrees: crees } } : undefined);
+      })
       .catch(() => { setSaving(false); alert('Erreur lors de la sauvegarde.'); });
   }
 

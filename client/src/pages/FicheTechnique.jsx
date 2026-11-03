@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import html2pdf from 'html2pdf.js';
 import { api } from '../api.js';
@@ -113,6 +113,17 @@ function ficheModifiee(form, recette) {
   return [...cles].some(k => form[k] !== recette[k] && JSON.stringify(form[k]) !== JSON.stringify(recette[k]));
 }
 
+// Toast après création d'ingrédients dans le catalogue par le serveur (champ ingredientsCrees de la réponse).
+function messageIngredientsCrees(crees) {
+  const noms = crees.map(c => c.nom);
+  const reste = noms.length - 3;
+  const liste = reste > 0 ? `${noms.slice(0, 3).join(', ')} et ${reste} ${reste > 1 ? 'autres' : 'autre'}` : noms.join(', ');
+  const debut = noms.length === 1
+    ? `1 ingrédient ajouté au catalogue : ${liste}`
+    : `${noms.length} ingrédients ajoutés au catalogue : ${liste}`;
+  return crees.some(c => !(c.prixUnitaire > 0)) ? `${debut} — prix à compléter dans Ingrédients.` : debut;
+}
+
 function buildDonutSVG(ingredients) {
   const items = ingredients.filter(i => coutIng(i) > 0);
   if (items.length < 2) return '';
@@ -140,6 +151,7 @@ function buildDonutSVG(ingredients) {
 export default function FicheTechnique() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [recette, setRecette] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState(null);
@@ -186,6 +198,32 @@ export default function FicheTechnique() {
     }).catch((err) => { console.error('[FicheTechnique] load error:', err); setLoading(false); navigate('/fiches-techniques'); });
   }, [id, navigate]);
 
+  // Ingrédients créés à la création de la fiche (transmis par « Nouvelle fiche » dans l'état de navigation) :
+  // toast une fois la fiche chargée, puis état effacé pour ne pas le réafficher au rechargement.
+  useEffect(() => {
+    const crees = location.state?.ingredientsCrees;
+    if (loading || !Array.isArray(crees) || crees.length === 0) return;
+    afficherToastCrees(crees);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [loading]);
+
+  function afficherToastCrees(crees) {
+    const message = messageIngredientsCrees(crees);
+    setSaveToast(message);
+    setTimeout(() => setSaveToast(t => (t === message ? '' : t)), 6000);
+  }
+
+  // Réponse d'enregistrement : ingredientsCrees est retiré (il ne doit pas revenir dans form ni être renvoyé) ;
+  // s'il n'est pas vide, toast et rechargement du catalogue (le ⚠️ « absent de la base » disparaît).
+  function ficheDepuisReponse(reponse) {
+    const { ingredientsCrees, ...fiche } = reponse || {};
+    if (Array.isArray(ingredientsCrees) && ingredientsCrees.length > 0) {
+      afficherToastCrees(ingredientsCrees);
+      api.ingredients.list().then(setCatalog).catch(() => {});
+    }
+    return fiche;
+  }
+
   // Ajoute seulement les allergènes nouvellement détectés du fait des modifications (version enregistrée
   // → formulaire) ; un allergène décoché à la main n'est jamais recoché. Détection indisponible : rien n'est ajouté.
   function sauvegarder() {
@@ -197,7 +235,7 @@ export default function FicheTechnique() {
     // Une clé hors liste déjà enregistrée (ancienne fiche) est conservée, en fin de liste.
     const allergenes = [...cles.filter(a => coches.includes(a) || nouveaux.includes(a)), ...coches.filter(a => !cles.includes(a))];
     api.recettes.update(id, { ...form, allergenes })
-      .then(data => { setRecette(data); setForm(data); setEditMode(false); })
+      .then(data => { const fiche = ficheDepuisReponse(data); setRecette(fiche); setForm(fiche); setEditMode(false); })
       .catch(() => {
         setSaveToast('Enregistrement impossible. Vos modifications sont toujours à l\'écran : réessayez.');
         setTimeout(() => setSaveToast(''), 4000);
@@ -346,11 +384,15 @@ export default function FicheTechnique() {
     setForm(updatedForm);
     // En édition : la ligne est modifiée dans le formulaire seulement (enregistrée avec « Sauvegarder »).
     if (editMode) return;
-    const saved = await api.recettes.update(id, updatedForm);
+    const reponse = await api.recettes.update(id, updatedForm);
+    const saved = ficheDepuisReponse(reponse);
     setRecette(saved);
     setForm(saved);
-    setSaveToast('Sauvegardé');
-    setTimeout(() => setSaveToast(''), 2000);
+    // « Sauvegardé » seulement s'il n'a pas déjà été remplacé par le toast des ingrédients créés.
+    if (!reponse?.ingredientsCrees?.length) {
+      setSaveToast('Sauvegardé');
+      setTimeout(() => setSaveToast(''), 2000);
+    }
   }
 
   async function dupliquerFiche() {
@@ -527,7 +569,7 @@ export default function FicheTechnique() {
               onChange={e => {
                 const newCat = e.target.value;
                 const updated = { ...recette, categorie: newCat };
-                api.recettes.update(id, updated).then(data => { setRecette(data); setForm(data); setCatEdit(false); });
+                api.recettes.update(id, updated).then(data => { const fiche = ficheDepuisReponse(data); setRecette(fiche); setForm(fiche); setCatEdit(false); });
               }}
               onBlur={() => setCatEdit(false)}
               style={{ fontSize: '0.75rem', padding: '3px 8px', border: '1px solid #2D6A4F', borderRadius: '4px', color: T.green, background: '#fff', fontFamily: "'DM Sans', sans-serif", outline: 'none', marginTop: '8px', display: 'inline-block' }}

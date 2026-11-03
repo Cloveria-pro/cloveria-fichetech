@@ -2,6 +2,7 @@ import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../db.js';
 import { calculerPrixUnitaireSousRecette, memeFamilleUnite } from '../lib/prixSousRecette.js';
+import { familleUnite } from '../lib/conversions.js';
 
 const router = express.Router();
 const PROJ = { projection: { _id: 0 } };
@@ -10,8 +11,12 @@ function norm(str) {
   return (str || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
 }
 
+// Crée dans le catalogue les ingrédients de la fiche qui n'y sont pas encore ; renvoie [{ nom, prixUnitaire }] des créés.
+// Le prix de la ligne (déjà par unité de base) est recopié s'il est > 0, hors sous-recette et pour une unité de famille
+// connue (masse, volume, pièce) ; sinon 0.
 async function syncIngredientsToBase(ingredients, userId, db) {
-  if (!ingredients || ingredients.length === 0) return;
+  const crees = [];
+  if (!ingredients || ingredients.length === 0) return crees;
   const existing = await db.collection('ingredients')
     .find({ user_id: userId }, { projection: { _id: 0, nom: 1 } })
     .toArray();
@@ -32,15 +37,29 @@ async function syncIngredientsToBase(ingredients, userId, db) {
     if (existingNorms.has(n) || seen.has(n)) continue;
     if (sousRecetteNorms.has(n)) continue;
     seen.add(n);
+    const prixLigne = parseFloat(ing.prixUnitaire);
+    const prixUnitaire = prixLigne > 0 && !ing.sousRecetteId && familleUnite(ing.unite) !== null ? prixLigne : 0;
     await db.collection('ingredients').insertOne({
       id: uuidv4(),
       user_id: userId,
       nom: ing.nom.trim(),
-      prixUnitaire: 0,
+      prixUnitaire,
       unite: ing.unite || 'g',
       fournisseur: '',
       createdAt: new Date().toISOString(),
     });
+    crees.push({ nom: ing.nom.trim(), prixUnitaire });
+  }
+  return crees;
+}
+
+// La synchronisation ne fait jamais échouer l'enregistrement de la fiche : en cas d'erreur, liste vide.
+async function syncSansEchec(ingredients, userId, db) {
+  try {
+    return await syncIngredientsToBase(ingredients, userId, db);
+  } catch (err) {
+    console.error('[Recettes] synchronisation du catalogue : échec', err?.name);
+    return [];
   }
 }
 
@@ -115,11 +134,13 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   const db = await getDb();
-  const item = { ...req.body, id: uuidv4(), user_id: req.userId, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+  // ingredientsCrees vient d'une réponse précédente : jamais enregistré, même s'il est renvoyé.
+  const { ingredientsCrees: _ignore, ...corps } = req.body;
+  const item = { ...corps, id: uuidv4(), user_id: req.userId, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
   await db.collection('recettes').insertOne(item);
   delete item._id;
-  syncIngredientsToBase(item.ingredients, req.userId, db).catch(() => {});
-  res.status(201).json(item);
+  const ingredientsCrees = await syncSansEchec(item.ingredients, req.userId, db);
+  res.status(201).json({ ...item, ingredientsCrees });
 });
 
 router.put('/:id', async (req, res) => {
@@ -127,10 +148,11 @@ router.put('/:id', async (req, res) => {
   const col = db.collection('recettes');
   const existing = await col.findOne({ id: req.params.id, user_id: req.userId }, PROJ);
   if (!existing) return res.status(404).json({ error: 'Introuvable' });
-  const updated = { ...existing, ...req.body, id: req.params.id, user_id: req.userId, updatedAt: new Date().toISOString() };
+  const { ingredientsCrees: _ignore, ...corps } = req.body;
+  const updated = { ...existing, ...corps, id: req.params.id, user_id: req.userId, updatedAt: new Date().toISOString() };
   await col.replaceOne({ id: req.params.id, user_id: req.userId }, updated);
-  syncIngredientsToBase(updated.ingredients, req.userId, db).catch(() => {});
-  res.json(updated);
+  const ingredientsCrees = await syncSansEchec(updated.ingredients, req.userId, db);
+  res.json({ ...updated, ingredientsCrees });
 });
 
 router.put('/:id/prix', async (req, res) => {
