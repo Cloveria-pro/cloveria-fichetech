@@ -250,7 +250,7 @@ export default function NouvelleRecette() {
       {/* Ingredients */}
       <div style={{ ...card, padding: '1.5rem', marginBottom: '1rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text }}>Ingredients</h3>
+          <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text }}>Ingrédients</h3>
           <button type="button" onClick={ajouterIngredient} style={btnOutline}>+ Ajouter</button>
         </div>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
