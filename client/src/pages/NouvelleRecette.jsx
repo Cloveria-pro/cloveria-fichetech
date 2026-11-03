@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../api.js';
-import { coutIng } from '../utils.js';
+import { coutIng, baseUnit } from '../utils.js';
 import { uniteAVerifier } from '../conversions.js';
 import EtapesEditor from '../components/EtapesEditor.jsx';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
@@ -266,6 +266,9 @@ export default function NouvelleRecette() {
               const nomRempli = !!ing.nom.trim();
               const quantiteIncomplete = nomRempli && !(parseFloat(ing.quantite) > 0);
               const uniteIncomplete = nomRempli && uniteAVerifier(ing.unite);
+              // Unité du prix, comme dans FicheTechnique : unité du catalogue si l'ingrédient y est, sinon unité de base de la ligne.
+              const cat = catalog.find(c => (c.nom || '').toLowerCase() === ing.nom.toLowerCase());
+              const unitePrix = cat ? baseUnit(cat.unite) : baseUnit(ing.unite);
               return (
               <tr key={idx} style={{ borderBottom: '1px solid #F9F7F4' }}>
                 <td style={{ padding: '0.5rem 0.75rem' }}>
@@ -285,7 +288,7 @@ export default function NouvelleRecette() {
                 </td>
                 <td style={{ padding: '0.5rem 0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <select value={ing.unite} onChange={e => updateIngredient(idx, 'unite', e.target.value)} style={inputStyle}>
+                    <select value={ing.unite} onChange={e => updateIngredient(idx, 'unite', e.target.value)} style={{ ...inputStyle, minWidth: '84px', flexShrink: 0 }}>
                       {(UNITES.includes(ing.unite) ? UNITES : [...UNITES, ing.unite]).map(u => <option key={u}>{u}</option>)}
                     </select>
                     {uniteIncomplete && (
@@ -296,6 +299,7 @@ export default function NouvelleRecette() {
                 <td style={{ padding: '0.5rem 0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                     <DecimalInput value={ing.prixUnitaire} onValueChange={n => updateIngredient(idx, 'prixUnitaire', n)} style={{ ...inputStyle, width: '90px' }} />
+                    <span style={{ color: T.muted, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>EUR HT&nbsp;/&nbsp;{unitePrix}</span>
                     {ing.prixUnitaire === 0 && ing.nom.trim() && (
                       <span title="Prix manquant — allez dans Ingrédients pour l'ajouter" style={{ cursor: 'help', flexShrink: 0 }}>⚠️</span>
                     )}
