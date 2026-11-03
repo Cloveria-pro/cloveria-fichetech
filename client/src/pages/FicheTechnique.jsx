@@ -56,6 +56,13 @@ async function downloadPDF(htmlString, filename) {
 
 const UNITES = ['g', 'kg', 'ml', 'L', 'pièce', 'c.s', 'c.c'];
 
+// Infobulle du ⚠️ « familles différentes » : la ligne et l'ingrédient du catalogue ne sont pas dans la même famille
+// d'unité (masse, volume, pièce) ; le prix du catalogue est exprimé dans l'unité de base de sa famille.
+function messageFamilleDifferente(uniteLigne, uniteCatalogue) {
+  const base = { masse: 'au kg', volume: 'au litre', piece: 'à la pièce' }[familleUnite(uniteCatalogue)];
+  return `Cette ligne est en ${uniteLigne}, mais le prix de l'ingrédient au catalogue est ${base} : le coût peut être faux. Mettez la ligne dans la même unité que le catalogue (${uniteCatalogue}) ou vérifiez le prix dans Ingrédients.`;
+}
+
 function baseUnit(unite) {
   if (['kg', 'g', 'mg'].includes(unite)) return 'kg';
   if (['L', 'l', 'ml', 'cl', 'c.c', 'c.s', 'c.c.', 'c.s.', 'càc', 'càs'].includes(unite)) return 'L';
@@ -808,13 +815,13 @@ export default function FicheTechnique() {
                         ? <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                             <select value={ing.unite} onChange={e => updateIngredient(idx, { unite: e.target.value })} style={{ ...inputStyle, minWidth: '84px', flexShrink: 0 }}>{(UNITES.includes(ing.unite) ? UNITES : [...UNITES, ing.unite]).map(u => <option key={u}>{u}</option>)}</select>
                             {(ing.uniteIncomplete || ing.familleIncoherente) && !ing.ligneSuivie && (
-                              <span title={ing.uniteIncomplete ? "Unité à vérifier — le coût de cette ligne peut être inexact" : `Unité de la ligne (${ing.unite}) et unité du catalogue (${ing.catUniteBrute}) de familles différentes — le coût peut être faux. Vérifiez le prix dans Ingrédients`} style={{ cursor: 'help' }}>⚠️</span>
+                              <span title={ing.uniteIncomplete ? "Unité à vérifier — le coût de cette ligne peut être inexact" : messageFamilleDifferente(ing.unite, ing.catUniteBrute)} style={{ cursor: 'help' }}>⚠️</span>
                             )}
                           </div>
                         : <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
                             <span style={{ color: T.muted }}>{ing.unite}</span>
                             {(ing.uniteIncomplete || ing.familleIncoherente) && !ing.ligneSuivie && (
-                              <span title={ing.uniteIncomplete ? "Unité à vérifier — le coût de cette ligne peut être inexact" : `Unité de la ligne (${ing.unite}) et unité du catalogue (${ing.catUniteBrute}) de familles différentes — le coût peut être faux. Vérifiez le prix dans Ingrédients`} style={{ cursor: 'help' }}>⚠️</span>
+                              <span title={ing.uniteIncomplete ? "Unité à vérifier — le coût de cette ligne peut être inexact" : messageFamilleDifferente(ing.unite, ing.catUniteBrute)} style={{ cursor: 'help' }}>⚠️</span>
                             )}
                           </span>}
                     </td>
