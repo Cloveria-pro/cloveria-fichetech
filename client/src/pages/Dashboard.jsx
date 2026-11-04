@@ -2,7 +2,7 @@ import { useEffect, useState, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { ItemModal } from './Organisation.jsx';
-import { foodCostRecetteHT, prixVenteHT, normaliserTexte, baseUnit } from '../utils.js';
+import { foodCostRecetteHT, prixVenteHT, normaliserTexte, baseUnit, formatHeure } from '../utils.js';
 import { getAnecdoteDuJour } from '../data/anecdotes.js';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
 
@@ -217,7 +217,7 @@ export default function Dashboard() {
       const fin = new Date(it.dateFin); fin.setHours(0, 0, 0, 0);
       return `Jusqu'au ${fin.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`;
     }
-    return formatAgendaDate(it.date) + (it.heure ? ` · ${it.heure}` : '');
+    return formatAgendaDate(it.date) + (it.heure ? ` · ${formatHeure(it.heure)}` : '');
   };
 
   async function handleAgendaSave(id, payload) {

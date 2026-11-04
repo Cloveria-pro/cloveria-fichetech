@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api.js';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
+import { formatHeure } from '../utils.js';
 
 const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280', red: '#DC2626', bg: '#F8F6F1' };
 const card = { background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' };
@@ -301,7 +302,7 @@ function ItemCard({ item, onEdit, onDelete, onToggleStatut }) {
           {item.titre}
         </div>
         <div style={{ display: 'flex', gap: '0.625rem', flexWrap: 'wrap', marginTop: '3px', alignItems: 'center' }}>
-          {item.heure && <span style={{ fontSize: '0.72rem', color: T.muted }}>{item.heure}</span>}
+          {item.heure && <span style={{ fontSize: '0.72rem', color: T.muted }}>{formatHeure(item.heure)}</span>}
           {item.dateFin && item.dateFin !== item.date && (
             <span style={{ fontSize: '0.72rem', color: T.muted }}>→ {formatDate(item.dateFin)}</span>
           )}

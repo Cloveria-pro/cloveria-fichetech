@@ -42,6 +42,15 @@ export function normaliserTexte(s) {
     .trim();
 }
 
+// Heure d'un élément d'agenda : « HH:MM » (secondes ignorées) affichée « HHhMM », heure sur deux chiffres.
+// Vide, null ou undefined : '' ; autre valeur : renvoyée telle quelle. Ne lève jamais d'exception.
+export function formatHeure(heure) {
+  if (heure == null || heure === '') return '';
+  const s = String(heure);
+  const m = s.match(/^\s*(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?\s*$/);
+  return m ? `${m[1].padStart(2, '0')}h${m[2]}` : s;
+}
+
 // Unité de base d'un prix unitaire (kg, L, ou l'unité elle-même) ; copie de baseUnit de pages/Ingredients.jsx.
 export function baseUnit(unite) {
   if (['kg', 'g', 'mg'].includes(unite)) return 'kg';
