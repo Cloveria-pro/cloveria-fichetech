@@ -11,7 +11,10 @@ const inputSm = { padding: '0.5rem 0.75rem', border: '1px solid #E5E0D8', border
 export const TYPE_COLORS = { rappel: '#3B82F6', evenement: '#2D6A4F', note: '#C9A84C' };
 const TYPE_LABELS = { rappel: 'Rappel', evenement: 'Événement', note: 'Note' };
 const STATUT_LABELS = { a_faire: 'À faire', fait: 'Fait', reporte: 'Reporté' };
-const STATUT_COLORS = { a_faire: T.muted, fait: T.green, reporte: '#D97706' };
+// Le statut se lit par la forme et en gris (les couleurs sont réservées au type) : rond et coche « fait », rond « reporté ».
+const GRIS_STATUT = '#9CA3AF';
+const COCHE_FAIT = <path d="M2 5l2.5 2.5L8 3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />;
+const FLECHE_REPORTE = <path d="M2 5h5.5M5.5 3l2 2-2 2" stroke={GRIS_STATUT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />;
 const CAT_LABELS = { fournisseur: 'Fournisseur', production: 'Production', service: 'Service', administratif: 'Administratif', autre: 'Autre' };
 const CATEGORIES = Object.entries(CAT_LABELS);
 const TYPES = Object.entries(TYPE_LABELS);
@@ -251,9 +254,9 @@ export function ItemModal({ item, onSave, onClose }) {
                 {Object.entries(STATUT_LABELS).map(([val, label]) => (
                   <button key={val} type="button" onClick={() => setForm(f => ({ ...f, statut: val }))} style={{
                     flex: 1, padding: '0.45rem 0.25rem', borderRadius: '8px',
-                    border: `1.5px solid ${form.statut === val ? STATUT_COLORS[val] : '#E5E0D8'}`,
-                    background: form.statut === val ? `${STATUT_COLORS[val]}15` : '#fff',
-                    color: form.statut === val ? STATUT_COLORS[val] : T.muted,
+                    border: `1.5px solid ${form.statut === val ? GRIS_STATUT : '#E5E0D8'}`,
+                    background: form.statut === val ? `${GRIS_STATUT}15` : '#fff',
+                    color: T.muted,
                     fontSize: '0.78rem', fontWeight: form.statut === val ? 700 : 400, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
                   }}>
                     {label}
@@ -314,11 +317,12 @@ function ItemCard({ item, onEdit, onDelete, onToggleStatut }) {
       {(item.type === 'rappel' || item.type === 'note') ? (
         <button onClick={() => onToggleStatut(item)} title={item.statut === 'fait' ? 'Marquer À faire' : 'Marquer Fait'} style={{
           width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0, marginTop: '2px',
-          border: `2px solid ${item.statut === 'fait' ? T.green : '#D6D0C8'}`,
-          background: item.statut === 'fait' ? T.green : 'transparent',
+          border: `2px solid ${item.statut === 'fait' || item.statut === 'reporte' ? GRIS_STATUT : '#D6D0C8'}`,
+          background: item.statut === 'fait' ? GRIS_STATUT : 'transparent',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          {item.statut === 'fait' && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+          {item.statut === 'fait' && <svg width="10" height="10" viewBox="0 0 10 10" fill="none">{COCHE_FAIT}</svg>}
+          {item.statut === 'reporte' && <svg width="10" height="10" viewBox="0 0 10 10" fill="none">{FLECHE_REPORTE}</svg>}
         </button>
       ) : (
         <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: typeColor, flexShrink: 0, marginTop: '5px' }} />
@@ -343,7 +347,7 @@ function ItemCard({ item, onEdit, onDelete, onToggleStatut }) {
             </span>
           )}
           {(item.type === 'rappel' || item.type === 'note') && item.statut && item.statut !== 'fait' && (
-            <span style={{ fontSize: '0.68rem', fontWeight: 700, color: STATUT_COLORS[item.statut] || T.muted }}>
+            <span style={{ fontSize: '0.68rem', fontWeight: 700, color: T.muted }}>
               {STATUT_LABELS[item.statut] || item.statut}
             </span>
           )}
@@ -373,6 +377,7 @@ function SidebarCard({ item, onEdit, onDelete, onToggleStatut }) {
   const typeColor = TYPE_COLORS[item.type] || T.muted;
   const effectiveStatut = item.statut || 'a_faire';
   const isDone = effectiveStatut === 'fait';
+  const isReporte = effectiveStatut === 'reporte';
   return (
     <div style={{
       padding: '0.7rem 0.875rem',
@@ -384,11 +389,12 @@ function SidebarCard({ item, onEdit, onDelete, onToggleStatut }) {
         {(item.type === 'rappel' || item.type === 'note') ? (
           <button onClick={() => onToggleStatut(item)} title={isDone ? 'Marquer À faire' : 'Marquer Fait'} style={{
             width: '15px', height: '15px', borderRadius: '50%', flexShrink: 0, marginTop: '2px',
-            border: `2px solid ${isDone ? T.green : typeColor}`,
-            background: isDone ? T.green : 'transparent',
+            border: `2px solid ${isDone || isReporte ? GRIS_STATUT : typeColor}`,
+            background: isDone ? GRIS_STATUT : 'transparent',
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            {isDone && <svg width="8" height="8" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+            {isDone && <svg width="8" height="8" viewBox="0 0 10 10" fill="none">{COCHE_FAIT}</svg>}
+            {isReporte && <svg width="8" height="8" viewBox="0 0 10 10" fill="none">{FLECHE_REPORTE}</svg>}
           </button>
         ) : (
           <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: typeColor, flexShrink: 0, marginTop: '4px' }} />
@@ -535,7 +541,7 @@ export default function Organisation() {
             if (secItems.length === 0) return null;
             return (
               <div key={key} style={{ marginBottom: '0.875rem' }}>
-                <div style={{ fontSize: '0.63rem', fontWeight: 700, color: STATUT_COLORS[key], textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.375rem' }}>
+                <div style={{ fontSize: '0.63rem', fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.375rem' }}>
                   {label}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
