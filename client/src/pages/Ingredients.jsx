@@ -933,6 +933,15 @@ export default function Ingredients() {
           + Ajouter un ingrédient
         </button>
       )}
+
+      {/* Bouton flottant : « + Ajouter » toujours accessible, même loin dans la liste. */}
+      {!showAdd && !enEdition && (
+        <button onClick={() => { setShowAdd(true); setEditId(null); }} aria-label="Ajouter un ingrédient"
+          style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 40, padding: '0.55rem 1.25rem', background: T.green, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", boxShadow: '0 4px 12px rgba(0,0,0,0.18)' }}
+          onMouseEnter={e => e.currentTarget.style.background = '#1e4d38'}
+          onMouseLeave={e => e.currentTarget.style.background = T.green}
+        >+ Ajouter</button>
+      )}
       </>)}
     </div>
   );
