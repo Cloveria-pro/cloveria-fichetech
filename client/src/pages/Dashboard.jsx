@@ -1,7 +1,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api.js';
-import { ItemModal } from './Organisation.jsx';
+import { ItemModal, TYPE_COLORS } from './Organisation.jsx';
 import { foodCostRecetteHT, prixVenteHT, normaliserTexte, baseUnit, formatHeure } from '../utils.js';
 import { getAnecdoteDuJour } from '../data/anecdotes.js';
 import { useWindowWidth } from '../hooks/useWindowWidth.js';
@@ -178,7 +178,6 @@ export default function Dashboard() {
   const repereUnite = { fontSize: '0.85rem', fontWeight: 400, color: T.muted };
   const repereSous = { marginTop: '0.3rem', fontSize: '0.75rem', color: T.muted };
 
-  const TYPE_COLORS_AG = { rappel: '#3B82F6', evenement: '#2D6A4F', note: '#C9A84C' };
   const TYPE_LABELS_AG = { rappel: 'Rappel', evenement: 'Événement', note: 'Note' };
 
   // Événement sur plusieurs jours (même règle qu'Organisation.jsx) : sa période va jusqu'à dateFin.
@@ -314,7 +313,7 @@ export default function Dashboard() {
               onMouseEnter={e => e.currentTarget.style.background = '#FAFAF8'}
               onMouseLeave={e => e.currentTarget.style.background = ''}
             >
-              <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: TYPE_COLORS_AG[it.type] || T.muted, flexShrink: 0, marginTop: '4px' }} />
+              <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: TYPE_COLORS[it.type] || T.muted, flexShrink: 0, marginTop: '4px' }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: '0.82rem', fontWeight: 600, color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {it.titre}
@@ -324,8 +323,8 @@ export default function Dashboard() {
                 </div>
               </div>
               <div style={{
-                fontSize: '0.65rem', fontWeight: 700, color: TYPE_COLORS_AG[it.type] || T.muted,
-                background: `${TYPE_COLORS_AG[it.type]}18`, borderRadius: '4px',
+                fontSize: '0.65rem', fontWeight: 700, color: TYPE_COLORS[it.type] || T.muted,
+                background: `${TYPE_COLORS[it.type]}18`, borderRadius: '4px',
                 padding: '1px 6px', flexShrink: 0,
               }}>
                 {TYPE_LABELS_AG[it.type]}

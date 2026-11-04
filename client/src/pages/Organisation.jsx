@@ -7,7 +7,8 @@ const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280'
 const card = { background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' };
 const inputSm = { padding: '0.5rem 0.75rem', border: '1px solid #E5E0D8', borderRadius: '8px', fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif", color: T.text, background: '#fff', outline: 'none', width: '100%', boxSizing: 'border-box' };
 
-const TYPE_COLORS = { rappel: '#3B82F6', evenement: '#2D6A4F', note: '#C9A84C' };
+// Couleur de chaque type d'élément d'agenda, partout dans l'appli (aussi importée par Dashboard.jsx).
+export const TYPE_COLORS = { rappel: '#3B82F6', evenement: '#2D6A4F', note: '#C9A84C' };
 const TYPE_LABELS = { rappel: 'Rappel', evenement: 'Événement', note: 'Note' };
 const STATUT_LABELS = { a_faire: 'À faire', fait: 'Fait', reporte: 'Reporté' };
 const STATUT_COLORS = { a_faire: T.muted, fait: T.green, reporte: '#D97706' };
@@ -38,6 +39,34 @@ function formatDate(dateStr) {
   return new Date(dateStr + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 }
 
+// Types présents chaque jour (« aaaa-mm-jj » → types dans l'ordre rappel, événement, note, sans doublon).
+// Un événement sur plusieurs jours compte pour chacun de ses jours.
+function typesParJour(items) {
+  const parJour = new Map();
+  items.forEach(i => {
+    if (!i.date) return;
+    let days;
+    if (i.type === 'evenement' && i.dateFin && i.dateFin > i.date) {
+      days = [];
+      // Calcul entièrement en UTC : les jours ne dépendent pas du fuseau du navigateur.
+      const cur = new Date(i.date.slice(0, 10) + 'T00:00:00Z');
+      const end = new Date(i.dateFin.slice(0, 10) + 'T00:00:00Z');
+      while (cur <= end) {
+        days.push(cur.toISOString().slice(0, 10));
+        cur.setUTCDate(cur.getUTCDate() + 1);
+      }
+    } else {
+      days = [i.date.slice(0, 10)];
+    }
+    days.forEach(j => {
+      if (!parJour.has(j)) parJour.set(j, new Set());
+      parJour.get(j).add(i.type);
+    });
+  });
+  const ordre = Object.keys(TYPE_COLORS);
+  return new Map([...parJour].map(([j, types]) => [j, ordre.filter(t => types.has(t))]));
+}
+
 /* ── Mini-calendrier ── */
 function MiniCalendar({ items, selectedDay, onDayClick }) {
   const [viewDate, setViewDate] = useState(() => {
@@ -49,21 +78,7 @@ function MiniCalendar({ items, selectedDay, onDayClick }) {
   const firstDayOfWeek = (new Date(year, month, 1).getDay() + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const todayStr = today();
-  const datesWithItems = new Set(items.flatMap(i => {
-    if (!i.date) return [];
-    if (i.type === 'evenement' && i.dateFin && i.dateFin > i.date) {
-      const days = [];
-      // Calcul entièrement en UTC : les jours ne dépendent pas du fuseau du navigateur.
-      const cur = new Date(i.date.slice(0, 10) + 'T00:00:00Z');
-      const end = new Date(i.dateFin.slice(0, 10) + 'T00:00:00Z');
-      while (cur <= end) {
-        days.push(cur.toISOString().slice(0, 10));
-        cur.setUTCDate(cur.getUTCDate() + 1);
-      }
-      return days;
-    }
-    return [i.date.slice(0, 10)];
-  }));
+  const typesJour = typesParJour(items);
   const monthLabel = new Date(year, month, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
 
   const btnNav = { background: 'none', border: 'none', cursor: 'pointer', color: T.muted, fontSize: '1.1rem', padding: '2px 8px', borderRadius: '4px', lineHeight: 1 };
@@ -85,7 +100,7 @@ function MiniCalendar({ items, selectedDay, onDayClick }) {
           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           const isToday = dateStr === todayStr;
           const isSelected = dateStr === selectedDay;
-          const hasDot = datesWithItems.has(dateStr);
+          const types = typesJour.get(dateStr) || [];
           return (
             <button key={day} onClick={() => onDayClick(isSelected ? null : dateStr)} style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -96,12 +111,25 @@ function MiniCalendar({ items, selectedDay, onDayClick }) {
               fontFamily: "'DM Sans', sans-serif", position: 'relative',
             }}>
               {day}
-              {hasDot && (
-                <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: isSelected ? 'rgba(255,255,255,0.7)' : T.green, position: 'absolute', bottom: '3px' }} />
+              {types.length > 0 && (
+                // Un point par type ; sur le jour sélectionné (fond vert), points blancs comme avant.
+                <span style={{ display: 'flex', gap: '2px', position: 'absolute', bottom: '3px' }}>
+                  {types.map(t => (
+                    <span key={t} style={{ width: '3px', height: '3px', borderRadius: '50%', background: isSelected ? 'rgba(255,255,255,0.7)' : TYPE_COLORS[t] }} />
+                  ))}
+                </span>
               )}
             </button>
           );
         })}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginTop: '0.6rem', fontSize: '0.65rem', color: T.muted }}>
+        {TYPES.map(([val, label]) => (
+          <span key={val} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: TYPE_COLORS[val] }} />
+            {label}
+          </span>
+        ))}
       </div>
       {selectedDay && (
         <button onClick={() => onDayClick(null)} style={{ marginTop: '0.75rem', width: '100%', padding: '0.35rem', background: 'none', border: '1px solid #E5E0D8', borderRadius: '6px', fontSize: '0.75rem', color: T.muted, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
