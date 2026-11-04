@@ -163,12 +163,6 @@ export default function NouvelleRecette() {
         <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', fontWeight: 700, color: T.text, flex: 1 }}>
           Nouvelle fiche technique
         </h1>
-        <button type="submit" disabled={saving} style={btnPrimary}
-          onMouseEnter={e => { if (!saving) e.currentTarget.style.background = '#1e4d38'; }}
-          onMouseLeave={e => e.currentTarget.style.background = T.green}
-        >
-          {saving ? 'Sauvegarde...' : 'Créer la fiche'}
-        </button>
       </div>
 
       {/* Zone IA */}
@@ -374,6 +368,16 @@ export default function NouvelleRecette() {
             );
           })}
         </div>
+      </div>
+
+      {/* Barre d'actions : collée en bas de la fenêtre (sticky), dans la largeur du formulaire. */}
+      <div style={{ position: 'sticky', bottom: 0, zIndex: 50, display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', padding: '0.75rem 0', background: '#fff', borderTop: '1px solid #E5E0D8', boxShadow: '0 -4px 12px rgba(0,0,0,0.06)' }}>
+        <button type="submit" disabled={saving} style={btnPrimary}
+          onMouseEnter={e => { if (!saving) e.currentTarget.style.background = '#1e4d38'; }}
+          onMouseLeave={e => e.currentTarget.style.background = T.green}
+        >
+          {saving ? 'Sauvegarde...' : 'Créer la fiche'}
+        </button>
       </div>
     </form>
   );
