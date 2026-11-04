@@ -185,7 +185,8 @@ export default function Dashboard() {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const j2 = new Date(today); j2.setDate(j2.getDate() + 2);
     return agendaItems
-      .filter(it => it.type !== 'note' && it.date)
+      // Tous les types datés (notes comprises) ; un élément « fait » n'est plus à venir.
+      .filter(it => it.date && it.statut !== 'fait')
       .filter(it => { const d = new Date(it.date); d.setHours(0, 0, 0, 0); return d >= today && d <= j2; })
       .sort((a, b) => a.date.localeCompare(b.date) || (a.heure || '').localeCompare(b.heure || ''));
   })();
