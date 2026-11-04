@@ -83,7 +83,15 @@ function compiler() {
     // « beurre d'amande / de noisette / de (noix de) cajou » garde le fruit à coque
     // (« beurre noisette », sans « de », reste du beurre),
     // « crème de marrons / cassis » garde « marrons » / « cassis ».
+    // Les trois groupes suivants passent en premier (avant « noix de coco », qui laisserait sinon « lait de » ou
+    // « beurre de » seul) ; liste fermée de mots, jamais « lait de » / « pâte de » / « beurre de » quelconque.
     exclusions: [
+      // Laits végétaux : « lait » retiré, le mot suivant reste (« lait d'amande » → amande, « lait de soja » → soja).
+      [motifGlobal("laits?[\\s-]+(?:de[\\s-]+|d['’]\\s*)((?:noix[\\s-]+de[\\s-]+)?cajous?|amandes?|noisettes?|noix(?:[\\s-]+de[\\s-]+coco)?|pistaches?|soja|coco|avoine|riz)"), ' $1'],
+      // Pâtes de fruits à coque et de graines : « pâte » retiré (sinon Gluten), le mot suivant reste.
+      [motifGlobal("pates?[\\s-]+(?:de[\\s-]+|d['’]\\s*)((?:noix[\\s-]+de[\\s-]+)?cajous?|noisettes?|amandes?|pistaches?|sesames?|cacahuetes?|arachides?|noix)"), ' $1'],
+      // Beurres végétaux : « beurre » retiré (sinon Lait), le mot suivant reste ; amande, noisette et cajou plus bas.
+      [motifGlobal("beurres?[\\s-]+(?:de[\\s-]+|d['’]\\s*)(pistaches?|macadamias?|(?:noix[\\s-]+de[\\s-]+)?pecans?|noix(?:[\\s-]+de[\\s-]+coco)?|sesames?|cacahuetes?|arachides?|karite|cacao|coco)"), ' $1'],
       [motifGlobal('noix[\\s-]+de[\\s-]+(?:coco|muscade|veau)'), ' '],
       [motifGlobal('lait[\\s-]+de[\\s-]+coco'), ' '],
       [motifGlobal('noix[\\s-]+de[\\s-]+(saint[\\s-]+jacques)'), ' $1'],
