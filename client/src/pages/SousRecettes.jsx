@@ -40,6 +40,7 @@ export default function SousRecettes() {
   const [editForm, setEditForm] = useState(null);
   const [editId, setEditId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [duplicationToast, setDuplicationToast] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -95,6 +96,18 @@ export default function SousRecettes() {
     cancel();
   }
 
+  // Même convention que la duplication des fiches (Recettes.jsx) : « (copie) » ajouté au nom ;
+  // le serveur attribue un nouvel identifiant (les fiches qui utilisent l'original ne changent pas).
+  function dupliquer(sr) {
+    const { id, user_id, createdAt, updatedAt, ...rest } = sr;
+    api.sousRecettes.create({ ...rest, nom: `${sr.nom} (copie)` })
+      .then(copie => {
+        setItems(prev => [...prev, copie]);
+        setDuplicationToast('Sous-recette dupliquée ✓');
+        setTimeout(() => setDuplicationToast(''), 3000);
+      });
+  }
+
   async function supprimer(id) {
     if (!confirm('Supprimer cette sous-recette ?')) return;
     await api.sousRecettes.delete(id);
@@ -114,6 +127,11 @@ export default function SousRecettes() {
 
   return (
     <div>
+      {duplicationToast && (
+        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', background: '#2D6A4F', color: '#fff', padding: '0.75rem 1.5rem', borderRadius: '8px', fontWeight: 600, fontSize: '0.9rem', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', zIndex: 500, fontFamily: "'DM Sans', sans-serif" }}>
+          {duplicationToast}
+        </div>
+      )}
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
         <div>
@@ -340,6 +358,10 @@ export default function SousRecettes() {
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'right' }}>
                     <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                      <button
+                        onClick={() => dupliquer(sr)}
+                        style={{ ...btnSm, border: '1px solid #E5E0D8', background: '#fff', color: T.text }}
+                      >Dupliquer</button>
                       <button
                         onClick={() => startEdit(sr)}
                         style={{ ...btnSm, border: '1px solid #E5E0D8', background: '#fff', color: T.text }}
