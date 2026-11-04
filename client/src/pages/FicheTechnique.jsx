@@ -452,8 +452,8 @@ export default function FicheTechnique() {
     const photoContainerStyle = fmt === 'paysage'
       ? 'width:450px;height:300px;margin-left:auto;margin-right:auto'
       : fmt === 'carre'
-      ? 'width:300px;height:300px;margin:0 auto'
-      : 'width:200px;height:300px;margin:0 auto';
+      ? 'width:300px;height:300px;margin-left:auto;margin-right:auto'
+      : 'width:200px;height:300px;margin-left:auto;margin-right:auto';
     const photoHtml = form.photo
       ? '<div style="margin-bottom:20px;border-radius:8px;overflow:hidden;' + photoContainerStyle + ';background-image:url(&quot;' + form.photo + '&quot;);background-size:cover;background-position:center;background-repeat:no-repeat"></div>'
       : '';
@@ -665,8 +665,8 @@ export default function FicheTechnique() {
         const containerStyle = fmt === 'paysage'
           ? { width: '100%', maxWidth: '600px', marginLeft: 'auto', marginRight: 'auto', aspectRatio: '3 / 2' }
           : fmt === 'carre'
-          ? { width: '400px', height: '400px', margin: '0 auto' }
-          : { width: '300px', height: '400px', margin: '0 auto' };
+          ? { width: '100%', maxWidth: '400px', aspectRatio: '1 / 1', marginLeft: 'auto', marginRight: 'auto' }
+          : { width: '100%', maxWidth: '300px', aspectRatio: '3 / 4', marginLeft: 'auto', marginRight: 'auto' };
         return (
           <div style={{ marginBottom: '1.5rem', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', ...containerStyle }}>
             <img src={recette.photo} alt={recette.nom} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', objectPosition: 'center' }} />
@@ -691,8 +691,8 @@ export default function FicheTechnique() {
                 const containerStyle = fmt === 'paysage'
                   ? { width: '100%', maxWidth: '600px', marginLeft: 'auto', marginRight: 'auto', aspectRatio: '3 / 2' }
                   : fmt === 'carre'
-                  ? { width: '400px', height: '400px', margin: '0 auto' }
-                  : { width: '300px', height: '400px', margin: '0 auto' };
+                  ? { width: '100%', maxWidth: '400px', aspectRatio: '1 / 1', marginLeft: 'auto', marginRight: 'auto' }
+                  : { width: '100%', maxWidth: '300px', aspectRatio: '3 / 4', marginLeft: 'auto', marginRight: 'auto' };
                 return (
                   <div style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', ...containerStyle }}>
                     <img src={form.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', objectPosition: 'center' }} />
