@@ -253,7 +253,19 @@ export default function FicheTechnique() {
     // Une clé hors liste déjà enregistrée (ancienne fiche) est conservée, en fin de liste.
     const allergenes = [...cles.filter(a => coches.includes(a) || nouveaux.includes(a)), ...coches.filter(a => !cles.includes(a))];
     api.recettes.update(id, { ...form, allergenes })
-      .then(data => { const fiche = ficheDepuisReponse(data); setRecette(fiche); setForm(fiche); setEditMode(false); })
+      .then(data => {
+        const crees = data?.ingredientsCrees?.length;
+        const fiche = ficheDepuisReponse(data);
+        setRecette(fiche);
+        setForm(fiche);
+        setEditMode(false);
+        // « Sauvegardé » seulement s'il n'a pas déjà été remplacé par le toast des ingrédients créés.
+        if (!crees) {
+          setSaveToast('Sauvegardé');
+          setSaveToastErreur(false);
+          setTimeout(() => setSaveToast(''), 2000);
+        }
+      })
       .catch(() => {
         setSaveToast('Enregistrement impossible. Vos modifications sont toujours à l\'écran : réessayez.');
         setSaveToastErreur(true);
@@ -1078,7 +1090,7 @@ export default function FicheTechnique() {
       {/* Barre d'actions de la modification : collée en bas de la fenêtre (sticky), dans la largeur de la fiche. */}
       {editMode && (
         <div style={{ position: 'sticky', bottom: 0, zIndex: 50, display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', padding: '0.75rem 0', background: '#fff', borderTop: '1px solid #E5E0D8', boxShadow: '0 -4px 12px rgba(0,0,0,0.06)' }}>
-          <button onClick={annulerModification} style={btnSecondary}>Annuler</button>
+          <button onClick={annulerModification} style={{ ...btnSecondary, background: '#F3EFE8', border: '1px solid #D1C4B0' }}>Annuler</button>
           <button onClick={sauvegarder} style={btnPrimary}
             onMouseEnter={e => e.currentTarget.style.background = '#1e4d38'} onMouseLeave={e => e.currentTarget.style.background = T.green}>Sauvegarder</button>
         </div>
