@@ -234,6 +234,14 @@ export default function FicheTechnique() {
     return fiche;
   }
 
+  // « Annuler » de la modification : confirmation seulement s'il y a des modifications non enregistrées
+  // (même condition que l'avertissement avant de quitter).
+  function annulerModification() {
+    if (ficheModifiee(form, recette) && !window.confirm('Abandonner vos modifications ? Elles ne seront pas enregistrées.')) return;
+    setForm(recette);
+    setEditMode(false);
+  }
+
   // Ajoute seulement les allergènes nouvellement détectés du fait des modifications (version enregistrée
   // → formulaire) ; un allergène décoché à la main n'est jamais recoché. Détection indisponible : rien n'est ajouté.
   function sauvegarder() {
@@ -654,13 +662,8 @@ export default function FicheTechnique() {
               ⎘ Dupliquer
             </button>
           )}
-          {editMode ? (
-            <>
-              <button onClick={() => { setForm(recette); setEditMode(false); }} style={btnSecondary}>Annuler</button>
-              <button onClick={sauvegarder} style={btnPrimary}
-                onMouseEnter={e => e.currentTarget.style.background = '#1e4d38'} onMouseLeave={e => e.currentTarget.style.background = T.green}>Sauvegarder</button>
-            </>
-          ) : (
+          {/* En modification, « Annuler » et « Sauvegarder » sont dans la barre collée en bas de la fiche. */}
+          {!editMode && (
             <button onClick={() => setEditMode(true)} style={{ ...btnSecondary, color: T.green, borderColor: '#2D6A4F' }}>Modifier</button>
           )}
         </div>
@@ -1072,9 +1075,18 @@ export default function FicheTechnique() {
         </div>
       </div>
 
+      {/* Barre d'actions de la modification : collée en bas de la fenêtre (sticky), dans la largeur de la fiche. */}
+      {editMode && (
+        <div style={{ position: 'sticky', bottom: 0, zIndex: 50, display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', padding: '0.75rem 0', background: '#fff', borderTop: '1px solid #E5E0D8', boxShadow: '0 -4px 12px rgba(0,0,0,0.06)' }}>
+          <button onClick={annulerModification} style={btnSecondary}>Annuler</button>
+          <button onClick={sauvegarder} style={btnPrimary}
+            onMouseEnter={e => e.currentTarget.style.background = '#1e4d38'} onMouseLeave={e => e.currentTarget.style.background = T.green}>Sauvegarder</button>
+        </div>
+      )}
+
       {/* Toast sauvegarde association */}
       {saveToast && (
-        <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', background: saveToastErreur ? T.red : T.green, color: '#fff', padding: '0.6rem 1.2rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, fontFamily: "'DM Sans', sans-serif", boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 9999 }}>
+        <div style={{ position: 'fixed', bottom: editMode ? '5rem' : '1.5rem', right: '1.5rem', background: saveToastErreur ? T.red : T.green, color: '#fff', padding: '0.6rem 1.2rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, fontFamily: "'DM Sans', sans-serif", boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 9999 }}>
           {saveToast}
         </div>
       )}
