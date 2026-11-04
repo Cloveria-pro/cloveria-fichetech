@@ -380,6 +380,10 @@ export default function Ingredients() {
   const [debordement, setDebordement] = useState(false);
   const carteRef = useRef(null);
   const tableRef = useRef(null);
+  // Suppression multiple : identifiants cochés, suppression en cours, message de résultat.
+  const [selection, setSelection] = useState(new Set());
+  const [suppressionEnCours, setSuppressionEnCours] = useState(false);
+  const [toastSelection, setToastSelection] = useState('');
 
   // offsetWidth du tableau ne dépend pas de l'overflow de la carte (clip ou hidden) : basculer la classe ne change pas la mesure.
   useLayoutEffect(() => {
@@ -402,6 +406,7 @@ export default function Ingredients() {
   // Liste longue : PAS_LISTE lignes au départ, remises à PAS_LISTE à chaque changement de recherche, de filtre ou de tri.
   useEffect(() => {
     setLimite(PAS_LISTE);
+    setSelection(new Set());
   }, [recherche, catFilter, fournisseurFilter, ficheFilter, sortField, sortDir]);
 
   useEffect(() => {
@@ -467,6 +472,59 @@ export default function Ingredients() {
   // Coupure après recherche, filtres et tri ; la ligne en édition reste toujours affichée.
   const affiches = filtered.filter((item, index) => index < limite || item.id === editId);
   const restants = filtered.length - affiches.length;
+
+  // Sélection : seulement des ingrédients encore présents ; la case d'en-tête porte sur les lignes affichées.
+  const idsSelectionnes = items.filter(i => selection.has(i.id)).map(i => i.id);
+  const nbSelectionnes = idsSelectionnes.length;
+  const nbAffichesCoches = affiches.filter(i => selection.has(i.id)).length;
+  const tousAffichesCoches = affiches.length > 0 && nbAffichesCoches === affiches.length;
+
+  function basculerSelection(id) {
+    setSelection(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function basculerSelectionAffiches() {
+    setSelection(prev => {
+      const next = new Set(prev);
+      affiches.forEach(i => { if (tousAffichesCoches) next.delete(i.id); else next.add(i.id); });
+      return next;
+    });
+  }
+
+  // Suppression à la suite (un appel par ingrédient) ; ceux qui échouent restent cochés. Pas d'annulation.
+  async function supprimerSelection() {
+    const ids = idsSelectionnes;
+    if (ids.length === 0) return;
+    const nomsFiches = new Set(recettes.flatMap(r => (r.ingredients || []).map(fi => norm(fi.nom))));
+    const utilises = items.filter(i => ids.includes(i.id) && nomsFiches.has(norm(i.nom))).length;
+    let message = `Supprimer ${ids.length} ingrédient${ids.length > 1 ? 's' : ''} ? Cette action est définitive.`;
+    if (utilises > 0) message += `\n${utilises} d'entre eux sont utilisés dans des fiches : ils y resteront avec leur prix et réapparaîtront dans le catalogue si vous enregistrez ces fiches.`;
+    if (!confirm(message)) return;
+    setSuppressionEnCours(true);
+    const reussis = [];
+    const echecs = [];
+    for (const id of ids) {
+      try {
+        await api.ingredients.delete(id);
+        reussis.push(id);
+      } catch {
+        echecs.push(id);
+      }
+    }
+    setItems(prev => prev.filter(i => !reussis.includes(i.id)));
+    setSelection(new Set(echecs));
+    setSuppressionEnCours(false);
+    const n = reussis.length;
+    const texte = echecs.length === 0
+      ? `${n} ingrédient${n > 1 ? 's' : ''} supprimé${n > 1 ? 's' : ''}`
+      : `${n} supprimé${n > 1 ? 's' : ''}, ${echecs.length} en échec : réessayez.`;
+    setToastSelection(texte);
+    setTimeout(() => setToastSelection(t => (t === texte ? '' : t)), 3500);
+  }
 
   // Une ligne ne disparaît jamais à cause de la limite : limite = max(limite, position + 1).
   // Sans effet si l'ingrédient est masqué par la recherche ou un filtre (position -1).
@@ -667,10 +725,16 @@ export default function Ingredients() {
         ` @media (min-width: ${LARGEUR_COLLANT_PX}px) { .ing-carte.ing-collant { overflow: clip !important; } .ing-carte.ing-collant .ing-cadre { overflow: visible !important; } }`}</style>
       <div ref={carteRef} className={'ing-carte' + (!debordement ? ' ing-collant' : '')} style={{ ...card, borderRadius: '14px', boxShadow: '0 4px 20px rgba(28,43,30,0.10)', overflow: 'hidden' }}>
         <div className="ing-cadre" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-        <table ref={tableRef} style={{ width: '100%', borderCollapse: 'collapse', minWidth: '960px' }}>
+        <table ref={tableRef} style={{ width: '100%', borderCollapse: 'collapse', minWidth: '1000px' }}>
           {/* En-tête sombre et opaque (collé, il ne doit pas laisser voir les lignes) : bloqué pendant l'édition, texte plus terne. */}
           <thead {...inertSiEdition} style={{ background: '#1C2B1E', color: enEdition ? '#8F978E' : '#F3EEDC', ...(enEdition ? { pointerEvents: 'none' } : {}) }}>
             <tr>
+              <th style={{ ...thStyle, width: '40px' }}>
+                <input type="checkbox" checked={tousAffichesCoches} onChange={basculerSelectionAffiches}
+                  ref={el => { if (el) el.indeterminate = nbAffichesCoches > 0 && !tousAffichesCoches; }}
+                  aria-label="Sélectionner toutes les lignes affichées"
+                  style={{ width: '16px', height: '16px', accentColor: T.green, cursor: 'pointer' }} />
+              </th>
               {[
                 { label: 'Nom', field: 'nom' },
                 { colonne: 'evolution-prix' },
@@ -707,6 +771,7 @@ export default function Ingredients() {
             {affiches.map((item, index) => (
               editId === item.id ? (
                 <tr key={item.id} style={{ background: 'rgba(45,106,79,0.03)' }}>
+                  <td style={tdStyle} />
                   <td style={tdStyle} colSpan={2}><input value={editForm.nom} onChange={e => updateEditForm(f => ({ ...f, nom: e.target.value }))} style={inputStyle} /></td>
                   <td style={tdStyle}>
                     <select value={editForm.categorie} onChange={e => updateEditForm(f => ({ ...f, categorie: e.target.value }))} style={{ ...inputStyle, minWidth: '136px' }}>
@@ -757,6 +822,11 @@ export default function Ingredients() {
                 <tr key={item.id} {...inertSiEdition} onClick={() => startEdit(item)} className="ing-ligne"
                   style={{ '--fond': fondLigne(item, index), cursor: 'pointer', transition: 'background 0.1s', ...styleBloque }}
                 >
+                  <td style={tdLecture} onClick={e => e.stopPropagation()}>
+                    <input type="checkbox" checked={selection.has(item.id)} onChange={() => basculerSelection(item.id)}
+                      aria-label={`Sélectionner ${item.nom}`}
+                      style={{ width: '16px', height: '16px', accentColor: T.green, cursor: 'pointer' }} />
+                  </td>
                   <td style={tdLecture}><span style={{ fontSize: '15px', fontWeight: 600, color: '#1C2B1E' }}>{item.nom}</span></td>
                   <td style={tdLecture} onClick={e => e.stopPropagation()}>
                     <button type="button" onClick={() => setHistItem(item)} className="ing-prix" title="Historique des prix"
@@ -797,7 +867,7 @@ export default function Ingredients() {
               )
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={9} style={{ ...tdStyle, textAlign: 'center', color: T.muted, padding: '2rem' }}>Aucun ingrédient trouvé</td></tr>
+              <tr><td colSpan={10} style={{ ...tdStyle, textAlign: 'center', color: T.muted, padding: '2rem' }}>Aucun ingrédient trouvé</td></tr>
             )}
           </tbody>
           {/* Formulaire ajout */}
@@ -805,7 +875,7 @@ export default function Ingredients() {
             <tfoot {...bloqueSiEdition}>
               {dupWarning && (
                 <tr style={{ background: '#FFF7ED', borderTop: '2px solid #FED7AA' }}>
-                  <td colSpan={9} style={{ padding: '0.75rem 1rem' }}>
+                  <td colSpan={10} style={{ padding: '0.75rem 1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '0.85rem', color: '#92400e', flex: 1 }}>
                         ⚠️ Un ingrédient similaire existe déjà : <strong>{dupWarning.nom}</strong> ({dupWarning.prixUnitaire} EUR HT/{dupWarning.unite}
@@ -826,7 +896,7 @@ export default function Ingredients() {
               )}
               {catalogSimilar.length > 0 && (
                 <tr style={{ background: '#F0FDF4', borderTop: '1px solid #BBF7D0' }}>
-                  <td colSpan={9} style={{ padding: '0.5rem 1rem' }}>
+                  <td colSpan={10} style={{ padding: '0.5rem 1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '0.72rem', color: '#166534', fontWeight: 600, whiteSpace: 'nowrap' }}>Déjà dans le catalogue :</span>
                       {catalogSimilar.map(it => (
@@ -843,7 +913,7 @@ export default function Ingredients() {
               )}
               {showNomSuggestions && nomSuggestions.length > 0 && (
                 <tr style={{ background: '#FFFBF5', borderTop: '1px solid #F3EFE8' }}>
-                  <td colSpan={9} style={{ padding: '0.5rem 1rem' }}>
+                  <td colSpan={10} style={{ padding: '0.5rem 1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '0.72rem', color: '#9CA3AF', whiteSpace: 'nowrap' }}>Utilisé dans des fiches :</span>
                       {nomSuggestions.map(name => (
@@ -857,6 +927,7 @@ export default function Ingredients() {
                 </tr>
               )}
               <tr style={{ background: 'rgba(45,106,79,0.04)', borderTop: '2px solid #E5E0D8' }}>
+                <td style={{ padding: '0.75rem 0.7rem' }} />
                 <td style={{ padding: '0.75rem 0.7rem' }} colSpan={2}>
                   <input placeholder="Nom *" value={addForm.nom}
                     onChange={e => { setAddForm(f => ({ ...f, nom: e.target.value })); setShowNomSuggestions(true); setDupWarning(null); }}
@@ -935,12 +1006,34 @@ export default function Ingredients() {
       )}
 
       {/* Bouton flottant : « + Ajouter » toujours accessible, même loin dans la liste. */}
-      {!showAdd && !enEdition && (
+      {!showAdd && !enEdition && nbSelectionnes === 0 && (
         <button onClick={() => { setShowAdd(true); setEditId(null); }} aria-label="Ajouter un ingrédient"
           style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 40, padding: '0.55rem 1.25rem', background: T.green, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", boxShadow: '0 4px 12px rgba(0,0,0,0.18)' }}
           onMouseEnter={e => e.currentTarget.style.background = '#1e4d38'}
           onMouseLeave={e => e.currentTarget.style.background = T.green}
         >+ Ajouter</button>
+      )}
+
+      {/* Barre de sélection : collée en bas de la fenêtre (sticky), sur le modèle de la barre de la fiche. */}
+      {nbSelectionnes > 0 && (
+        <div style={{ position: 'sticky', bottom: 0, zIndex: 50, display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 0', background: '#fff', borderTop: '1px solid #E5E0D8', boxShadow: '0 -4px 12px rgba(0,0,0,0.06)' }}>
+          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: T.text }}>
+            {nbSelectionnes} ingrédient{nbSelectionnes > 1 ? 's' : ''} sélectionné{nbSelectionnes > 1 ? 's' : ''}
+          </span>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button onClick={() => setSelection(new Set())} disabled={enEdition || suppressionEnCours}
+              style={{ padding: '0.55rem 1.25rem', background: '#F3EFE8', color: T.text, border: '1px solid #D1C4B0', borderRadius: '8px', fontSize: '0.875rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+            >Tout désélectionner</button>
+            <button onClick={supprimerSelection} disabled={enEdition || suppressionEnCours}
+              style={{ padding: '0.55rem 1.25rem', background: '#DC2626', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", opacity: enEdition || suppressionEnCours ? 0.6 : 1 }}
+            >{suppressionEnCours ? 'Suppression…' : 'Supprimer la sélection'}</button>
+          </div>
+        </div>
+      )}
+      {toastSelection && (
+        <div style={{ position: 'fixed', bottom: nbSelectionnes > 0 ? '5rem' : '2rem', right: '2rem', background: '#2D6A4F', color: '#fff', padding: '0.75rem 1.5rem', borderRadius: '8px', fontWeight: 600, fontSize: '0.9rem', boxShadow: '0 4px 16px rgba(0,0,0,0.2)', zIndex: 500 }}>
+          {toastSelection}
+        </div>
       )}
       </>)}
     </div>
