@@ -181,13 +181,21 @@ export default function Dashboard() {
   const TYPE_COLORS_AG = { rappel: '#3B82F6', evenement: '#2D6A4F', note: '#C9A84C' };
   const TYPE_LABELS_AG = { rappel: 'Rappel', evenement: 'Événement', note: 'Note' };
 
+  // Événement sur plusieurs jours (même règle qu'Organisation.jsx) : sa période va jusqu'à dateFin.
+  const surPlusieursJours = it => it.type === 'evenement' && it.dateFin && it.dateFin > it.date;
+
   const agendaJ0J2 = (() => {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const j2 = new Date(today); j2.setDate(j2.getDate() + 2);
     return agendaItems
       // Tous les types datés (notes comprises) ; un élément « fait » n'est plus à venir.
       .filter(it => it.date && it.statut !== 'fait')
-      .filter(it => { const d = new Date(it.date); d.setHours(0, 0, 0, 0); return d >= today && d <= j2; })
+      // Période de l'élément (début → fin) qui touche la fenêtre aujourd'hui → aujourd'hui + 2.
+      .filter(it => {
+        const debut = new Date(it.date); debut.setHours(0, 0, 0, 0);
+        const fin = new Date(surPlusieursJours(it) ? it.dateFin : it.date); fin.setHours(0, 0, 0, 0);
+        return debut <= j2 && fin >= today;
+      })
       .sort((a, b) => a.date.localeCompare(b.date) || (a.heure || '').localeCompare(b.heure || ''));
   })();
 
@@ -198,6 +206,18 @@ export default function Dashboard() {
     if (diff === 0) return "Aujourd'hui";
     if (diff === 1) return 'Demain';
     return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+  };
+
+  // Ligne de date d'un élément. Événement sur plusieurs jours déjà commencé : « Jusqu'au 14 nov. », sans heure
+  // (elle désignerait le début) ; sinon affichage habituel, suivi de l'heure après « · ».
+  const dateAgenda = it => {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const debut = new Date(it.date); debut.setHours(0, 0, 0, 0);
+    if (surPlusieursJours(it) && debut < today) {
+      const fin = new Date(it.dateFin); fin.setHours(0, 0, 0, 0);
+      return `Jusqu'au ${fin.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`;
+    }
+    return formatAgendaDate(it.date) + (it.heure ? ` · ${it.heure}` : '');
   };
 
   async function handleAgendaSave(id, payload) {
@@ -300,7 +320,7 @@ export default function Dashboard() {
                   {it.titre}
                 </div>
                 <div style={{ fontSize: '0.72rem', color: T.muted, marginTop: '2px' }}>
-                  {formatAgendaDate(it.date)}{it.heure ? ` · ${it.heure}` : ''}
+                  {dateAgenda(it)}
                 </div>
               </div>
               <div style={{
