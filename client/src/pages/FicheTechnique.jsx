@@ -107,7 +107,7 @@ const TVA_OPTIONS = [
   { value: 20, label: '20% — Alcool/Luxe' },
 ];
 
-const T = { green: '#2D6A4F', gold: '#C9A84C', bg: '#F8F6F1', text: '#1C2B1E', muted: '#6B7280' };
+const T = { green: '#2D6A4F', gold: '#C9A84C', bg: '#F8F6F1', text: '#1C2B1E', muted: '#6B7280', red: '#DC2626' };
 const card = { background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' };
 const inputStyle = { padding: '0.45rem 0.7rem', border: '1px solid #E5E0D8', borderRadius: '6px', fontSize: '0.875rem', width: '100%', fontFamily: "'DM Sans', sans-serif", outline: 'none', color: T.text };
 const labelStyle = { fontSize: '0.78rem', color: T.muted, display: 'block', marginBottom: '5px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' };
@@ -175,6 +175,8 @@ export default function FicheTechnique() {
   const [showCarteAdd, setShowCarteAdd] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [saveToast, setSaveToast] = useState('');
+  // Toast d'échec (fond rouge) ; remis à false par chaque message de succès ou d'information.
+  const [saveToastErreur, setSaveToastErreur] = useState(false);
   const width = useWindowWidth();
   const isMobile = width < 768;
   // Avertissement avant de quitter : en modification, seulement si le formulaire diffère de la version enregistrée.
@@ -217,6 +219,7 @@ export default function FicheTechnique() {
   function afficherToastCrees(crees) {
     const message = messageIngredientsCrees(crees);
     setSaveToast(message);
+    setSaveToastErreur(false);
     setTimeout(() => setSaveToast(t => (t === message ? '' : t)), 6000);
   }
 
@@ -245,6 +248,7 @@ export default function FicheTechnique() {
       .then(data => { const fiche = ficheDepuisReponse(data); setRecette(fiche); setForm(fiche); setEditMode(false); })
       .catch(() => {
         setSaveToast('Enregistrement impossible. Vos modifications sont toujours à l\'écran : réessayez.');
+        setSaveToastErreur(true);
         setTimeout(() => setSaveToast(''), 4000);
       });
   }
@@ -263,6 +267,7 @@ export default function FicheTechnique() {
           setForm(f => ({ ...f, photo: ancienne }));
           setRecette(prev => ({ ...prev, photo: ancienne }));
           setSaveToast('Photo non enregistrée. Réessayez avec une autre photo.');
+          setSaveToastErreur(true);
           setTimeout(() => setSaveToast(''), 4000);
         });
       } else {
@@ -310,6 +315,7 @@ export default function FicheTechnique() {
     const allergenes = detecterAllergenes({ ingredients: form.ingredients, etapes: form.etapes, sousRecettes });
     if (allergenes === null) {
       setSaveToast('Détection indisponible sur ce navigateur.');
+      setSaveToastErreur(true);
       setTimeout(() => setSaveToast(''), 2000);
       return;
     }
@@ -398,6 +404,7 @@ export default function FicheTechnique() {
     // « Sauvegardé » seulement s'il n'a pas déjà été remplacé par le toast des ingrédients créés.
     if (!reponse?.ingredientsCrees?.length) {
       setSaveToast('Sauvegardé');
+      setSaveToastErreur(false);
       setTimeout(() => setSaveToast(''), 2000);
     }
   }
@@ -1067,7 +1074,7 @@ export default function FicheTechnique() {
 
       {/* Toast sauvegarde association */}
       {saveToast && (
-        <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', background: T.green, color: '#fff', padding: '0.6rem 1.2rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, fontFamily: "'DM Sans', sans-serif", boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 9999 }}>
+        <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', background: saveToastErreur ? T.red : T.green, color: '#fff', padding: '0.6rem 1.2rem', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, fontFamily: "'DM Sans', sans-serif", boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 9999 }}>
           {saveToast}
         </div>
       )}
