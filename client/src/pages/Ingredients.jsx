@@ -644,14 +644,14 @@ export default function Ingredients() {
         </select>
         {fournisseursOptions.length > 0 && (
           <select value={fournisseurActif} onChange={e => setFournisseurFilter(e.target.value)}
-            style={{ ...inputStyle, width: 'auto', cursor: 'pointer', borderColor: fournisseurActif ? '#2D6A4F' : '#E5E0D8' }}>
+            style={{ ...inputStyle, width: 'auto', maxWidth: '100%', cursor: 'pointer', borderColor: fournisseurActif ? '#2D6A4F' : '#E5E0D8' }}>
             <option value="">Tous les fournisseurs</option>
             {fournisseursOptions.map(f => <option key={f.cle} value={f.cle}>{f.libelle}</option>)}
           </select>
         )}
         {recettes.length > 0 && (
           <select value={ficheFilter} onChange={e => setFicheFilter(e.target.value)}
-            style={{ ...inputStyle, width: 'auto', cursor: 'pointer', borderColor: ficheFilter ? '#2D6A4F' : '#E5E0D8' }}>
+            style={{ ...inputStyle, width: 'auto', maxWidth: '100%', cursor: 'pointer', borderColor: ficheFilter ? '#2D6A4F' : '#E5E0D8' }}>
             <option value="">Toutes les fiches</option>
             {[...recettes].sort((a, b) => a.nom.localeCompare(b.nom)).map(r => (
               <option key={r.id} value={r.id}>{r.nom}</option>
