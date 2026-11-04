@@ -115,7 +115,7 @@ function MiniCalendar({ items, selectedDay, onDayClick }) {
                 // Un point par type ; sur le jour sélectionné (fond vert), points blancs comme avant.
                 <span style={{ display: 'flex', gap: '2px', position: 'absolute', bottom: '3px' }}>
                   {types.map(t => (
-                    <span key={t} style={{ width: '3px', height: '3px', borderRadius: '50%', background: isSelected ? 'rgba(255,255,255,0.7)' : TYPE_COLORS[t] }} />
+                    <span key={t} style={{ width: '4px', height: '4px', borderRadius: '50%', background: isSelected ? 'rgba(255,255,255,0.7)' : TYPE_COLORS[t] }} />
                   ))}
                 </span>
               )}
