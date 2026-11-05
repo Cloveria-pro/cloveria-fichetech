@@ -26,14 +26,21 @@ const PREV_ROUTES = [
   '/menu-engineering',  // step 7 → step 6
 ];
 
-const LOGO_HTML = `<img src="/logo.png" style="width:200px;height:auto;display:block;margin:0 auto 16px;object-fit:contain" />`;
+// Même seuil que isMobile d'App.jsx (largeur < 768 px) : sur mobile, la fenêtre reste centrée sur l'écran.
+const estMobile = () => window.innerWidth < 768;
 
-// Popover config shared by all sidebar steps — centered on screen, close button always visible
-const sidebarPopover = (title, description) => ({
-  title,
-  description: LOGO_HTML + description,
-  side: 'over',
-  align: 'center',
+// Petit logo (logo.png est carré, 500 × 500) à gauche du titre de chaque étape ciblée.
+const titreAvecLogo = title =>
+  `<span style="display:inline-flex;align-items:center;gap:10px"><img src="/logo.png" alt="" style="height:32px;width:auto;object-fit:contain;flex-shrink:0" />${title}</span>`;
+
+// Popover config shared by all sidebar steps — à droite de l'élément du menu (centrée sur mobile),
+// compteur « Étape N sur 7 » propre à l'étape, close button always visible.
+const sidebarPopover = (numero, title, description, alignOrdinateur = 'start') => ({
+  title: titreAvecLogo(title),
+  description,
+  side: estMobile() ? 'over' : 'right',
+  align: estMobile() ? 'center' : alignOrdinateur,
+  progressText: `Étape ${numero} sur 7`,
   showButtons: ['next', 'previous', 'close'],
 });
 
@@ -91,6 +98,7 @@ export function startTour(navigate) {
       {
         element: '[data-tour="nav-parametres"]',
         popover: sidebarPopover(
+          1,
           'Paramètres',
           "Commencez ici — définissez votre food cost cible et votre TVA. Tout se calcule automatiquement à partir de ces valeurs."
         ),
@@ -98,6 +106,7 @@ export function startTour(navigate) {
       {
         element: '[data-tour="nav-ingredients"]',
         popover: sidebarPopover(
+          2,
           'Ingrédients',
           "Ajoutez vos ingrédients avec leurs prix, ou scannez directement une facture fournisseur — l'IA détecte les produits automatiquement."
         ),
@@ -105,6 +114,7 @@ export function startTour(navigate) {
       {
         element: '[data-tour="nav-fiches"]',
         popover: sidebarPopover(
+          3,
           'Fiches Techniques',
           "Vous avez des fiches papier ? Importez-les en photo ou PDF — l'IA extrait les ingrédients et les quantités."
         ),
@@ -112,13 +122,16 @@ export function startTour(navigate) {
       {
         element: '[data-tour="btn-nouvelle-fiche"]',
         popover: sidebarPopover(
+          4,
           'Nouvelle fiche',
-          "Ou décrivez un plat en langage naturel — l'IA génère la fiche technique complète en quelques secondes."
+          "Ou décrivez un plat avec vos mots — la fiche technique complète est générée en quelques secondes.",
+          'end' // bouton en bas du menu : la fenêtre remonte au lieu de sortir de l'écran
         ),
       },
       {
         element: '[data-tour="nav-cartes"]',
         popover: sidebarPopover(
+          5,
           'Cartes',
           "Assemblez vos fiches en cartes de restaurant. Visualisez le food cost par section et ajustez les prix de vente."
         ),
@@ -126,6 +139,7 @@ export function startTour(navigate) {
       {
         element: '[data-tour="nav-menu-engineering"]',
         popover: sidebarPopover(
+          6,
           'Menu Engineering',
           "Importez vos récapitulatifs de ventes caisse pour analyser la popularité et la rentabilité de chaque plat."
         ),
@@ -133,6 +147,7 @@ export function startTour(navigate) {
       {
         element: '[data-tour="nav-dashboard"]',
         popover: sidebarPopover(
+          7,
           'Dashboard',
           "Votre tableau de bord — suivez le food cost global et les actions prioritaires du jour en un coup d'œil."
         ),

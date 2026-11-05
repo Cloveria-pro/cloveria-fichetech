@@ -237,7 +237,7 @@ export default function App() {
           )}
         </div>
 
-        <nav style={{ flex: 1, padding: '0 0.75rem' }}>
+        <nav style={{ flex: '1 0 auto', padding: '0 0.75rem' }}>
           {NAV_ITEMS.map(({ label, to, end, tour, icon }) => (
             <NavLink key={label} to={to} end={end} onClick={isMobile ? closeSidebar : undefined} data-tour={tour}
               style={({ isActive }) => ({
