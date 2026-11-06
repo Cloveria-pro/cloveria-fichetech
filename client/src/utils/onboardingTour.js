@@ -31,7 +31,7 @@ const estMobile = () => window.innerWidth < 768;
 
 // Petit logo à gauche du titre de chaque étape ciblée : le favicon (FAVICONoff.png, trèfle seul, carré 500 × 500).
 const titreAvecLogo = title =>
-  `<span style="display:inline-flex;align-items:center;gap:10px"><img src="/FAVICONoff.png" alt="" style="height:36px;width:auto;object-fit:contain;flex-shrink:0" />${title}</span>`;
+  `<span style="display:inline-flex;align-items:center;gap:12px"><img src="/chef-etape.webp" alt="" style="width:56px;height:56px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid #E5E0D8" />${title}</span>`;
 
 // Popover config shared by all sidebar steps — à droite de l'élément du menu (centrée sur mobile),
 // compteur « Étape N sur 7 » propre à l'étape, close button always visible.
@@ -91,7 +91,7 @@ export function startTour(navigate) {
       {
         // Étape d'accueil — centrée, sans spotlight sur un élément
         popover: {
-          title: `<div style="text-align:center;padding-top:4px"><img src="/logo.png" style="width:200px;height:auto;display:block;margin:0 auto 16px;object-fit:contain" /></div>`,
+          title: `<div style="text-align:center;padding-top:4px"><img src="/chef-accueil.webp" alt="" style="height:220px;width:auto;display:block;margin:0 auto 12px" /></div>`,
           description: `<div style="text-align:center"><p style="font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:700;color:#1C2B1E;margin:0 0 10px;line-height:1.3">Bienvenue sur CloverIA FicheTech</p><p style="font-family:'DM Sans',sans-serif;font-size:0.9rem;color:#6B7280;line-height:1.6;margin:0">Laissez-nous vous faire découvrir l'outil en 7 étapes.</p></div>`,
           showButtons: ['next', 'close'],
           nextBtnText: 'Commencer →',
