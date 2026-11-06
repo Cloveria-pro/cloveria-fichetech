@@ -7,31 +7,25 @@ const card = { background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px 
 const inputStyle = { padding: '0.45rem 0.7rem', border: '1px solid #E5E0D8', borderRadius: '6px', fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif", outline: 'none', color: T.text, width: '100%' };
 const labelStyle = { fontSize: '0.78rem', color: T.muted, display: 'block', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' };
 
-function fcColor(pct) { if (pct < 30) return T.green; if (pct <= 35) return T.orange; return T.red; }
-function fcLabel(pct) { if (pct < 30) return 'Excellent'; if (pct <= 35) return 'Acceptable'; return 'À retravailler'; }
-
+// Seuils [t1, t2] : cible du type + 1 (vert inclus), puis + 5 (orange inclus).
 const TYPE_FC = {
-  'Gastro': { thresholds: [28, 33], msgs: ['Excellent pour un gastro — marges très confortables', 'Acceptable pour un gastro', 'À surveiller pour un gastro'] },
-  'Brasserie / traditionnel': { thresholds: [32, 36], msgs: ['Excellent pour une brasserie', 'Acceptable pour une brasserie', 'À surveiller pour une brasserie'] },
-  'Fast-food / snacking': { thresholds: [32, 36], msgs: ['Excellent pour le snacking', 'Acceptable pour le snacking', 'À surveiller pour le snacking'] },
-  'Traiteur': { thresholds: [32, 36], msgs: ['Excellent pour un traiteur', 'Acceptable pour un traiteur', 'À surveiller pour un traiteur'] },
-  "Hôtel / restaurant d'hôtel": { thresholds: [30, 35], msgs: ["Excellent pour un hôtel-restaurant", "Acceptable pour un hôtel-restaurant", "À surveiller pour un hôtel-restaurant"] },
+  'Gastro': { thresholds: [33, 37], msgs: ['Excellent pour un gastro — marges très confortables', 'Acceptable pour un gastro', 'À surveiller pour un gastro'] },
+  'Brasserie / traditionnel': { thresholds: [33, 37], msgs: ['Excellent pour une brasserie', 'Acceptable pour une brasserie', 'À surveiller pour une brasserie'] },
+  'Fast-food / snacking': { thresholds: [29, 33], msgs: ['Excellent pour le snacking', 'Acceptable pour le snacking', 'À surveiller pour le snacking'] },
+  'Traiteur': { thresholds: [31, 35], msgs: ['Excellent pour un traiteur', 'Acceptable pour un traiteur', 'À surveiller pour un traiteur'] },
+  "Hôtel / restaurant d'hôtel": { thresholds: [31, 35], msgs: ["Excellent pour un hôtel-restaurant", "Acceptable pour un hôtel-restaurant", "À surveiller pour un hôtel-restaurant"] },
 };
+
+// Type vide ou « Autre » : référence 30, même règle.
+const FC_GENERIQUE = { thresholds: [31, 35], msgs: ['Marges confortables : vérifiez la qualité.', 'Acceptable, surveillez les matières premières.', 'Trop élevé, révisez vos recettes ou vos prix.'] };
 
 const IND_BG = { [T.green]: 'rgba(45,106,79,0.06)', [T.orange]: 'rgba(217,119,6,0.06)', [T.red]: 'rgba(220,38,38,0.06)' };
 const IND_BORDER = { [T.green]: 'rgba(45,106,79,0.2)', [T.orange]: 'rgba(217,119,6,0.2)', [T.red]: 'rgba(220,38,38,0.2)' };
 
 function getIndicator(cible, type) {
-  const conf = TYPE_FC[type];
-  if (!conf) {
-    return {
-      color: fcColor(cible),
-      label: fcLabel(cible),
-      msg: cible < 28 ? '— Marges très confortables, vérifiez la qualité.' : cible < 32 ? '— Zone idéale pour la restauration gastronomique.' : cible < 36 ? '— Acceptable, surveillez les matières premières.' : '— Trop élevé, révisez vos recettes ou vos prix.',
-    };
-  }
+  const conf = TYPE_FC[type] || FC_GENERIQUE;
   const [t1, t2] = conf.thresholds;
-  const idx = cible < t1 ? 0 : cible <= t2 ? 1 : 2;
+  const idx = cible <= t1 ? 0 : cible <= t2 ? 1 : 2;
   const colors = [T.green, T.orange, T.red];
   const labels = ['Excellent', 'Acceptable', 'À retravailler'];
   return { color: colors[idx], label: labels[idx], msg: '— ' + conf.msgs[idx] };

@@ -5,10 +5,10 @@ import { api } from '../api.js';
 const T = { green: '#2D6A4F', text: '#1C2B1E', muted: '#6B7280', bg: '#F8F6F1', border: '#E5E0D8' };
 
 const FC_PRESETS = {
-  'Gastro': 28,
+  'Gastro': 32,
   'Brasserie / traditionnel': 32,
-  'Fast-food / snacking': 32,
-  'Traiteur': 32,
+  'Fast-food / snacking': 28,
+  'Traiteur': 30,
   "Hôtel / restaurant d'hôtel": 30,
   'Autre': 30,
 };
