@@ -167,7 +167,7 @@ export default function App() {
     return (
       <Routes>
         <Route path="/onboarding" element={
-          <Onboarding onComplete={async () => {
+          <Onboarding etablissementInitial={user?.etablissement || ''} onComplete={async () => {
             const fresh = await api.profil.get().catch(() => null);
             const newUser = { ...user, onboardingComplete: true, etablissement: fresh?.etablissement || user.etablissement || '' };
             localStorage.setItem('user', JSON.stringify(newUser));

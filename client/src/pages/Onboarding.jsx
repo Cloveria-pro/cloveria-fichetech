@@ -82,7 +82,7 @@ function Logo() {
   );
 }
 
-export default function Onboarding({ onComplete }) {
+export default function Onboarding({ onComplete, etablissementInitial = '' }) {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -91,7 +91,7 @@ export default function Onboarding({ onComplete }) {
   const [autreObjectif, setAutreObjectif] = useState('');
   const [data, setData] = useState({
     prenom: '',
-    etablissement: '',
+    etablissement: etablissementInitial, // nom saisi à l'inscription
     typeEtablissement: '',
     role: '',
     objectifs: [],
@@ -142,8 +142,11 @@ export default function Onboarding({ onComplete }) {
       const finalObjectifs = data.objectifs.map(o =>
         o === 'Autre' && autreObjectif.trim() ? autreObjectif.trim() : o
       );
+      // Nom vide : champ non envoyé, le nom existant reste en base
+      const { etablissement, ...reste } = data;
+      const envoi = etablissement.trim() ? data : reste;
       localStorage.removeItem('onboarding_done');
-      await api.profil.update({ ...data, objectifs: finalObjectifs, onboardingComplete: true });
+      await api.profil.update({ ...envoi, objectifs: finalObjectifs, onboardingComplete: true });
       onComplete();
       navigate('/');
     } catch {
