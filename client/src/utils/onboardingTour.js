@@ -29,7 +29,7 @@ const PREV_ROUTES = [
 // Même seuil que isMobile d'App.jsx (largeur < 768 px) : sur mobile, la fenêtre reste centrée sur l'écran.
 const estMobile = () => window.innerWidth < 768;
 
-// Petit logo à gauche du titre de chaque étape ciblée : le favicon (FAVICONoff.png, trèfle seul, carré 500 × 500).
+// Portrait du chef à gauche du titre de chaque étape ciblée (chef-etape.webp, rond de 56 px).
 const titreAvecLogo = title =>
   `<span style="display:inline-flex;align-items:center;gap:12px"><img src="/chef-etape.webp" alt="" style="width:56px;height:56px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid #E5E0D8" />${title}</span>`;
 
@@ -103,7 +103,8 @@ export function startTour(navigate) {
         popover: sidebarPopover(
           1,
           'Paramètres',
-          "Commencez ici : définissez votre food cost cible et votre TVA. Tout se calcule automatiquement à partir de ces valeurs."
+          "Commencez ici : définissez votre food cost cible et votre TVA. Tout se calcule automatiquement à partir de ces valeurs.",
+          'end' // bas du menu : fenêtre alignée sur le bas de l'élément, la flèche reste en face
         ),
       },
       {
