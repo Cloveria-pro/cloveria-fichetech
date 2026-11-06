@@ -255,7 +255,7 @@ export default function App() {
           ))}
         </nav>
 
-        <div style={{ padding: '0 0.75rem 1rem' }}>
+        <div style={{ padding: '0 0.75rem 1rem', flexShrink: 0 }}>
           <Link to="/fiches-techniques/nouvelle" data-tour="btn-nouvelle-fiche" onClick={isMobile ? closeSidebar : undefined} style={{ display: 'block', textAlign: 'center', padding: '0.65rem 1rem', background: '#2D6A4F', color: '#fff', borderRadius: '8px', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600, transition: 'background 0.15s', minHeight: '44px', lineHeight: '1.5' }}
             onMouseEnter={e => e.currentTarget.style.background = '#1e4d38'}
             onMouseLeave={e => e.currentTarget.style.background = '#2D6A4F'}

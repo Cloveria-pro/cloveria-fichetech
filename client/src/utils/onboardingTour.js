@@ -29,9 +29,9 @@ const PREV_ROUTES = [
 // Même seuil que isMobile d'App.jsx (largeur < 768 px) : sur mobile, la fenêtre reste centrée sur l'écran.
 const estMobile = () => window.innerWidth < 768;
 
-// Petit logo (logo.png est carré, 500 × 500) à gauche du titre de chaque étape ciblée.
+// Petit logo à gauche du titre de chaque étape ciblée : le favicon (FAVICONoff.png, trèfle seul, carré 500 × 500).
 const titreAvecLogo = title =>
-  `<span style="display:inline-flex;align-items:center;gap:10px"><img src="/logo.png" alt="" style="height:32px;width:auto;object-fit:contain;flex-shrink:0" />${title}</span>`;
+  `<span style="display:inline-flex;align-items:center;gap:10px"><img src="/FAVICONoff.png" alt="" style="height:36px;width:auto;object-fit:contain;flex-shrink:0" />${title}</span>`;
 
 // Popover config shared by all sidebar steps — à droite de l'élément du menu (centrée sur mobile),
 // compteur « Étape N sur 7 » propre à l'étape, close button always visible.
@@ -40,6 +40,7 @@ const sidebarPopover = (numero, title, description, alignOrdinateur = 'start') =
   description,
   side: estMobile() ? 'over' : 'right',
   align: estMobile() ? 'center' : alignOrdinateur,
+  showProgress: true,
   progressText: `Étape ${numero} sur 7`,
   showButtons: ['next', 'previous', 'close'],
 });
@@ -75,7 +76,9 @@ export function startTour(navigate) {
     allowClose: false,
     stagePadding: 4,
     overlayColor: 'rgba(0,0,0,0.75)',
-    showProgress: true,
+    // Désactivé ici : driver.js 1.4.0 ignore un showProgress: false d'étape quand l'option globale est vraie.
+    // Le compteur est activé dans sidebarPopover (étapes ciblées) ; l'accueil n'en a pas.
+    showProgress: false,
     nextBtnText: 'Suivant',
     prevBtnText: 'Précédent',
     doneBtnText: 'Terminer',
@@ -100,7 +103,7 @@ export function startTour(navigate) {
         popover: sidebarPopover(
           1,
           'Paramètres',
-          "Commencez ici — définissez votre food cost cible et votre TVA. Tout se calcule automatiquement à partir de ces valeurs."
+          "Commencez ici : définissez votre food cost cible et votre TVA. Tout se calcule automatiquement à partir de ces valeurs."
         ),
       },
       {
@@ -108,7 +111,7 @@ export function startTour(navigate) {
         popover: sidebarPopover(
           2,
           'Ingrédients',
-          "Ajoutez vos ingrédients avec leurs prix, ou scannez directement une facture fournisseur — l'IA détecte les produits automatiquement."
+          "Ajoutez vos ingrédients avec leurs prix, ou scannez directement une facture fournisseur. L'IA détecte les produits automatiquement."
         ),
       },
       {
@@ -116,7 +119,7 @@ export function startTour(navigate) {
         popover: sidebarPopover(
           3,
           'Fiches Techniques',
-          "Vous avez des fiches papier ? Importez-les en photo ou PDF — l'IA extrait les ingrédients et les quantités."
+          "Vous avez des fiches papier ? Importez-les en photo ou PDF : l'IA extrait les ingrédients et les quantités."
         ),
       },
       {
@@ -124,7 +127,7 @@ export function startTour(navigate) {
         popover: sidebarPopover(
           4,
           'Nouvelle fiche',
-          "Ou décrivez un plat avec vos mots — la fiche technique complète est générée en quelques secondes.",
+          "Ou décrivez un plat avec vos mots. La fiche technique complète est générée en quelques secondes.",
           'end' // bouton en bas du menu : la fenêtre remonte au lieu de sortir de l'écran
         ),
       },
@@ -149,7 +152,7 @@ export function startTour(navigate) {
         popover: sidebarPopover(
           7,
           'Dashboard',
-          "Votre tableau de bord — suivez le food cost global et les actions prioritaires du jour en un coup d'œil."
+          "Votre tableau de bord : suivez le food cost global et les actions prioritaires du jour en un coup d'œil."
         ),
       },
     ],
