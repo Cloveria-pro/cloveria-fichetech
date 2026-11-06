@@ -283,13 +283,21 @@ router.put('/profil', authMiddleware, async (req, res) => {
     if (req.body[key] !== undefined) updates[key] = req.body[key];
   }
 
+  // TVA de vente (onboarding) : 5.5, 10 ou 20, enregistrée seulement dans parametres.
+  const { tva } = req.body;
+  if (tva !== undefined && ![5.5, 10, 20].includes(tva)) {
+    return res.status(400).json({ error: 'TVA invalide : choisissez 5,5 %, 10 % ou 20 %.' });
+  }
+
   const updated = { ...existing, ...updates, updated_at: new Date().toISOString() };
   await col.replaceOne({ id: req.userId }, updated);
 
-  if (updates.foodCostCible !== undefined) {
+  if (updates.foodCostCible !== undefined || tva !== undefined) {
     const paramCol = db.collection('parametres');
     const params = await paramCol.findOne({ user_id: req.userId });
-    const newParams = { ...(params || {}), user_id: req.userId, foodCostCible: updates.foodCostCible };
+    const newParams = { ...(params || {}), user_id: req.userId };
+    if (updates.foodCostCible !== undefined) newParams.foodCostCible = updates.foodCostCible;
+    if (tva !== undefined) newParams.tva = tva;
     delete newParams._id;
     await paramCol.replaceOne({ user_id: req.userId }, newParams, { upsert: true });
   }

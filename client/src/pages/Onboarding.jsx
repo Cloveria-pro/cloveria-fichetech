@@ -18,6 +18,12 @@ const ROLES = ['Chef', 'Gérant', "Directeur d'établissement", 'Autre'];
 const OBJECTIFS = ['Mieux gérer mes fiches techniques', 'Suivre mes coûts matière', 'Mieux piloter mes marges', 'Centraliser mes documents', 'Gagner du temps au quotidien', 'Autre'];
 const NB_PLATS = ['Moins de 10', 'Entre 10 et 30', 'Entre 30 et 60', 'Plus de 60'];
 const SOURCES = ['Bouche à oreille', 'Internet / Google', 'Facebook', 'LinkedIn', 'Instagram', 'Autre réseau'];
+// Mêmes taux et textes que Paramètres.jsx, sans le tiret
+const TVA_OPTIONS = [
+  { value: 10, taux: '10 %', label: 'Repas et plats consommés sur place ou immédiatement', desc: 'Restaurant, food truck, plats chauds à emporter.' },
+  { value: 5.5, taux: '5,5 %', label: 'Produits alimentaires conditionnés pour une consommation différée', desc: 'Plats de traiteur à conserver, par exemple.' },
+  { value: 20, taux: '20 %', label: 'Boissons alcoolisées', desc: 'Taux normal, pour une activité de vente de boissons alcoolisées.' },
+];
 
 function CardSelect({ options, value, onChange, multi = false }) {
   return (
@@ -56,7 +62,7 @@ function CardSelect({ options, value, onChange, multi = false }) {
 function ProgressBar({ step }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginBottom: '1.75rem' }}>
-      {[1, 2, 3, 4, 5].map(i => (
+      {[1, 2, 3, 4, 5, 6].map(i => (
         <div key={i} style={{
           width: i === step ? '28px' : '8px',
           height: '8px',
@@ -97,6 +103,7 @@ export default function Onboarding({ onComplete, etablissementInitial = '' }) {
     objectifs: [],
     nbPlats: '',
     foodCostCible: 30,
+    tva: null,
     sourceDecouverte: '',
   });
 
@@ -118,10 +125,10 @@ export default function Onboarding({ onComplete, etablissementInitial = '' }) {
     setInjectError(null);
     try {
       await api.onboarding.injectExample();
-      setStep(5);
+      setStep(6);
     } catch (err) {
       if (err.message === 'Pack déjà appliqué') {
-        setStep(5);
+        setStep(6);
       } else {
         setInjectError('Une erreur est survenue. Vous pouvez continuer sans exemple.');
       }
@@ -132,7 +139,7 @@ export default function Onboarding({ onComplete, etablissementInitial = '' }) {
 
   async function chooseBlank() {
     try { await api.onboarding.skipExample(); } catch { /* non-bloquant */ }
-    setStep(5);
+    setStep(6);
   }
 
   async function finish() {
@@ -182,6 +189,36 @@ export default function Onboarding({ onComplete, etablissementInitial = '' }) {
     fontSize: '1rem', fontWeight: 600,
     color: T.text, marginBottom: '0.75rem', marginTop: '1.5rem',
   };
+  const aideStyle = { fontSize: '0.8rem', color: T.muted, lineHeight: 1.5, marginTop: '0.5rem' };
+
+  // Réponses obligatoires par écran (client seulement)
+  const reponsesOk = {
+    1: data.prenom.trim() !== '' && data.etablissement.trim() !== '',
+    2: data.typeEtablissement !== '' && data.role !== '',
+    3: data.tva !== null,
+    4: data.objectifs.length > 0 && data.nbPlats !== '' && data.sourceDecouverte !== '',
+  };
+
+  // Bouton « Continuer → » désactivé et grisé tant que les réponses de l'écran manquent
+  const boutonContinuer = (ecran, suivant) => {
+    const ok = reponsesOk[ecran];
+    return (
+      <>
+        <button
+          style={{ ...btnStyle(!ok), ...(ok ? {} : { background: '#B8C4BE' }) }}
+          disabled={!ok}
+          onClick={() => setStep(suivant)}
+          onMouseEnter={e => { if (ok) e.currentTarget.style.background = '#1e4d38'; }}
+          onMouseLeave={e => { if (ok) e.currentTarget.style.background = T.green; }}
+        >Continuer →</button>
+        {!ok && (
+          <p style={{ fontSize: '0.78rem', color: T.muted, textAlign: 'center', marginTop: '0.5rem' }}>
+            Merci de répondre à toutes les questions pour continuer.
+          </p>
+        )}
+      </>
+    );
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: T.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem' }}>
@@ -218,12 +255,7 @@ export default function Onboarding({ onComplete, etablissementInitial = '' }) {
                 onBlur={e => e.target.style.borderColor = T.border}
               />
             </div>
-            <button
-              style={btnStyle()}
-              onClick={() => setStep(2)}
-              onMouseEnter={e => e.currentTarget.style.background = '#1e4d38'}
-              onMouseLeave={e => e.currentTarget.style.background = T.green}
-            >Continuer →</button>
+            {boutonContinuer(1, 2)}
           </>
         )}
 
@@ -236,17 +268,64 @@ export default function Onboarding({ onComplete, etablissementInitial = '' }) {
             <CardSelect options={TYPES_ETAB} value={data.typeEtablissement} onChange={selectType} />
             <p style={subTitle}>Quel est votre rôle ?</p>
             <CardSelect options={ROLES} value={data.role} onChange={role => setData(d => ({ ...d, role }))} />
-            <button
-              style={btnStyle()}
-              onClick={() => setStep(3)}
-              onMouseEnter={e => e.currentTarget.style.background = '#1e4d38'}
-              onMouseLeave={e => e.currentTarget.style.background = T.green}
-            >Continuer →</button>
+            {boutonContinuer(2, 3)}
           </>
         )}
 
-        {/* ── Écran 3 : Vos objectifs ── */}
+        {/* ── Écran 3 : Food cost cible et TVA de vente ── */}
         {step === 3 && (
+          <>
+            <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', fontWeight: 700, color: T.text, marginBottom: '1.25rem', lineHeight: 1.25 }}>
+              Deux réglages pour des calculs justes
+            </h1>
+
+            <p style={{ ...subTitle, marginTop: 0 }}>Votre objectif de food cost</p>
+            <div style={{ textAlign: 'center', fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', fontWeight: 700, color: T.green, lineHeight: 1, marginBottom: '0.75rem' }}>
+              {data.foodCostCible}%
+            </div>
+            <input
+              type="range" min="20" max="50" step="1"
+              value={data.foodCostCible}
+              onChange={e => setData(d => ({ ...d, foodCostCible: parseInt(e.target.value) }))}
+              style={{ width: '100%', accentColor: T.green, cursor: 'pointer', display: 'block' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: T.muted, marginTop: '4px' }}>
+              <span>20%</span><span>30%</span><span>40%</span><span>50%</span>
+            </div>
+            <p style={aideStyle}>Valeur proposée pour votre type d'établissement. Vous pourrez la modifier à tout moment dans Paramètres.</p>
+
+            <p style={subTitle}>Votre TVA de vente</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {TVA_OPTIONS.map(opt => (
+                <label key={opt.value} style={{
+                  display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
+                  padding: '0.75rem 0.875rem', borderRadius: '8px',
+                  border: `1.5px solid ${data.tva === opt.value ? T.green : T.border}`,
+                  background: data.tva === opt.value ? 'rgba(45,106,79,0.07)' : '#fff',
+                  cursor: 'pointer', transition: 'all 0.1s',
+                }}>
+                  <input
+                    type="radio" name="tva" value={opt.value}
+                    checked={data.tva === opt.value}
+                    onChange={() => setData(d => ({ ...d, tva: opt.value }))}
+                    style={{ accentColor: T.green, flexShrink: 0, marginTop: '3px' }}
+                  />
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: T.text }}>{opt.taux}</div>
+                    <div style={{ fontSize: '0.85rem', color: T.text, lineHeight: 1.4 }}>{opt.label}</div>
+                    <div style={{ fontSize: '0.78rem', color: T.muted, lineHeight: 1.4 }}>{opt.desc}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+            <p style={aideStyle}>La TVA que vous appliquez à vos ventes (celle que vous facturez à vos clients).</p>
+
+            {boutonContinuer(3, 4)}
+          </>
+        )}
+
+        {/* ── Écran 4 : Vos objectifs ── */}
+        {step === 4 && (
           <>
             <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', fontWeight: 700, color: T.text, marginBottom: '1.25rem', lineHeight: 1.25 }}>
               Qu'est-ce qui vous amène ?
@@ -296,17 +375,12 @@ export default function Onboarding({ onComplete, etablissementInitial = '' }) {
               onChange={src => setData(d => ({ ...d, sourceDecouverte: src }))}
             />
 
-            <button
-              style={btnStyle()}
-              onClick={() => setStep(4)}
-              onMouseEnter={e => e.currentTarget.style.background = '#1e4d38'}
-              onMouseLeave={e => e.currentTarget.style.background = T.green}
-            >Continuer →</button>
+            {boutonContinuer(4, 5)}
           </>
         )}
 
-        {/* ── Écran 4 : Choix du mode de démarrage ── */}
-        {step === 4 && (
+        {/* ── Écran 5 : Choix du mode de démarrage ── */}
+        {step === 5 && (
           <>
             <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', fontWeight: 700, color: T.text, marginBottom: '0.5rem', lineHeight: 1.25 }}>
               Comment souhaitez-vous démarrer ?
@@ -383,8 +457,8 @@ export default function Onboarding({ onComplete, etablissementInitial = '' }) {
           </>
         )}
 
-        {/* ── Écran 5 : Confirmation ── */}
-        {step === 5 && (
+        {/* ── Écran 6 : Confirmation ── */}
+        {step === 6 && (
           <>
             <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.75rem', fontWeight: 700, color: T.text, textAlign: 'center', marginBottom: '1rem', lineHeight: 1.2 }}>
               Votre espace est prêt.
