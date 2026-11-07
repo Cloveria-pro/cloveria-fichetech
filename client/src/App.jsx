@@ -111,6 +111,21 @@ export default function App() {
     return () => window.removeEventListener('session_invalide', handler);
   }, [navigate]);
 
+  // Nom modifié dans Paramètres : met à jour le nom affiché en bas du menu (état et localStorage)
+  useEffect(() => {
+    const handler = (e) => {
+      const etablissement = e.detail?.etablissement;
+      if (!etablissement) return;
+      setUser(u => (u ? { ...u, etablissement } : u));
+      try {
+        const stocke = JSON.parse(localStorage.getItem('user'));
+        if (stocke) localStorage.setItem('user', JSON.stringify({ ...stocke, etablissement }));
+      } catch { /* valeur illisible : l'état suffit pour l'affichage */ }
+    };
+    window.addEventListener('profil_modifie', handler);
+    return () => window.removeEventListener('profil_modifie', handler);
+  }, []);
+
   function handleLogin(newToken, newUser) {
     localStorage.setItem('token', newToken);
     localStorage.setItem('user', JSON.stringify(newUser));

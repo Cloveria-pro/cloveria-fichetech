@@ -16,6 +16,9 @@ const TYPE_FC = {
   "Hôtel / restaurant d'hôtel": { thresholds: [31, 35], msgs: ["Excellent pour un hôtel-restaurant", "Acceptable pour un hôtel-restaurant", "À surveiller pour un hôtel-restaurant"] },
 };
 
+// Mêmes six types que l'onboarding, dans le même ordre
+const TYPES_ETAB = [...Object.keys(TYPE_FC), 'Autre'];
+
 // Type vide ou « Autre » : référence 30, même règle.
 const FC_GENERIQUE = { thresholds: [31, 35], msgs: ['Marges confortables : vérifiez la qualité.', 'Acceptable, surveillez les matières premières.', 'Trop élevé, révisez vos recettes ou vos prix.'] };
 
@@ -76,14 +79,32 @@ export default function Parametres() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(paramFields),
         }),
-        api.profil.update({ etablissement }),
+        api.profil.update({ etablissement }).then(r => {
+          // Nom enregistré : prévient App.jsx pour mettre à jour le nom affiché en bas du menu
+          if (etablissement.trim()) window.dispatchEvent(new CustomEvent('profil_modifie', { detail: { etablissement } }));
+          return r;
+        }),
       ]).then(() => { setSaved(true); setTimeout(() => setSaved(false), 2000); });
     }, 500);
     return () => clearTimeout(timer);
   }, [form]);
 
+  // Type d'établissement : enregistré tout de suite, sans toucher à foodCostCible ; ancienne valeur remise en cas d'échec
+  async function changerType(valeur) {
+    const ancien = profil?.typeEtablissement || '';
+    setProfil(p => ({ ...p, typeEtablissement: valeur }));
+    try {
+      await api.profil.update({ typeEtablissement: valeur });
+      setSaved(true); setTimeout(() => setSaved(false), 2000);
+    } catch {
+      setProfil(p => ({ ...p, typeEtablissement: ancien }));
+    }
+  }
+
   const cible = form.foodCostCible;
   const indicator = getIndicator(cible, profil?.typeEtablissement);
+  const typeActuel = profil?.typeEtablissement || '';
+  const typeConnu = TYPES_ETAB.includes(typeActuel);
 
   let abonnementBody = null;
   if (profil?.subscriptionStatus === 'lifetime') {
@@ -139,6 +160,17 @@ export default function Parametres() {
               placeholder="Ex: Restaurant La Bonne Table"
             />
             <p style={{ fontSize: '0.75rem', color: T.muted, marginTop: '6px' }}>Apparaît sur les fiches techniques imprimées.</p>
+          </div>
+          <div style={{ marginTop: '1rem' }}>
+            <label style={labelStyle}>Type d'établissement</label>
+            <select
+              value={typeConnu ? typeActuel : ''}
+              onChange={e => changerType(e.target.value)}
+              style={inputStyle}
+            >
+              {!typeConnu && <option value="" disabled>Choisir…</option>}
+              {TYPES_ETAB.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
           </div>
         </div>
 
