@@ -220,6 +220,17 @@ export default function Onboarding({ onComplete, etablissementInitial = '' }) {
     );
   };
 
+  // Retour à l'écran précédent (écrans 2 à 5) : les réponses restent dans data
+  const boutonRetour = (
+    <div style={{ textAlign: 'center', marginTop: '0.75rem' }}>
+      <button
+        type="button"
+        onClick={() => setStep(s => s - 1)}
+        style={{ background: 'none', border: 'none', padding: '0.25rem 0.5rem', color: T.muted, fontSize: '0.85rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+      >← Retour</button>
+    </div>
+  );
+
   return (
     <div style={{ minHeight: '100vh', background: T.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem' }}>
       <div style={{ width: '100%', maxWidth: '500px', background: '#fff', borderRadius: '20px', boxShadow: '0 4px 32px rgba(0,0,0,0.08)', padding: '2rem 2rem 2.5rem' }}>
@@ -269,6 +280,7 @@ export default function Onboarding({ onComplete, etablissementInitial = '' }) {
             <p style={subTitle}>Quel est votre rôle ?</p>
             <CardSelect options={ROLES} value={data.role} onChange={role => setData(d => ({ ...d, role }))} />
             {boutonContinuer(2, 3)}
+            {boutonRetour}
           </>
         )}
 
@@ -321,6 +333,7 @@ export default function Onboarding({ onComplete, etablissementInitial = '' }) {
             <p style={aideStyle}>La TVA que vous appliquez à vos ventes (celle que vous facturez à vos clients).</p>
 
             {boutonContinuer(3, 4)}
+            {boutonRetour}
           </>
         )}
 
@@ -376,6 +389,7 @@ export default function Onboarding({ onComplete, etablissementInitial = '' }) {
             />
 
             {boutonContinuer(4, 5)}
+            {boutonRetour}
           </>
         )}
 
@@ -454,6 +468,8 @@ export default function Onboarding({ onComplete, etablissementInitial = '' }) {
                 </button>
               </div>
             )}
+
+            {!injecting && boutonRetour}
           </>
         )}
 
