@@ -373,8 +373,8 @@ export default function FicheTechnique() {
   function ajouterACarte() {
     const carte = cartes.find(c => c.id === selectedCarteId);
     if (!carte || !selectedSection) return;
-    const cp = form.portions > 0 ? (form.ingredients || []).reduce((acc, i) => acc + coutIng(i), 0) / form.portions : 0;
-    const prixVente = recette.prixVentePratiqueTTC || recette.prixVente || parseFloat((cp / 0.30).toFixed(2));
+    // Le chef fixe son prix : sans prix sur la fiche, le plat arrive dans la carte sans prix (0)
+    const prixVente = recette.prixVentePratiqueTTC || recette.prixVente || 0;
     const updatedCarte = {
       ...carte,
       sections: carte.sections.map(s =>
@@ -467,7 +467,7 @@ export default function FicheTechnique() {
     const financeCards = [
       { label: 'Food cost', value: fc ? fc + '%' : '—', color: fcColor },
       { label: 'PV suggéré HT', value: pvHT ? pvHT + ' €' : '—', color: '#2D6A4F' },
-      { label: 'PV TTC (' + parametres.tva + '%)', value: pvTTC ? pvTTC + ' €' : '—', color: '#1C2B1E' },
+      { label: 'PV suggéré TTC (' + parametres.tva + '%)', value: pvTTC ? pvTTC + ' €' : '—', color: '#1C2B1E' },
       { label: 'Coefficient', value: coeffVal ? '×' + coeffVal : '—', color: '#1C2B1E' },
     ].map(c =>
       '<div style="background:#F8F6F1;border-radius:8px;padding:12px 16px;flex:1"><div style="font-size:0.68rem;color:#6B7280;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">' + c.label + '</div><div style="font-family:Georgia,serif;font-size:1.3rem;font-weight:700;color:' + c.color + '">' + c.value + '</div></div>'

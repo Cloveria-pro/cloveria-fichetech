@@ -736,8 +736,8 @@ function EditeurCarte({ carte, recettes, parametres, onSave, onBack, onAutoSave,
   const platsIds = form.sections.flatMap(s => s.plats.map(p => p.recetteId));
 
   function addToSection(recette, sectionTitre) {
-    const cp = coutPortion(recette);
-    const prixVente = recette.prixVentePratiqueTTC || recette.prixVente || parseFloat((cp / 0.30).toFixed(2));
+    // Le chef fixe son prix : sans prix sur la fiche, le plat arrive dans la carte sans prix (0)
+    const prixVente = recette.prixVentePratiqueTTC || recette.prixVente || 0;
     setFormAndSave(f => ({
       ...f,
       sections: f.sections.map(s =>
@@ -921,7 +921,7 @@ function EditeurCarte({ carte, recettes, parametres, onSave, onBack, onAutoSave,
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
                             <span style={{ fontSize: '0.72rem', color: T.muted }}>PV</span>
-                            <DecimalInput value={plat.prixVente}
+                            <DecimalInput value={plat.prixVente || ''}
                               onFocus={() => { prixAuFocus.current = plat.prixVente; }}
                               onValueChange={n => majPrix(section.titre, plat.recetteId, n)}
                               onBlur={n => validerPrix(section.titre, plat.recetteId, n)}

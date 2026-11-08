@@ -1294,7 +1294,7 @@ function ImportFacture({ items, setItems }) {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #F3EFE8' }}>
-                {['Fiche', 'Ancien food cost', 'Nouveau food cost', 'PV actuel', 'PV suggéré', ''].map(h => (
+                {['Fiche', 'Ancien food cost', 'Nouveau food cost', 'PV actuel TTC', 'PV suggéré TTC', ''].map(h => (
                   <th key={h} style={{ padding: '4px 8px', color: T.muted, fontWeight: 600, fontSize: '0.68rem', textTransform: 'uppercase', textAlign: 'left' }}>{h}</th>
                 ))}
               </tr>

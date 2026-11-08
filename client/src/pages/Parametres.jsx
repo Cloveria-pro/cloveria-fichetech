@@ -103,6 +103,7 @@ export default function Parametres() {
 
   const cible = form.foodCostCible;
   const indicator = getIndicator(cible, profil?.typeEtablissement);
+  const exempleHT = 4.5 / (cible / 100);
   const typeActuel = profil?.typeEtablissement || '';
   const typeConnu = TYPES_ETAB.includes(typeActuel);
 
@@ -216,13 +217,14 @@ export default function Parametres() {
             </div>
 
             <p style={{ fontSize: '0.75rem', color: T.muted, marginTop: '0.75rem' }}>
-              Utilisé pour calculer le prix de vente suggéré : Prix = Coût matière ÷ {cible / 100}
+              Prix de vente HT suggéré = Coût matière ÷ {String(cible / 100).replace('.', ',')}
             </p>
 
-            {/* Exemple live */}
+            {/* Exemple live : prix suggéré HT, puis TTC avec la TVA du formulaire */}
             <div style={{ marginTop: '0.75rem', padding: '0.75rem 1rem', borderRadius: '8px', background: '#FAFAF8', border: '1px solid #F3EFE8', fontSize: '0.82rem', color: T.muted }}>
-              <strong style={{ color: T.text }}>Exemple :</strong> Coût matière 4.50 EUR/portion → Prix suggéré{' '}
-              <strong style={{ color: T.green }}>{(4.5 / (cible / 100)).toFixed(2)} EUR</strong>
+              <strong style={{ color: T.text }}>Exemple :</strong> coût matière 4,50 € par portion → prix suggéré{' '}
+              <strong style={{ color: T.green }}>{exempleHT.toFixed(2).replace('.', ',')} € HT</strong>{' '}
+              ({(exempleHT * (1 + form.tva / 100)).toFixed(2).replace('.', ',')} € TTC avec votre TVA)
             </div>
           </div>
         </div>
