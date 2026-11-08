@@ -58,6 +58,12 @@ router.get('/users', adminAuth, async (req, res) => {
       .sort({ created_at: -1 })
       .toArray();
 
+    // Food cost cible et TVA de vente : une seule lecture de parametres pour tous les comptes
+    const params = await db.collection('parametres')
+      .find({ user_id: { $in: users.map(u => u.id) } }, { projection: { _id: 0, user_id: 1, foodCostCible: 1, tva: 1 } })
+      .toArray();
+    const paramsParUser = new Map(params.map(p => [p.user_id, p]));
+
     const enriched = await Promise.all(users.map(async (u) => {
       const realFilter = { user_id: u.id, _source: { $ne: 'example' } };
       const [nbFiches, nbIngredients, nbCartes, firstFiche] = await Promise.all([
@@ -86,6 +92,10 @@ router.get('/users', adminAuth, async (req, res) => {
         objectifs: u.objectifs || [],
         nbPlats: u.nbPlats || '',
         sourceDecouverte: u.sourceDecouverte || '',
+        gestionFiches: u.gestionFiches || '',
+        gestionFichesAutre: u.gestionFichesAutre || '',
+        foodCostCible: paramsParUser.get(u.id)?.foodCostCible ?? null,
+        tva: paramsParUser.get(u.id)?.tva ?? null,
         examplePackChoice: u.examplePackChoice || null,
         disabled: u.disabled === true,
         deleted: u.deleted === true,

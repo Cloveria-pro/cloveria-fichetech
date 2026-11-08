@@ -46,6 +46,10 @@ function trialDaysLeft(trialEndDate) {
   return Math.ceil((new Date(trialEndDate) - new Date()) / 86400000);
 }
 
+// Bloc « Profil onboarding » du volet : valeur absente et libellés du choix du pack
+const NON_RENSEIGNE = 'Non renseigné';
+const PACK_LIBELLES = { example: "Avec l'exemple", blank: 'Sans exemple' };
+
 function ClientDrawer({ user: u, onClose, onGrantLifetime, onRevokeLifetime }) {
   if (!u) return null;
   const row = (label, value) => (
@@ -80,13 +84,20 @@ function ClientDrawer({ user: u, onClose, onGrantLifetime, onRevokeLifetime }) {
           {u.subscriptionStatus === 'trial' && row('Essai', daysLeft !== null ? (daysLeft > 0 ? `${daysLeft}j restants` : 'Expiré') : null)}
 
           {section('Profil onboarding')}
-          {row('Type établissement', u.typeEtablissement || null)}
-          {row('Rôle', u.role || null)}
-          {row('Objectifs', u.objectifs?.length ? u.objectifs.join(', ') : null)}
-          {row('Nb plats carte', u.nbPlats || null)}
-          {row('Food cost cible', u.foodCostCible != null ? `${u.foodCostCible}%` : null)}
-          {row('Source découverte', u.sourceDecouverte || null)}
-          {row('Pack exemple', u.examplePackChoice || null)}
+          {/* Fragment : les libellés répétés du bloc « Compte » (Prénom) gardent des clés distinctes */}
+          <>
+            {row('Prénom', u.prenom || NON_RENSEIGNE)}
+            {row('Établissement', u.etablissement || NON_RENSEIGNE)}
+            {row('Type établissement', u.typeEtablissement || NON_RENSEIGNE)}
+            {row('Rôle', u.role || NON_RENSEIGNE)}
+            {row('Food cost cible', u.foodCostCible != null ? `${u.foodCostCible}%` : NON_RENSEIGNE)}
+            {row('TVA de vente', u.tva != null ? `${String(u.tva).replace('.', ',')} %` : NON_RENSEIGNE)}
+            {row('Objectifs', u.objectifs?.length ? u.objectifs.join(', ') : NON_RENSEIGNE)}
+            {row('Nb plats carte', u.nbPlats || NON_RENSEIGNE)}
+            {row('Source découverte', u.sourceDecouverte || NON_RENSEIGNE)}
+            {row('Gestion des fiches', u.gestionFiches ? (u.gestionFichesAutre ? `${u.gestionFiches} : ${u.gestionFichesAutre}` : u.gestionFiches) : NON_RENSEIGNE)}
+            {row('Pack exemple', PACK_LIBELLES[u.examplePackChoice] || u.examplePackChoice || NON_RENSEIGNE)}
+          </>
 
           <div style={{ marginTop: '1.25rem' }}>
             {u.subscriptionStatus === 'lifetime' ? (

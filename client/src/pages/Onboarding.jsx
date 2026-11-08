@@ -18,6 +18,9 @@ const ROLES = ['Chef', 'Gérant', "Directeur d'établissement", 'Autre'];
 const OBJECTIFS = ['Mieux gérer mes fiches techniques', 'Suivre mes coûts matière', 'Mieux piloter mes marges', 'Centraliser mes documents', 'Gagner du temps au quotidien', 'Autre'];
 const NB_PLATS = ['Moins de 10', 'Entre 10 et 30', 'Entre 30 et 60', 'Plus de 60'];
 const SOURCES = ['Bouche à oreille', 'Internet / Google', 'Facebook', 'LinkedIn', 'Instagram', 'Autre réseau'];
+// Mêmes chaînes que GESTION_FICHES dans server/routes/auth.js (validées par PUT /profil)
+const GESTION_FICHES = ['Sur papier ou cahier', 'Sur Excel ou Google Sheets', 'Avec un autre logiciel', "Je n'en ai pas encore"];
+const GESTION_AUTRE_LOGICIEL = 'Avec un autre logiciel';
 // Mêmes taux et textes que Paramètres.jsx, sans le tiret
 const TVA_OPTIONS = [
   { value: 10, taux: '10 %', label: 'Repas et plats consommés sur place ou immédiatement', desc: 'Restaurant, food truck, plats chauds à emporter.' },
@@ -105,6 +108,8 @@ export default function Onboarding({ onComplete, etablissementInitial = '' }) {
     foodCostCible: 30,
     tva: null,
     sourceDecouverte: '',
+    gestionFiches: '',
+    gestionFichesAutre: '',
   });
 
   function selectType(type) {
@@ -153,7 +158,7 @@ export default function Onboarding({ onComplete, etablissementInitial = '' }) {
       const { etablissement, ...reste } = data;
       const envoi = etablissement.trim() ? data : reste;
       localStorage.removeItem('onboarding_done');
-      await api.profil.update({ ...envoi, objectifs: finalObjectifs, onboardingComplete: true });
+      await api.profil.update({ ...envoi, objectifs: finalObjectifs, gestionFichesAutre: data.gestionFichesAutre.trim(), onboardingComplete: true });
       onComplete();
       navigate('/');
     } catch {
@@ -196,7 +201,9 @@ export default function Onboarding({ onComplete, etablissementInitial = '' }) {
     1: data.prenom.trim() !== '' && data.etablissement.trim() !== '',
     2: data.typeEtablissement !== '' && data.role !== '',
     3: data.tva !== null,
-    4: data.objectifs.length > 0 && data.nbPlats !== '' && data.sourceDecouverte !== '',
+    4: data.objectifs.length > 0 && data.nbPlats !== '' && data.sourceDecouverte !== ''
+      && data.gestionFiches !== ''
+      && (data.gestionFiches !== GESTION_AUTRE_LOGICIEL || data.gestionFichesAutre.trim() !== ''),
   };
 
   // Bouton « Continuer → » désactivé et grisé tant que les réponses de l'écran manquent
@@ -387,6 +394,29 @@ export default function Onboarding({ onComplete, etablissementInitial = '' }) {
               value={data.sourceDecouverte}
               onChange={src => setData(d => ({ ...d, sourceDecouverte: src }))}
             />
+
+            <p style={subTitle}>Comment gérez-vous vos fiches techniques aujourd'hui ?</p>
+            <CardSelect
+              options={GESTION_FICHES}
+              value={data.gestionFiches}
+              onChange={g => setData(d => ({ ...d, gestionFiches: g, gestionFichesAutre: g === d.gestionFiches ? d.gestionFichesAutre : '' }))}
+            />
+
+            {/* Champ obligatoire si « Avec un autre logiciel » est choisi */}
+            {data.gestionFiches === GESTION_AUTRE_LOGICIEL && (
+              <div style={{ marginTop: '0.75rem' }}>
+                <input
+                  value={data.gestionFichesAutre}
+                  onChange={e => setData(d => ({ ...d, gestionFichesAutre: e.target.value }))}
+                  placeholder="Lequel ?"
+                  maxLength={100}
+                  style={inputStyle}
+                  onFocus={e => e.target.style.borderColor = T.green}
+                  onBlur={e => e.target.style.borderColor = T.border}
+                  autoFocus
+                />
+              </div>
+            )}
 
             {boutonContinuer(4, 5)}
             {boutonRetour}

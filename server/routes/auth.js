@@ -271,13 +271,16 @@ router.get('/profil', authMiddleware, async (req, res) => {
   res.json(buildProfilResponse(user));
 });
 
+// Réponses possibles à « Comment gérez-vous vos fiches techniques aujourd'hui ? » (mêmes chaînes qu'Onboarding.jsx)
+const GESTION_FICHES = ['Sur papier ou cahier', 'Sur Excel ou Google Sheets', 'Avec un autre logiciel', "Je n'en ai pas encore"];
+
 router.put('/profil', authMiddleware, async (req, res) => {
   const db = await getDb();
   const col = db.collection('users');
   const existing = await col.findOne({ id: req.userId }, { projection: { _id: 0 } });
   if (!existing) return res.status(404).json({ error: 'Utilisateur introuvable' });
 
-  const ALLOWED = ['prenom', 'etablissement', 'typeEtablissement', 'role', 'objectifs', 'nbPlats', 'foodCostCible', 'onboardingComplete', 'sourceDecouverte'];
+  const ALLOWED = ['prenom', 'etablissement', 'typeEtablissement', 'role', 'objectifs', 'nbPlats', 'foodCostCible', 'onboardingComplete', 'sourceDecouverte', 'gestionFiches', 'gestionFichesAutre'];
   const updates = {};
   for (const key of ALLOWED) {
     if (req.body[key] !== undefined) updates[key] = req.body[key];
@@ -287,6 +290,18 @@ router.put('/profil', authMiddleware, async (req, res) => {
   const { tva } = req.body;
   if (tva !== undefined && ![5.5, 10, 20].includes(tva)) {
     return res.status(400).json({ error: 'TVA invalide : choisissez 5,5 %, 10 % ou 20 %.' });
+  }
+
+  // Gestion actuelle des fiches (onboarding) : chaîne nettoyée, 100 caractères au plus ; gestionFiches = une des quatre options.
+  for (const cle of ['gestionFiches', 'gestionFichesAutre']) {
+    if (updates[cle] === undefined) continue;
+    if (typeof updates[cle] !== 'string' || updates[cle].trim().length > 100) {
+      return res.status(400).json({ error: 'Réponse invalide sur la gestion des fiches techniques : 100 caractères au plus.' });
+    }
+    updates[cle] = updates[cle].trim();
+  }
+  if (updates.gestionFiches !== undefined && !GESTION_FICHES.includes(updates.gestionFiches)) {
+    return res.status(400).json({ error: 'Réponse invalide sur la gestion des fiches techniques : choisissez une des quatre propositions.' });
   }
 
   const updated = { ...existing, ...updates, updated_at: new Date().toISOString() };
