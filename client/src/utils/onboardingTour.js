@@ -103,7 +103,7 @@ export function startTour(navigate) {
         popover: sidebarPopover(
           1,
           'Paramètres',
-          "Commencez ici : définissez votre food cost cible et votre TVA. Tout se calcule automatiquement à partir de ces valeurs.",
+          "Commencez ici : vérifiez votre food cost cible et votre TVA. Tout se calcule automatiquement à partir de ces valeurs.",
           'end' // bas du menu : fenêtre alignée sur le bas de l'élément, la flèche reste en face
         ),
       },
