@@ -1256,7 +1256,8 @@ function ImportFacture({ items, setItems }) {
   }
 
   async function appliquerPrixSuggere(item) {
-    await api.recettes.update(item.recette.id, { ...item.recette, prixVentePratiqueTTC: item.pvSuggere });
+    // Seul le prix TTC est envoyé : le serveur met à jour la fiche et toutes les cartes qui la contiennent
+    await api.recettes.updatePrix(item.recette.id, item.pvSuggere);
     setImpactReport(prev => ({
       ...prev,
       report: prev.report.map(r => r.recette.id === item.recette.id ? { ...r, applied: true } : r),
