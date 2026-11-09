@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
+import { useWindowWidth } from '../hooks/useWindowWidth.js';
 
 const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280', red: '#DC2626', bg: '#F8F6F1' };
 const card = { background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' };
@@ -46,7 +47,7 @@ async function openFile(type, id) {
   }
 }
 
-function FacturesTab({ docs, onDelete }) {
+function FacturesTab({ docs, onDelete, isMobile }) {
   const [filtFournisseur, setFiltFournisseur] = useState('');
   const [filtMois, setFiltMois] = useState('');
   const [filtCategorie, setFiltCategorie] = useState('');
@@ -115,7 +116,7 @@ function FacturesTab({ docs, onDelete }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {sorted.map(doc => (
             <div key={doc.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.875rem 1rem', background: '#FAFAF8', borderRadius: '8px', border: '1px solid #F3EFE8', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ flex: isMobile ? '1 1 100%' : 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: '0.875rem', color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.nomFichier}</div>
                 <div style={{ fontSize: '0.75rem', color: T.muted, marginTop: '3px', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                   {doc.fournisseur && <span>{doc.fournisseur}</span>}
@@ -138,7 +139,7 @@ function FacturesTab({ docs, onDelete }) {
   );
 }
 
-function FichesTab({ docs, onDelete }) {
+function FichesTab({ docs, onDelete, isMobile }) {
   const [filtCategorie, setFiltCategorie] = useState('');
   const [sortOrder, setSortOrder] = useState('desc');
   const [periodeDebut, setPeriodeDebut] = useState('');
@@ -192,7 +193,7 @@ function FichesTab({ docs, onDelete }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {sorted.map(doc => (
             <div key={doc.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.875rem 1rem', background: '#FAFAF8', borderRadius: '8px', border: '1px solid #F3EFE8', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ flex: isMobile ? '1 1 100%' : 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: '0.875rem', color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.nomFichier}</div>
                 <div style={{ fontSize: '0.75rem', color: T.muted, marginTop: '3px', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                   {doc.nomPlat && <span>{doc.nomPlat}</span>}
@@ -213,7 +214,7 @@ function FichesTab({ docs, onDelete }) {
   );
 }
 
-function VentesTab({ docs, onDelete }) {
+function VentesTab({ docs, onDelete, isMobile }) {
   const [sortOrder, setSortOrder] = useState('desc');
   const [periodeDebut, setPeriodeDebut] = useState('');
   const [periodeFin, setPeriodeFin] = useState('');
@@ -260,7 +261,7 @@ function VentesTab({ docs, onDelete }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {sorted.map(doc => (
             <div key={doc.id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.875rem 1rem', background: '#FAFAF8', borderRadius: '8px', border: '1px solid #F3EFE8', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ flex: isMobile ? '1 1 100%' : 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: '0.875rem', color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.nomFichier}</div>
                 <div style={{ fontSize: '0.75rem', color: T.muted, marginTop: '3px', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                   {doc.lignesCount != null && <span>{doc.lignesCount} lignes</span>}
@@ -300,6 +301,8 @@ export default function Documents() {
   const [data, setData] = useState({ factures: [], fiches: [], ventes: [] });
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(null);
+  const width = useWindowWidth();
+  const isMobile = width < 768;
 
   useEffect(() => {
     setLoading(true);
@@ -371,11 +374,11 @@ export default function Documents() {
         {loading ? (
           <p style={{ color: T.muted, fontSize: '0.875rem' }}>Chargement...</p>
         ) : activeTab === 'factures' ? (
-          <FacturesTab docs={data.factures} onDelete={handleDelete} />
+          <FacturesTab docs={data.factures} onDelete={handleDelete} isMobile={isMobile} />
         ) : activeTab === 'fiches' ? (
-          <FichesTab docs={data.fiches} onDelete={handleDelete} />
+          <FichesTab docs={data.fiches} onDelete={handleDelete} isMobile={isMobile} />
         ) : (
-          <VentesTab docs={data.ventes} onDelete={handleDelete} />
+          <VentesTab docs={data.ventes} onDelete={handleDelete} isMobile={isMobile} />
         )}
       </div>
 
