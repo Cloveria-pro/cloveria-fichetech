@@ -4,6 +4,7 @@ import { api } from '../api.js';
 import { coutPortionHT, foodCostRecetteHT, normaliserTexte } from '../utils.js';
 import ImportFicheModal from '../components/ImportFicheModal.jsx';
 import { libelleAllergene } from '../allergenes.js';
+import { useWindowWidth } from '../hooks/useWindowWidth.js';
 
 const T = { green: '#2D6A4F', text: '#1A1A1A', muted: '#9CA3AF' };
 const SECTIONS = ['Amuse-bouche', 'Entrée', 'Plat viande', 'Plat poisson', 'Plat végétarien', 'Dessert', 'Autre'];
@@ -35,13 +36,108 @@ function Col({ label, value, color, italic }) {
   );
 }
 
-function TileFiche({ r, cible, tvaVente, onDelete, onDuplicate, onUpdateCategorie, navigate }) {
+function TileFiche({ r, cible, tvaVente, onDelete, onDuplicate, onUpdateCategorie, navigate, isMobile }) {
   const [hovered, setHovered] = useState(false);
   const [catEdit, setCatEdit] = useState(false);
   const cpHT = coutPortionHT(r);
   const pvTTC = r.prixVentePratiqueTTC || 0;
   const fc = foodCostRecetteHT(r, tvaVente);
   const badge = fc !== null ? fcBadge(fc, cible) : null;
+
+  // Téléphone (< 768 px) : carte sur trois zones, mêmes éléments et mêmes comportements que la ligne d'ordinateur ci-dessous.
+  if (isMobile) {
+    return (
+      <div
+        style={{
+          padding: '0.875rem 1rem',
+          borderRadius: '16px',
+          background: '#FFFFFF',
+          border: `1px solid ${hovered ? T.green : '#E8E2D9'}`,
+          boxShadow: hovered ? '0 4px 16px rgba(45,106,79,0.12)' : '0 1px 4px rgba(0,0,0,0.05)',
+          cursor: 'pointer',
+          transition: 'all 0.15s',
+          marginBottom: '8px',
+        }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onClick={() => navigate('/fiches-techniques/' + r.id)}
+      >
+        {/* Zone 1 : nom (deux lignes au plus), catégorie dessous ; ✕ et flèche à droite */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ fontSize: '15px', fontWeight: 600, color: T.text, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'anywhere' }}>
+              {r.nom}
+            </span>
+            {catEdit ? (
+              <select
+                autoFocus
+                value={r.categorie || 'Autre'}
+                onClick={e => e.stopPropagation()}
+                onChange={e => { onUpdateCategorie(r.id, e.target.value); setCatEdit(false); }}
+                onBlur={() => setCatEdit(false)}
+                style={{ fontSize: '10px', padding: '1px 4px', border: '1px solid #2D6A4F', borderRadius: '4px', color: T.green, marginTop: '3px', fontFamily: "'DM Sans', sans-serif", outline: 'none' }}
+              >
+                {SECTIONS.map(s => <option key={s}>{s}</option>)}
+              </select>
+            ) : (
+              <span
+                onClick={e => { e.stopPropagation(); setCatEdit(true); }}
+                title="Cliquer pour changer la catégorie"
+                style={{ fontSize: '10px', fontWeight: 600, color: T.green, background: 'rgba(45,106,79,0.08)', padding: '1px 7px', borderRadius: '3px', display: 'inline-block', marginTop: '3px', cursor: 'pointer' }}
+              >
+                {r.categorie || 'Autre'}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={e => { e.stopPropagation(); if (!confirm('Supprimer cette fiche ?')) return; onDelete(r.id); }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: hovered ? '#D1C4B0' : 'transparent', fontSize: '12px', padding: '4px 6px', flexShrink: 0, transition: 'color 0.15s' }}
+            onMouseEnter={e => { e.stopPropagation(); e.currentTarget.style.color = '#ef4444'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = hovered ? '#D1C4B0' : 'transparent'; }}
+            title="Supprimer"
+          >✕</button>
+          <span style={{ color: hovered ? T.green : '#D1C4B0', fontSize: '16px', flexShrink: 0, lineHeight: 1, transition: 'color 0.15s', paddingLeft: '4px', paddingTop: '2px' }}>→</span>
+        </div>
+
+        {/* Zone 2 : coût matière, prix de vente, food cost (passent à la ligne si la place manque) */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem 0.75rem', marginTop: '0.75rem' }}>
+          <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+            <Col label="Coût mat." value={cpHT > 0 ? cpHT.toFixed(2) + ' € HT/cvt' : '—'} />
+          </div>
+          <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+            {pvTTC > 0
+              ? <Col label="Prix de vente" value={pvTTC.toFixed(2) + ' € TTC'} />
+              : <Col label="Prix de vente" value="non renseigné" color={T.muted} italic />
+            }
+          </div>
+          <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+            {fc !== null
+              ? <Col label="Food cost" value={fc.toFixed(1) + '%'} color={badge.color} />
+              : <Col label="Food cost" value="—" color={T.muted} />
+            }
+          </div>
+        </div>
+
+        {/* Zone 3 : statut et « Dupliquer » */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', marginTop: '0.75rem' }}>
+          {badge ? (
+            <span style={{ fontSize: '11px', fontWeight: 700, padding: '4px 12px', borderRadius: '99px', background: badge.bg, color: badge.color, whiteSpace: 'nowrap' }}>
+              {badge.label}
+            </span>
+          ) : (
+            <span style={{ fontSize: '11px', color: '#f97316', fontWeight: 600 }} title="Prix de vente non renseigné">⚠️</span>
+          )}
+          <button
+            onClick={e => { e.stopPropagation(); onDuplicate(r); }}
+            style={{ background: 'none', border: '1px solid #2D6A4F', borderRadius: '6px', cursor: 'pointer', color: '#2D6A4F', fontSize: '12px', padding: '3px 8px', flexShrink: 0, fontFamily: "'DM Sans', sans-serif", fontWeight: 600, transition: 'background 0.15s' }}
+            onMouseEnter={e => { e.stopPropagation(); e.currentTarget.style.background = 'rgba(45,106,79,0.08)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
+            title="Dupliquer"
+          >⎘ Dupliquer</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -158,6 +254,9 @@ export default function Recettes() {
   const [showImport, setShowImport] = useState(false);
   const [duplicationToast, setDuplicationToast] = useState('');
   const navigate = useNavigate();
+  // Un seul calcul de largeur pour toute la liste (téléphone : moins de 768 px, comme dans les autres pages)
+  const width = useWindowWidth();
+  const isMobile = width < 768;
 
   useEffect(() => {
     Promise.all([
@@ -371,6 +470,7 @@ export default function Recettes() {
                     onDuplicate={dupliquer}
                     onUpdateCategorie={updateCategorie}
                     navigate={navigate}
+                    isMobile={isMobile}
                   />
                 ))}
               </div>
