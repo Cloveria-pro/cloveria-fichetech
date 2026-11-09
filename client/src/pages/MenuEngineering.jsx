@@ -1635,12 +1635,12 @@ function ResultatsView({ resultats, onBack }) {
         <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text, marginBottom: '1.25rem' }}>
           Matrice Menu Engineering
         </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '0.75rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0, 1fr)' : '1fr 1fr', gap: '1rem', marginBottom: '0.75rem' }}>
           {['enigme', 'etoile', 'poids_mort', 'vache'].map(key => {
             const q = QUADRANTS[key];
             const plats = filtered.filter(r => r.quadrant === key);
             return (
-              <div key={key} style={{ background: q.bg, border: `2px solid ${q.border}`, borderRadius: '12px', padding: '1rem 1.1rem', minHeight: '120px' }}>
+              <div key={key} style={{ background: q.bg, border: `2px solid ${q.border}`, borderRadius: '12px', padding: '1rem 1.1rem', minHeight: '120px', ...(isMobile ? { minWidth: 0 } : {}) }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                   <div>
                     <div style={{ fontWeight: 800, fontSize: '0.88rem', color: q.color }}>{q.icon} {q.label}</div>
@@ -1674,7 +1674,7 @@ function ResultatsView({ resultats, onBack }) {
             );
           })}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', paddingTop: '4px' }}>
+        <div style={{ display: isMobile ? 'none' : 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', paddingTop: '4px' }}>
           <div style={{ fontSize: '0.64rem', color: '#B0A898', textAlign: 'center' }}>← Peu populaire · Populaire →</div>
           <div style={{ fontSize: '0.64rem', color: '#B0A898', textAlign: 'center' }}>← Peu populaire · Populaire →</div>
         </div>
