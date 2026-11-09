@@ -8,6 +8,7 @@ import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
 import DecimalInput from '../components/DecimalInput.jsx';
 import { ALLERGENES_14, detecterAllergenes } from '../allergenes.js';
 import { useAvertirAvantDepart } from '../hooks/useAvertirAvantDepart.js';
+import { useWindowWidth } from '../hooks/useWindowWidth.js';
 
 const UNITES = ['g', 'kg', 'ml', 'L', 'pièce', 'c.s', 'c.c'];
 const CLES_ALLERGENES = ALLERGENES_14.map(a => a.key);
@@ -37,6 +38,8 @@ export default function NouvelleRecette() {
   const [iaLoading, setIaLoading] = useState(false);
   const [catalog, setCatalog] = useState([]);
   const navigate = useNavigate();
+  const width = useWindowWidth();
+  const isMobile = width < 768;
 
   // Avertissement avant de quitter : formulaire différent des valeurs de départ ou description IA saisie ;
   // levé dès l'enregistrement (saving), qui redirige vers la fiche créée.
@@ -175,7 +178,7 @@ export default function NouvelleRecette() {
           onChange={e => setIaDescription(e.target.value)}
           disabled={iaLoading}
           rows={4}
-          style={{ ...inputStyle, minHeight: '110px', resize: 'vertical', marginBottom: '0.75rem' }}
+          style={{ ...inputStyle, minHeight: '110px', resize: 'vertical', marginBottom: '0.75rem', ...(isMobile ? { boxSizing: 'border-box' } : {}) }}
           placeholder="Décrivez votre recette librement : nom du plat, ingrédients, technique de cuisson, nombre de couverts..."
         />
         <button
@@ -210,10 +213,10 @@ export default function NouvelleRecette() {
         <div style={{ marginBottom: '1rem' }}>
           <label style={labelStyle}>Nom de la recette *</label>
           <input value={form.nom} onChange={e => setField('nom', e.target.value)}
-            style={{ ...inputStyle, fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 600 }}
+            style={{ ...inputStyle, fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 600, ...(isMobile ? { boxSizing: 'border-box' } : {}) }}
             placeholder="Ex: Tarte Tatin, Blanquette de veau..." required />
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1rem', ...(isMobile ? { alignItems: 'end' } : {}) }}>
           <div>
             <label style={labelStyle}>Catégorie</label>
             <select value={form.categorie} onChange={e => setField('categorie', e.target.value)} style={inputStyle}>
@@ -222,21 +225,21 @@ export default function NouvelleRecette() {
           </div>
           <div>
             <label style={labelStyle}>Portions</label>
-            <input type="number" min="1" value={form.portions} onChange={e => setField('portions', parseInt(e.target.value) || 1)} style={inputStyle} />
+            <input type="number" min="1" value={form.portions} onChange={e => setField('portions', parseInt(e.target.value) || 1)} style={{ ...inputStyle, ...(isMobile ? { boxSizing: 'border-box' } : {}) }} />
           </div>
           <div>
             <label style={labelStyle}>Prép. (min)</label>
-            <input type="number" min="0" value={form.tempsPreparation} onChange={e => setField('tempsPreparation', parseInt(e.target.value) || 0)} style={inputStyle} />
+            <input type="number" min="0" value={form.tempsPreparation} onChange={e => setField('tempsPreparation', parseInt(e.target.value) || 0)} style={{ ...inputStyle, ...(isMobile ? { boxSizing: 'border-box' } : {}) }} />
           </div>
           <div>
             <label style={labelStyle}>Cuisson (min)</label>
-            <input type="number" min="0" value={form.tempsCuisson} onChange={e => setField('tempsCuisson', parseInt(e.target.value) || 0)} style={inputStyle} />
+            <input type="number" min="0" value={form.tempsCuisson} onChange={e => setField('tempsCuisson', parseInt(e.target.value) || 0)} style={{ ...inputStyle, ...(isMobile ? { boxSizing: 'border-box' } : {}) }} />
           </div>
         </div>
         <div>
           <label style={labelStyle}>Description</label>
           <textarea value={form.description} onChange={e => setField('description', e.target.value)}
-            style={{ ...inputStyle, minHeight: '80px', resize: 'vertical' }}
+            style={{ ...inputStyle, minHeight: '80px', resize: 'vertical', ...(isMobile ? { boxSizing: 'border-box' } : {}) }}
             placeholder="Décrivez brièvement la recette..." />
         </div>
       </div>
