@@ -798,6 +798,106 @@ export default function FicheTechnique() {
             {editMode && <button onClick={ajouterIngredient} style={btnOutline}>+ Ajouter</button>}
           </div>
         </div>
+        {/* Téléphone, en lecture : une carte par ingrédient et les totaux dessous (mêmes contenus, ⚠️ et infobulles que le tableau ci-dessous) */}
+        {isMobile && !editMode ? (
+          <>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {ingData.map((ing, idx) => {
+                const suggestion = ing.prixUnitaire === 0 && ing.nom && !ing.ligneSuivie ? findSimilarInCatalog(ing.nom, catalog, aliases) : null;
+                const qteScaled = ing.quantite * scaleFactor;
+                return (
+                  <div key={idx} style={{ border: '1px solid #F3EFE8', borderRadius: '8px', overflow: 'hidden', fontSize: '0.875rem' }}>
+                    <div style={{ padding: '0.6rem 0.75rem' }}>
+                      {/* Ligne 1 : nom et rendement ; coût TTC à droite */}
+                      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.75rem' }}>
+                        <span style={{ fontWeight: 500, minWidth: 0, overflowWrap: 'anywhere' }}>{ing.nom}{ing.rendement && ing.rendement < 100 && <span style={{ marginLeft: '6px', fontSize: '0.68rem', fontWeight: 700, padding: '1px 5px', borderRadius: '3px', background: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A' }}>{ing.rendement}%</span>}</span>
+                        <span style={{ fontWeight: 600, color: ing.prixUnitaire === 0 ? T.muted : T.green, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          {ing.coutTTC.toFixed(2) + ' EUR'}
+                        </span>
+                      </div>
+                      {/* Ligne 2 : quantité et unité */}
+                      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.25rem' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <span style={{ color: scaleFactor !== 1 ? T.gold : T.text, fontWeight: scaleFactor !== 1 ? 600 : 400 }}>{formatQuantite(qteScaled)}</span>
+                          {ing.quantiteIncomplete && (
+                            <span title="Quantité à compléter — le coût de cette ligne est à 0" style={{ cursor: 'help' }}>⚠️</span>
+                          )}
+                        </span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <span style={{ color: T.muted }}>{ing.unite}</span>
+                          {(ing.uniteIncomplete || ing.familleIncoherente) && !ing.ligneSuivie && (
+                            <span title={ing.uniteIncomplete ? "Unité à vérifier — le coût de cette ligne peut être inexact" : messageFamilleDifferente(ing.unite, ing.catUniteBrute)} style={{ cursor: 'help' }}>⚠️</span>
+                          )}
+                        </span>
+                      </div>
+                      {/* Ligne 3 : prix par unité, TVA, coût HT */}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.15rem 0.6rem', marginTop: '0.25rem', fontSize: '0.78rem' }}>
+                        <span style={{ color: T.muted }}>
+                          {ing.prixUnitaire === 0 && ing.nom
+                            ? <>{ing.prixUnitaire} EUR HT <span title={ing.ligneSuivie ? "Prix manquant — la sous-recette n'a pas de prix : complétez les prix de ses ingrédients" : ing.estSousRecette ? "Prix manquant — ajoutez de nouveau la sous-recette depuis la liste pour copier son prix" : "Prix manquant — allez dans Ingrédients pour l'ajouter"} style={{ cursor: 'help' }}>⚠️</span></>
+                            : ing.ligneSuivie
+                              ? <>{ing.prixUnitaire} EUR HT&nbsp;/&nbsp;{baseUnit(ing.unite)}</>
+                              : ing.catUnite
+                                ? <>{ing.prixUnitaire} EUR HT&nbsp;/&nbsp;{ing.catUnite}</>
+                                : ing.estSousRecette
+                                  ? <>{ing.prixUnitaire} EUR HT&nbsp;/&nbsp;{baseUnit(ing.unite)}</>
+                                  : ing.nom
+                                    ? <>{ing.prixUnitaire} EUR HT&nbsp;/&nbsp;{baseUnit(ing.unite)} <span title="Ingrédient absent de la base — prix saisi manuellement" style={{ cursor: 'help' }}>⚠️</span></>
+                                    : <>{ing.prixUnitaire} EUR HT</>
+                          }
+                        </span>
+                        <span style={{ color: T.muted }}>TVA {ing.ingTva}%</span>
+                        <span style={{ color: ing.prixUnitaire === 0 ? T.muted : T.text }}>Coût HT {ing.coutHT.toFixed(2) + ' EUR'}</span>
+                      </div>
+                    </div>
+                    {/* Suggestion d'association, comme la ligne du tableau */}
+                    {suggestion && (
+                      <div style={{ background: '#FFFBF5', borderTop: '1px solid #F9F7F4', padding: '0.4rem 0.75rem 0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem 0.75rem' }}>
+                          <span style={{ fontSize: '0.75rem', color: '#92400E' }}>
+                            💡 Associer à <strong>{suggestion.nom}</strong> — {suggestion.prixUnitaire.toFixed(2)} EUR HT/{baseUnit(suggestion.unite)} ?
+                          </span>
+                          <button onClick={() => associerIngredient(idx, suggestion)}
+                            style={{ padding: '2px 10px', fontSize: '0.75rem', background: '#d97706', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>
+                            Associer
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {/* Totaux : mêmes libellés et conditions que le pied du tableau */}
+            <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '2px solid #F3EFE8', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', fontSize: '0.75rem', color: T.muted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <span style={{ minWidth: '84px', textAlign: 'right' }}>Coût HT</span>
+                <span style={{ minWidth: '84px', textAlign: 'right' }}>Coût TTC</span>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.25rem 0.75rem' }}>
+                <span style={{ color: T.muted, fontSize: '0.85rem', fontWeight: 600 }}>
+                  Total coût matière HT {couverts !== form.portions ? `(${couverts} couverts)` : ''}
+                </span>
+                <span style={{ display: 'flex', gap: '0.75rem', marginLeft: 'auto' }}>
+                  <span style={{ minWidth: '84px', textAlign: 'right', color: T.text, fontWeight: 600 }}>{totalHTScaled.toFixed(2)} EUR</span>
+                  <span style={{ minWidth: '84px', textAlign: 'right', fontWeight: 700, color: T.green }}>{totalTTCScaled.toFixed(2)} EUR</span>
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.25rem 0.75rem' }}>
+                <span style={{ color: T.muted, fontSize: '0.85rem', fontWeight: 600 }}>Coût par couvert (HT)</span>
+                <span style={{ display: 'flex', gap: '0.75rem', marginLeft: 'auto' }}>
+                  <span style={{ minWidth: '84px', textAlign: 'right', fontWeight: 700, fontSize: '1.05rem', color: T.text }}>{coutPortion.toFixed(2)} EUR</span>
+                  <span style={{ minWidth: '84px', textAlign: 'right', fontWeight: 700, fontSize: '1.05rem', color: T.green }}>{(totalTTCScaled / couverts).toFixed(2)} EUR</span>
+                </span>
+              </div>
+              {nbLignesIncompletes > 0 && (
+                <div style={{ textAlign: 'right', color: T.muted, fontSize: '0.85rem', fontWeight: 600 }}>
+                  ⚠️ Total incomplet : {nbLignesIncompletes} ligne(s) à compléter
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: '600px' }}>
             <thead>
@@ -945,6 +1045,7 @@ export default function FicheTechnique() {
             </tfoot>
           </table>
         </div>
+        )}
         {editMode && (
           <p style={{ fontSize: '0.78rem', color: T.muted, marginTop: '0.75rem' }}>
             Le prix d'un ingrédient du catalogue se modifie dans la page Ingrédients.
