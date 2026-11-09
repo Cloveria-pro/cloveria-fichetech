@@ -250,6 +250,102 @@ export default function NouvelleRecette() {
           <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text }}>Ingrédients</h3>
           <button type="button" onClick={ajouterIngredient} style={btnOutline}>+ Ajouter</button>
         </div>
+        {/* Téléphone : une carte par ingrédient (mêmes champs, ⚠️ et calculs que le tableau ci-dessous), puis les totaux empilés.
+            Aucun overflow sur les cartes : la liste de suggestions du nom (position absolue) reste visible. */}
+        {isMobile ? (
+          <>
+            {/* Champ du nom (IngredientAutocomplete, non modifié) en border-box, dans ces cartes seulement */}
+            <style>{`.nr-ing-nom input { box-sizing: border-box; }`}</style>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {form.ingredients.map((ing, idx) => {
+                const nomRempli = !!ing.nom.trim();
+                const quantiteIncomplete = nomRempli && !(parseFloat(ing.quantite) > 0);
+                const uniteIncomplete = nomRempli && uniteAVerifier(ing.unite);
+                // Unité du prix, comme dans le tableau : unité du catalogue si l'ingrédient y est, sinon unité de base de la ligne.
+                const cat = catalog.find(c => (c.nom || '').toLowerCase() === ing.nom.toLowerCase());
+                const unitePrix = cat ? baseUnit(cat.unite) : baseUnit(ing.unite);
+                return (
+                  <div key={idx} style={{ border: '1px solid #F3EFE8', borderRadius: '8px', padding: '0.6rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem' }}>
+                    {/* Nom et suppression */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <div className="nr-ing-nom" style={{ flex: 1, minWidth: 0 }}>
+                        <IngredientAutocomplete
+                          value={ing.nom}
+                          catalog={catalog}
+                          onChange={fields => updateIngredientFields(idx, fields)}
+                        />
+                      </div>
+                      <button type="button" onClick={() => supprimerIngredient(idx)} style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '1rem', minWidth: '32px', minHeight: '32px', padding: 0, flexShrink: 0 }}
+                        onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                        onMouseLeave={e => e.currentTarget.style.color = '#D1C4B0'}
+                      >x</button>
+                    </div>
+                    {/* Qté et Unité */}
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <label style={labelStyle}>Qté</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <DecimalInput value={ing.quantite} onValueChange={n => updateIngredient(idx, 'quantite', n)} style={{ ...inputStyle, flex: 1, minWidth: 0, boxSizing: 'border-box' }} />
+                          {quantiteIncomplete && (
+                            <span title="Quantité à compléter — le coût de cette ligne est à 0" style={{ cursor: 'help', flexShrink: 0 }}>⚠️</span>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <label style={labelStyle}>Unité</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <select value={ing.unite} onChange={e => updateIngredient(idx, 'unite', e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: 0, boxSizing: 'border-box' }}>
+                            {(UNITES.includes(ing.unite) ? UNITES : [...UNITES, ing.unite]).map(u => <option key={u}>{u}</option>)}
+                          </select>
+                          {uniteIncomplete && (
+                            <span title="Unité à vérifier — le coût de cette ligne peut être inexact" style={{ cursor: 'help', flexShrink: 0 }}>⚠️</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Prix/unité */}
+                    <div>
+                      <label style={labelStyle}>Prix/unité (EUR)</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <DecimalInput value={ing.prixUnitaire} onValueChange={n => updateIngredient(idx, 'prixUnitaire', n)} style={{ ...inputStyle, flex: 1, minWidth: 0, boxSizing: 'border-box' }} />
+                        <span style={{ color: T.muted, fontSize: '0.8rem', whiteSpace: 'nowrap', flexShrink: 0 }}>EUR HT&nbsp;/&nbsp;{unitePrix}</span>
+                        {ing.prixUnitaire === 0 && ing.nom.trim() && (
+                          <span title="Prix manquant — allez dans Ingrédients pour l'ajouter" style={{ cursor: 'help', flexShrink: 0 }}>⚠️</span>
+                        )}
+                      </div>
+                    </div>
+                    {/* TVA et Coût */}
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <label style={labelStyle}>TVA</label>
+                        <select value={ing.tva ?? 10} onChange={e => updateIngredient(idx, 'tva', e.target.value)} style={{ ...inputStyle, boxSizing: 'border-box' }}>
+                          {TVA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <label style={labelStyle}>Coût</label>
+                        <div style={{ fontWeight: 600, color: ing.prixUnitaire === 0 ? T.muted : T.green, padding: '0.45rem 0' }}>
+                          {ing.prixUnitaire === 0 ? '—' : coutIng(ing).toFixed(2) + ' EUR'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {/* Totaux, empilés : mêmes libellés et valeurs que le pied du tableau */}
+            <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '2px solid #F3EFE8', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.25rem 0.75rem' }}>
+                <span style={{ color: T.muted, fontSize: '0.85rem', fontWeight: 600 }}>Total matières</span>
+                <span style={{ fontWeight: 700, color: T.green }}>{cout.toFixed(2)} EUR</span>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.25rem 0.75rem' }}>
+                <span style={{ color: T.muted, fontSize: '0.85rem', fontWeight: 600 }}>Coût / portion</span>
+                <span style={{ fontWeight: 700, fontSize: '1.1rem', color: T.green }}>{coutPortion.toFixed(2)} EUR</span>
+              </div>
+            </div>
+          </>
+        ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #F3EFE8' }}>
@@ -336,6 +432,7 @@ export default function NouvelleRecette() {
             </tr>
           </tfoot>
         </table>
+        )}
       </div>
 
       {/* Etapes */}
