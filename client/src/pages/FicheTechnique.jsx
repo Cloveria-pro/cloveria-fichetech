@@ -592,11 +592,11 @@ export default function FicheTechnique() {
   return (
     <div style={{ maxWidth: '860px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '2rem' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: '1rem', marginBottom: '2rem' }}>
         <Link to="/fiches-techniques" style={{ color: T.muted, textDecoration: 'none', fontSize: '0.875rem', marginTop: '6px', flexShrink: 0 }}>← Retour</Link>
         <div style={{ flex: 1 }}>
           {editMode
-            ? <input value={form.nom} onChange={e => setForm(f => ({ ...f, nom: e.target.value }))} style={{ ...inputStyle, fontFamily: "'Playfair Display', serif", fontSize: '1.4rem', fontWeight: 700 }} />
+            ? <input value={form.nom} onChange={e => setForm(f => ({ ...f, nom: e.target.value }))} style={{ ...inputStyle, fontFamily: "'Playfair Display', serif", fontSize: '1.4rem', fontWeight: 700, boxSizing: 'border-box' }} />
             : <h1 data-font-playfair style={{ fontSize: '1.8rem', fontWeight: 700, color: T.text, lineHeight: 1.2 }}>{recette.nom}</h1>
           }
           {catEdit && !editMode ? (
@@ -663,7 +663,7 @@ export default function FicheTechnique() {
             </div>
           )}
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 1, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <button onClick={exportPDF} disabled={pdfLoading} style={{ ...btnSecondary, color: T.gold, borderColor: '#C9A84C', opacity: pdfLoading ? 0.7 : 1 }}
             onMouseEnter={e => { if (!pdfLoading) e.currentTarget.style.background = '#FFFBF0'; }} onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
             {pdfLoading ? '⏳ PDF...' : '↓ PDF'}
@@ -1030,13 +1030,15 @@ export default function FicheTechnique() {
         {donutData.length >= 2 && (
           <div style={{ marginTop: '1.5rem', borderTop: '1px solid #F3EFE8', paddingTop: '1.25rem' }}>
             <h4 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.95rem', fontWeight: 700, color: T.text, marginBottom: '0.75rem' }}>Répartition des coûts</h4>
-            <ResponsiveContainer width="100%" height={260}>
+            {/* Téléphone : légende en colonne et hauteur selon le nombre d'ingrédients, pour qu'elle ne passe pas sur l'anneau (rayon fixe de 105 px) */}
+            <ResponsiveContainer width="100%" height={isMobile ? 240 + donutData.length * 24 : 260}>
               <PieChart>
                 <Pie data={donutData} cx="50%" cy="50%" innerRadius={65} outerRadius={105} paddingAngle={2} dataKey="value">
                   {donutData.map((entry, index) => <Cell key={index} fill={entry.color} />)}
                 </Pie>
                 <Tooltip formatter={(val, name) => [`${val.toFixed(2)} EUR (${cout > 0 ? (val / cout * 100).toFixed(1) : 0}%)`, name]} />
-                <Legend formatter={(val, entry) => `${val} — ${cout > 0 ? (entry.payload.value / cout * 100).toFixed(1) : 0}%`} />
+                <Legend formatter={(val, entry) => `${val} — ${cout > 0 ? (entry.payload.value / cout * 100).toFixed(1) : 0}%`}
+                  {...(isMobile ? { layout: 'vertical', verticalAlign: 'bottom', align: 'center' } : {})} />
               </PieChart>
             </ResponsiveContainer>
           </div>
