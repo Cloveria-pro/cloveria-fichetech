@@ -3,7 +3,7 @@ import { api } from '../api.js';
 
 const T = { green: '#2D6A4F', gold: '#C9A84C', text: '#1C2B1E', muted: '#6B7280', red: '#DC2626', bg: '#F8F6F1' };
 const card = { background: '#fff', borderRadius: '12px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' };
-const selectStyle = { padding: '0.4rem 0.6rem', border: '1px solid #E5E0D8', borderRadius: '6px', fontSize: '0.8rem', fontFamily: "'DM Sans', sans-serif", color: T.text, background: '#fff', outline: 'none' };
+const selectStyle = { padding: '0.4rem 0.6rem', border: '1px solid #E5E0D8', borderRadius: '6px', fontSize: '0.8rem', fontFamily: "'DM Sans', sans-serif", color: T.text, background: '#fff', outline: 'none', maxWidth: '100%' };
 const badgeStyle = (color) => ({ display: 'inline-block', padding: '2px 8px', borderRadius: '999px', fontSize: '0.72rem', fontWeight: 600, background: color === 'green' ? 'rgba(45,106,79,0.1)' : 'rgba(107,114,128,0.1)', color: color === 'green' ? T.green : T.muted });
 
 const TABS = [
@@ -335,7 +335,7 @@ export default function Documents() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0', marginBottom: '1.5rem', borderBottom: '2px solid #E5E0D8' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0', marginBottom: '1.5rem', borderBottom: '2px solid #E5E0D8' }}>
         {TABS.map(tab => (
           <button
             key={tab.key}

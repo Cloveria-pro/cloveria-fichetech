@@ -849,7 +849,7 @@ export default function MenuEngineering() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '4px', marginBottom: '1.75rem', background: '#fff', border: '1px solid #E8E2D9', borderRadius: '10px', padding: '4px', width: 'fit-content' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '1.75rem', background: '#fff', border: '1px solid #E8E2D9', borderRadius: '10px', padding: '4px', width: 'fit-content', maxWidth: '100%' }}>
         {[{ key: 'import', label: 'Nouvel import' }, { key: 'historique', label: 'Historique' }, { key: 'analyse', label: 'Analyse' }].map(t => (
           <button key={t.key} onClick={() => {
             if (t.key === 'import') {
