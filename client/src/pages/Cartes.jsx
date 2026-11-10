@@ -208,7 +208,8 @@ async function downloadPDF(htmlString, filename, landscape = false) {
 }
 
 // ─── Description editor inline ───────────────────────────────────────────────
-function DescriptionEditor({ recette, onSaved }) {
+// compact : téléphone (seuil fourni par VueCarte) ; absent ou faux, affichage inchangé.
+function DescriptionEditor({ recette, onSaved, compact = false }) {
   const [value, setValue] = useState(recette?.description_commerciale || '');
   const [iaLoading, setIaLoading] = useState(false);
   const debounceRef = useRef(null);
@@ -273,6 +274,7 @@ function DescriptionEditor({ recette, onSaved }) {
           padding: '4px 7px', border: '1px solid #E5E0D8', borderRadius: '6px',
           fontSize: '0.78rem', fontFamily: "'DM Sans', sans-serif", color: T.text,
           lineHeight: 1.45, fontStyle: 'italic', outline: 'none', background: 'transparent',
+          ...(compact ? { minWidth: 0 } : {}),
         }}
       />
       <button
@@ -286,6 +288,7 @@ function DescriptionEditor({ recette, onSaved }) {
           fontSize: '0.68rem', fontWeight: 600,
           cursor: iaLoading ? 'default' : 'pointer',
           fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap',
+          ...(compact ? { minHeight: '36px' } : {}),
         }}
       >{iaLoading ? '...' : '✨ IA'}</button>
     </div>
@@ -559,8 +562,8 @@ ${sections}
                     {section.platsData.map(plat => {
                       const badge = plat.fc !== null ? fcBadge(plat.fc, fcCible) : null;
                       return (
-                        <div key={plat.recetteId} style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', padding: '0.875rem 1rem', background: '#FAFAF8', borderRadius: '10px', border: '1px solid #F3EFE8' }}>
-                          <div style={{ flex: 1, minWidth: 0 }}>
+                        <div key={plat.recetteId} style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', padding: '0.875rem 1rem', background: '#FAFAF8', borderRadius: '10px', border: '1px solid #F3EFE8', ...(isPhone ? { flexWrap: 'wrap' } : {}) }}>
+                          <div style={{ flex: isPhone ? '1 1 100%' : 1, minWidth: 0 }}>
                             <Link to={'/fiches-techniques/' + plat.recetteId}
                               style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.975rem', fontWeight: 700, color: T.text, textDecoration: 'none', lineHeight: 1.3, display: 'block' }}
                               onMouseEnter={e => e.currentTarget.style.color = T.green}
@@ -568,6 +571,7 @@ ${sections}
                             >{plat.nom}</Link>
                             <DescriptionEditor
                               recette={plat.rec}
+                              compact={isPhone}
                               onSaved={updated => setLocalRecettes(prev => prev.map(r => r.id === updated.id ? updated : r))}
                             />
                             {badge && (
