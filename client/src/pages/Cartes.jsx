@@ -822,11 +822,11 @@ function EditeurCarte({ carte, recettes, parametres, onSave, onBack, onAutoSave,
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', ...(isMobile ? { flexWrap: 'wrap' } : {}) }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: '0.875rem' }}>← Retour</button>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: isMobile ? '1 1 100%' : 1 }}>
           <input value={form.nom} onChange={e => setForm(f => ({ ...f, nom: e.target.value }))}
-            placeholder="Nom de la carte..." style={{ ...inputStyle, fontFamily: "'Playfair Display', serif", fontSize: '1.1rem', fontWeight: 700 }} />
+            placeholder="Nom de la carte..." style={{ ...inputStyle, fontFamily: "'Playfair Display', serif", fontSize: '1.1rem', fontWeight: 700, ...(isMobile ? { boxSizing: 'border-box' } : {}) }} />
         </div>
         <button onClick={sauvegarder} disabled={saving} style={{ padding: '0.55rem 1.5rem', background: T.green, color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' }}
           onMouseEnter={e => { if (!saving) e.currentTarget.style.background = '#1e4d38'; }}
