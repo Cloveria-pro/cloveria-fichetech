@@ -836,7 +836,7 @@ function EditeurCarte({ carte, recettes, parametres, onSave, onBack, onAutoSave,
 
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '300px 1fr', gap: '1.25rem', alignItems: 'start' }}>
         {/* Panneau gauche : fiches disponibles */}
-        <div style={{ ...card, padding: '1.25rem', position: 'sticky', top: '1rem' }}>
+        <div style={{ ...card, padding: '1.25rem', position: isMobile ? 'static' : 'sticky', top: '1rem' }}>
           <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.95rem', fontWeight: 700, color: T.text, marginBottom: '0.875rem' }}>Fiches techniques</h3>
           <input type="search" placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} style={{ ...inputSm, marginBottom: '0.5rem' }} />
           <select value={catFilter} onChange={e => setCatFilter(e.target.value)} style={{ ...inputSm, marginBottom: '0.875rem' }}>
