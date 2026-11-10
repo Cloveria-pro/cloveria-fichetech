@@ -1519,6 +1519,7 @@ function ResultatsView({ resultats, onBack }) {
   const [filterCategorie, setFilterCategorie] = useState('');
   const rvWidth = useWindowWidth();
   const isMobile = rvWidth < 768;
+  const isTablet = rvWidth >= 768 && rvWidth < 1024;
 
   const services = useMemo(() => {
     const s = new Set();
@@ -1635,12 +1636,12 @@ function ResultatsView({ resultats, onBack }) {
         <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text, marginBottom: '1.25rem' }}>
           Matrice Menu Engineering
         </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0, 1fr)' : '1fr 1fr', gap: '1rem', marginBottom: '0.75rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0, 1fr)' : isTablet ? 'minmax(0, 1fr) minmax(0, 1fr)' : '1fr 1fr', gap: '1rem', marginBottom: '0.75rem' }}>
           {['enigme', 'etoile', 'poids_mort', 'vache'].map(key => {
             const q = QUADRANTS[key];
             const plats = filtered.filter(r => r.quadrant === key);
             return (
-              <div key={key} style={{ background: q.bg, border: `2px solid ${q.border}`, borderRadius: '12px', padding: '1rem 1.1rem', minHeight: '120px', ...(isMobile ? { minWidth: 0 } : {}) }}>
+              <div key={key} style={{ background: q.bg, border: `2px solid ${q.border}`, borderRadius: '12px', padding: '1rem 1.1rem', minHeight: '120px', ...((isMobile || isTablet) ? { minWidth: 0 } : {}) }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                   <div>
                     <div style={{ fontWeight: 800, fontSize: '0.88rem', color: q.color }}>{q.icon} {q.label}</div>
