@@ -4,6 +4,7 @@ import { coutIng } from '../utils.js';
 import { uniteAVerifier } from '../conversions.js';
 import IngredientAutocomplete from '../components/IngredientAutocomplete.jsx';
 import DecimalInput from '../components/DecimalInput.jsx';
+import { useWindowWidth } from '../hooks/useWindowWidth.js';
 
 const UNITES_SR = ['g', 'ml', 'piece'];
 const UNITES_ING = ['g', 'kg', 'ml', 'L', 'pièce', 'c.s', 'c.c'];
@@ -41,6 +42,8 @@ export default function SousRecettes() {
   const [editId, setEditId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [duplicationToast, setDuplicationToast] = useState('');
+  const width = useWindowWidth();
+  const isMobile = width < 768;
 
   useEffect(() => {
     Promise.all([
@@ -158,14 +161,14 @@ export default function SousRecettes() {
           </h3>
 
           {/* Nom + quantité produite + unité */}
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
-            <div>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0, 1fr) minmax(0, 1fr)' : '2fr 1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+            <div style={isMobile ? { gridColumn: '1 / -1' } : undefined}>
               <label style={labelStyle}>Nom</label>
               <input
                 value={editForm.nom}
                 onChange={e => setEditForm(f => ({ ...f, nom: e.target.value }))}
                 placeholder="ex: Fond de veau, Sauce béarnaise, Pâte sablée…"
-                style={inputStyle}
+                style={{ ...inputStyle, ...(isMobile ? { boxSizing: 'border-box' } : {}) }}
                 autoFocus
               />
             </div>
@@ -174,12 +177,12 @@ export default function SousRecettes() {
               <DecimalInput
                 value={editForm.quantiteProduite}
                 onValueChange={n => setEditForm(f => ({ ...f, quantiteProduite: n === null ? '' : String(n) }))}
-                style={inputStyle}
+                style={{ ...inputStyle, ...(isMobile ? { boxSizing: 'border-box' } : {}) }}
               />
             </div>
             <div>
               <label style={labelStyle}>Unité</label>
-              <select value={editForm.unite} onChange={e => setEditForm(f => ({ ...f, unite: e.target.value }))} style={inputStyle}>
+              <select value={editForm.unite} onChange={e => setEditForm(f => ({ ...f, unite: e.target.value }))} style={{ ...inputStyle, ...(isMobile ? { boxSizing: 'border-box' } : {}) }}>
                 {UNITES_SR.map(u => <option key={u} value={u}>{u}</option>)}
               </select>
             </div>
@@ -199,6 +202,93 @@ export default function SousRecettes() {
                 Aucun ingrédient — cliquez sur "Ajouter" pour commencer.
               </p>
             ) : (
+              isMobile ? (
+                <>
+                  {/* Téléphone : une carte par ingrédient (mêmes champs, ⚠️ et fonctions que le tableau ci-dessous).
+                      Aucun overflow sur les cartes : la liste de suggestions du nom (position absolue) reste visible. */}
+                  {/* Champ du nom (IngredientAutocomplete, non modifié) en border-box, dans ces cartes seulement */}
+                  <style>{`.sr-ing-nom input { box-sizing: border-box; }`}</style>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.75rem' }}>
+                    {editForm.ingredients.map((ing, idx) => {
+                      const nomRempli = !!(ing.nom || '').trim();
+                      const quantiteIncomplete = nomRempli && !(parseFloat(ing.quantite) > 0);
+                      const uniteIncomplete = nomRempli && uniteAVerifier(ing.unite);
+                      return (
+                        <div key={idx} style={{ border: '1px solid #F3EFE8', borderRadius: '8px', padding: '0.6rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem' }}>
+                          {/* Ingrédient et suppression */}
+                          <div>
+                            <label style={labelStyle}>Ingrédient</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                              <div className="sr-ing-nom" style={{ flex: 1, minWidth: 0 }}>
+                                <IngredientAutocomplete
+                                  value={ing.nom}
+                                  catalog={catalog}
+                                  onChange={fields => updateIng(idx, {
+                                    nom: fields.nom !== undefined ? fields.nom : ing.nom,
+                                    ...(fields.prixUnitaire !== undefined ? { prixUnitaire: fields.prixUnitaire } : {}),
+                                    ...(fields.unite !== undefined ? { unite: fields.unite } : {}),
+                                  })}
+                                />
+                              </div>
+                              <button
+                                onClick={() => removeIng(idx)}
+                                style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '1rem', minWidth: '32px', minHeight: '32px', padding: 0, flexShrink: 0 }}
+                                onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                                onMouseLeave={e => e.currentTarget.style.color = '#D1C4B0'}
+                              >✕</button>
+                            </div>
+                          </div>
+                          {/* Quantité et Unité */}
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <label style={labelStyle}>Quantité</label>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <DecimalInput
+                                  value={ing.quantite}
+                                  onValueChange={n => updateIng(idx, { quantite: n ?? 0 })}
+                                  style={{ ...inputStyle, flex: 1, minWidth: 0, boxSizing: 'border-box' }}
+                                />
+                                {quantiteIncomplete && (
+                                  <span title="Quantité à compléter — le coût de cette ligne est à 0" style={{ cursor: 'help', flexShrink: 0 }}>⚠️</span>
+                                )}
+                              </div>
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <label style={labelStyle}>Unité</label>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <select value={ing.unite} onChange={e => updateIng(idx, { unite: e.target.value })} style={{ ...inputStyle, flex: 1, minWidth: 0, boxSizing: 'border-box' }}>
+                                  {(UNITES_ING.includes(ing.unite) ? UNITES_ING : [...UNITES_ING, ing.unite]).map(u => <option key={u} value={u}>{u}</option>)}
+                                </select>
+                                {uniteIncomplete && (
+                                  <span title="Unité à vérifier — le coût de cette ligne peut être inexact" style={{ cursor: 'help', flexShrink: 0 }}>⚠️</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          {/* Prix/unité et Coût */}
+                          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem' }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <label style={labelStyle}>Prix/unité</label>
+                              <DecimalInput
+                                value={ing.prixUnitaire || ''}
+                                placeholder="Prix/unité"
+                                onValueChange={n => updateIng(idx, { prixUnitaire: n ?? 0 })}
+                                style={{ ...inputStyle, boxSizing: 'border-box' }}
+                              />
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <label style={labelStyle}>Coût</label>
+                              <div style={{ fontWeight: 600, color: T.green, padding: '0.45rem 0' }}>
+                                {coutIng(ing).toFixed(3)} EUR
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid #F3EFE8' }}>
@@ -271,17 +361,18 @@ export default function SousRecettes() {
                   })}
                 </tbody>
               </table>
+              )
             )}
           </div>
 
           {/* Récapitulatif coûts */}
           {editForm.ingredients.length > 0 && (
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-              <div style={{ background: '#F8F6F1', borderRadius: '8px', padding: '0.75rem 1rem', minWidth: '140px' }}>
+              <div style={{ background: '#F8F6F1', borderRadius: '8px', padding: '0.75rem 1rem', minWidth: '140px', ...(isMobile ? { minWidth: 0 } : {}) }}>
                 <div style={{ fontSize: '0.65rem', color: T.muted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '3px' }}>Coût total</div>
                 <div style={{ fontSize: '1.1rem', fontWeight: 700, color: T.green }}>{formCoutTotal.toFixed(3)} EUR</div>
               </div>
-              <div style={{ background: '#F8F6F1', borderRadius: '8px', padding: '0.75rem 1rem', minWidth: '160px' }}>
+              <div style={{ background: '#F8F6F1', borderRadius: '8px', padding: '0.75rem 1rem', minWidth: '160px', ...(isMobile ? { minWidth: 0 } : {}) }}>
                 <div style={{ fontSize: '0.65rem', color: T.muted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '3px' }}>
                   Coût unitaire
                 </div>
@@ -289,7 +380,7 @@ export default function SousRecettes() {
                   {formCoutUnitaire.toFixed(5)} EUR/{labelUniteBase(editForm.unite)}
                 </div>
               </div>
-              <div style={{ background: '#F8F6F1', borderRadius: '8px', padding: '0.75rem 1rem', minWidth: '140px' }}>
+              <div style={{ background: '#F8F6F1', borderRadius: '8px', padding: '0.75rem 1rem', minWidth: '140px', ...(isMobile ? { minWidth: 0 } : {}) }}>
                 <div style={{ fontSize: '0.65rem', color: T.muted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '3px' }}>
                   Pour {editForm.quantiteProduite} {editForm.unite}
                 </div>
