@@ -131,7 +131,7 @@ async function sendTrialEmails() {
         { id: user.id },
         { $push: { emailsEnvoyes: typeof jour === 'number' ? `j${jour}` : jour } }
       );
-      console.log(`[Relance] ${typeof jour === 'number' ? `j${jour}` : jour} envoyé (utilisateur ${user.id})`);
+      console.log(`[Relance] ${typeof jour === 'number' ? `j${jour}` : jour} envoyé`);
     } catch (err) {
       console.error(`[Relance] Erreur j${jour} (utilisateur ${user.id}) :`, err?.name, err?.code ?? err?.codeName ?? '');
     }
@@ -184,7 +184,7 @@ async function sendLifecycleEmails() {
         { id: user.id },
         { $push: { lifecycleEmailsSent: emailKey } }
       );
-      console.log(`[Lifecycle] ${emailKey} envoyé (utilisateur ${user.id})`);
+      console.log(`[Lifecycle] ${emailKey} envoyé`);
     } catch (err) {
       console.error(`[Lifecycle] Erreur ${emailKey} (utilisateur ${user.id}) :`, err?.name, err?.code ?? err?.codeName ?? '');
     }

@@ -113,6 +113,7 @@ export default function PolitiqueConfidentialite() {
               <li><strong>Documents importés</strong> (factures, fiches, fichiers de ventes) — conservés dans votre espace jusqu'à leur suppression par vos soins ou jusqu'à la suppression de votre compte</li>
               <li><strong>Sauvegardes</strong> — pour pouvoir rétablir le service après un incident, nous réalisons des exports de la base de données, stockés sur un poste chiffré à accès protégé. Chaque export est supprimé au plus tard 30 jours après sa création. Les codes de vérification d'e-mail et de réinitialisation du mot de passe n'y figurent pas.</li>
               <li><strong>Données de facturation</strong> — les factures émises par CloverIA sont conservées 10 ans conformément aux obligations comptables légales (article L123-22 du Code de commerce)</li>
+              <li><strong>Notification d'inscription</strong> — à votre inscription, un e-mail de notification (adresse e-mail, nom de l'établissement, identifiant) est envoyé à l'adresse de contact de CloverIA ; il est supprimé de cette boîte à votre demande</li>
             </ul>
           </Section>
 
@@ -121,7 +122,7 @@ export default function PolitiqueConfidentialite() {
             <ul style={{ paddingLeft: '1.25rem', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
               <li><strong>Droit d'accès</strong> — obtenir une copie de vos données : sur demande à contact@cloveria.fr, nous vous la transmettons</li>
               <li><strong>Droit de rectification</strong> — corriger des données inexactes ou incomplètes</li>
-              <li><strong>Droit à l'effacement</strong> — vous pouvez supprimer vous-même votre compte et vos données depuis l'application (page « Paramètres », rubrique « Zone dangereuse », bouton « Supprimer mon compte ») ; l'effacement dans l'application est immédiat et définitif. Des copies peuvent subsister dans nos exports de sauvegarde pendant 30 jours au plus ; elles ne sont utilisées qu'en cas de restauration après un incident. Les factures émises sont conservées 10 ans (voir section 6)</li>
+              <li><strong>Droit à l'effacement</strong> — vous pouvez supprimer vous-même votre compte et vos données depuis l'application (page « Paramètres », rubrique « Zone dangereuse », bouton « Supprimer mon compte ») ; l'effacement dans l'application est immédiat et définitif. Stripe, notre prestataire de paiement, conserve de son côté les données de paiement et de facturation liées à votre abonnement, selon ses propres obligations légales et sa propre politique de confidentialité. Des copies peuvent subsister dans nos exports de sauvegarde pendant 30 jours au plus ; elles ne sont utilisées qu'en cas de restauration après un incident. Les factures émises sont conservées 10 ans (voir section 6)</li>
               <li><strong>Droit à la portabilité</strong> — sur demande à contact@cloveria.fr, nous vous transmettons vos données dans un format structuré et lisible par machine</li>
               <li><strong>Droit d'opposition</strong> — vous opposer à certains traitements basés sur l'intérêt légitime</li>
               <li><strong>Droit à la limitation</strong> — restreindre le traitement dans certains cas prévus par le RGPD</li>
