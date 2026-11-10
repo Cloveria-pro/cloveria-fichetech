@@ -106,6 +106,8 @@ function dateHistorique(date) {
 /* ─── Modal historique des prix ─────────────────────────────────────────── */
 export function HistoriqueModal({ item, onClose, recettes, params }) {
   const [data, setData] = useState([]);
+  const width = useWindowWidth();
+  const isMobile = width < 768;
 
   useEffect(() => {
     api.historiquePrix.list(item.nom).then(d => setData(d.filter(e => e.prix > 0))).catch(() => {});
@@ -145,7 +147,7 @@ export function HistoriqueModal({ item, onClose, recettes, params }) {
       <div style={{ background: '#fff', borderRadius: '16px', padding: '1.5rem', maxWidth: '580px', width: '92%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text }}>Historique — {item.nom}</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.muted, fontSize: '1.2rem', lineHeight: 1 }}>✕</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.muted, fontSize: '1.2rem', lineHeight: 1, ...(isMobile ? { minWidth: '36px', minHeight: '36px' } : {}) }}>✕</button>
         </div>
 
         {data.length === 0 ? (
@@ -194,7 +196,7 @@ export function HistoriqueModal({ item, onClose, recettes, params }) {
                     <td style={{ padding: '4px 8px', color: T.muted }}>{d.fournisseur || '—'}</td>
                     <td style={{ padding: '4px 8px', textAlign: 'right' }}>
                       <button onClick={() => supprimerEntree(d)}
-                        style={{ padding: '2px 8px', fontSize: '0.72rem', background: 'none', border: '1px solid #FECACA', color: '#DC2626', cursor: 'pointer', borderRadius: '4px', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}
+                        style={{ padding: '2px 8px', fontSize: '0.72rem', background: 'none', border: '1px solid #FECACA', color: '#DC2626', cursor: 'pointer', borderRadius: '4px', fontFamily: "'DM Sans', sans-serif", fontWeight: 600, ...(isMobile ? { minHeight: '36px' } : {}) }}
                         onMouseEnter={e => e.currentTarget.style.background = '#FEE2E2'}
                         onMouseLeave={e => e.currentTarget.style.background = 'none'}
                       >Supprimer</button>
@@ -243,7 +245,7 @@ export function HistoriqueModal({ item, onClose, recettes, params }) {
                   return (
                     <div key={r.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem', background: '#FAFAF8', borderRadius: '6px', border: '1px solid #F3EFE8', gap: '0.75rem', flexWrap: 'wrap' }}>
                       <span style={{ fontWeight: 600, color: T.text, fontSize: '0.85rem', flex: 1 }}>{r.nom}</span>
-                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexShrink: 0 }}>
+                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexShrink: 0, ...(isMobile ? { flexShrink: 1, flexWrap: 'wrap' } : {}) }}>
                         <span style={{ fontSize: '0.78rem', color: T.muted }}>{coutPortionHT.toFixed(2)} EUR HT/couvert</span>
                         {fc !== null && (
                           <span style={{ fontSize: '0.78rem', fontWeight: 700, color: fcColor }}>FC {fc.toFixed(1)}%</span>
