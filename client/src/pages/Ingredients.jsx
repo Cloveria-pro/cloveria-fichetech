@@ -1,4 +1,4 @@
-﻿import { useEffect, useLayoutEffect, useState, useRef } from 'react';
+﻿import { Fragment, useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { api, API_URL, authHeaders } from '../api.js';
 import { calculerCoutIngredient, convertirEnUniteBase, familleUnite, famillesIncompatibles } from '../conversions.js';
@@ -108,6 +108,8 @@ export function HistoriqueModal({ item, onClose, recettes, params }) {
   const [data, setData] = useState([]);
   const width = useWindowWidth();
   const isMobile = width < 768;
+  // Téléphone : le tableau d'historique défile seul dans son cadre. Ordinateur et tablette : Fragment, aucun élément ajouté.
+  const CadreTableau = isMobile ? 'div' : Fragment;
 
   useEffect(() => {
     api.historiquePrix.list(item.nom).then(d => setData(d.filter(e => e.prix > 0))).catch(() => {});
@@ -180,6 +182,7 @@ export function HistoriqueModal({ item, onClose, recettes, params }) {
                 <Line type="monotone" dataKey="prix" stroke={T.green} strokeWidth={2} dot={{ r: 3, fill: T.green }} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
+            <CadreTableau {...(isMobile ? { style: { overflowX: 'auto' } } : {})}>
             <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '0.75rem', fontSize: '0.82rem' }}>
               <thead>
                 <tr>
@@ -205,6 +208,7 @@ export function HistoriqueModal({ item, onClose, recettes, params }) {
                 ))}
               </tbody>
             </table>
+            </CadreTableau>
           </>
         )}
 
