@@ -302,6 +302,8 @@ function VueCarte({ carte, recettes, parametres, onEdit, onBack, onAutoSave, onP
   useEffect(() => { setLocalRecettes(recettes); }, [recettes]);
   const width = useWindowWidth();
   const isMobile = width < 900;
+  // Téléphone seulement (isMobile vaut < 900 ici, la tablette garde son affichage).
+  const isPhone = width < 768;
   const date = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   const etablissement = parametres?.etablissement || 'Restaurant';
   const fcCible = parametres?.foodCostCible || 30;
@@ -512,7 +514,7 @@ ${sections}
         <div style={{ flex: 1, minWidth: 0 }}>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', fontWeight: 700, color: T.text, margin: 0, lineHeight: 1.2 }}>{carte.nom}</h1>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0, ...(isPhone ? { flexShrink: 1, flexWrap: 'wrap' } : {}) }}>
           <button onClick={exportAllergenesA} disabled={pdfLoading}
             style={{ padding: '0.45rem 0.9rem', border: '1px solid #E5E0D8', background: '#fff', borderRadius: '8px', cursor: pdfLoading ? 'default' : 'pointer', fontSize: '0.82rem', color: T.muted, fontFamily: "'DM Sans', sans-serif", opacity: pdfLoading ? 0.7 : 1 }}>
             {pdfLoading ? '⏳ PDF...' : 'Allergènes'}
