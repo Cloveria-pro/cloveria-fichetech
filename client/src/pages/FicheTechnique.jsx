@@ -593,7 +593,7 @@ export default function FicheTechnique() {
     <div style={{ maxWidth: '860px' }}>
       {/* Header */}
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: '1rem', marginBottom: '2rem' }}>
-        <Link to="/fiches-techniques" style={{ color: T.muted, textDecoration: 'none', fontSize: '0.875rem', marginTop: '6px', flexShrink: 0 }}>← Retour</Link>
+        <Link to="/fiches-techniques" style={{ color: T.muted, textDecoration: 'none', fontSize: '0.875rem', marginTop: '6px', flexShrink: 0, ...(isMobile ? { minHeight: '36px' } : {}) }}>← Retour</Link>
         <div style={{ flex: 1 }}>
           {editMode
             ? <input value={form.nom} onChange={e => setForm(f => ({ ...f, nom: e.target.value }))} style={{ ...inputStyle, fontFamily: "'Playfair Display', serif", fontSize: '1.4rem', fontWeight: 700, boxSizing: 'border-box' }} />
@@ -630,7 +630,7 @@ export default function FicheTechnique() {
                   {carte.nom}
                   <span style={{ color: '#A07828', fontWeight: 400, fontSize: '0.68rem' }}>&nbsp;{section.titre}</span>
                   <button onClick={() => retirerDeCarte(carte, section.titre)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#B45309', fontSize: '0.85rem', padding: '0 3px', lineHeight: 1 }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#B45309', fontSize: '0.85rem', padding: '0 3px', lineHeight: 1, ...(isMobile ? { minWidth: '36px', minHeight: '36px' } : {}) }}
                     onMouseEnter={e => e.currentTarget.style.color = '#dc2626'} onMouseLeave={e => e.currentTarget.style.color = '#B45309'}
                   >×</button>
                 </span>
