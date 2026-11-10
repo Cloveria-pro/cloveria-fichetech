@@ -137,7 +137,7 @@ function ListeCartes({ cartes, onNew, onOpen, onDelete }) {
                           </div>
                           <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.15rem', fontWeight: 700, color: T.text }}>{carte.nom}</h2>
                         </div>
-                        <button onClick={e => { e.stopPropagation(); onDelete(carte.id); }} style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '1rem', padding: '2px 6px' }}
+                        <button onClick={e => { e.stopPropagation(); onDelete(carte.id); }} style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '1rem', padding: '2px 6px', ...(isMobile ? { minWidth: '36px', minHeight: '36px' } : {}) }}
                           onMouseEnter={e => e.currentTarget.style.color = T.red}
                           onMouseLeave={e => e.currentTarget.style.color = '#D1C4B0'}
                         >✕</button>
@@ -515,7 +515,7 @@ ${sections}
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: '0.875rem', flexShrink: 0 }}>← Cartes</button>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: '0.875rem', flexShrink: 0, ...(isPhone ? { minHeight: '36px' } : {}) }}>← Cartes</button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', fontWeight: 700, color: T.text, margin: 0, lineHeight: 1.2 }}>{carte.nom}</h1>
         </div>
@@ -829,7 +829,7 @@ function EditeurCarte({ carte, recettes, parametres, onSave, onBack, onAutoSave,
     <div>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', ...(isMobile ? { flexWrap: 'wrap' } : {}) }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: '0.875rem' }}>← Retour</button>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.muted, cursor: 'pointer', fontSize: '0.875rem', ...(isMobile ? { minHeight: '36px' } : {}) }}>← Retour</button>
         <div style={{ flex: isMobile ? '1 1 100%' : 1 }}>
           <input value={form.nom} onChange={e => setForm(f => ({ ...f, nom: e.target.value }))}
             placeholder="Nom de la carte..." style={{ ...inputStyle, fontFamily: "'Playfair Display', serif", fontSize: '1.1rem', fontWeight: 700, ...(isMobile ? { boxSizing: 'border-box' } : {}) }} />
@@ -860,7 +860,7 @@ function EditeurCarte({ carte, recettes, parametres, onSave, onBack, onAutoSave,
                   <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                     {form.sections.map(s => (
                       <button key={s.titre} onClick={() => addToSection(r, s.titre)}
-                        style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: '99px', border: '1px solid ' + T.gold, background: 'rgba(201,168,76,0.08)', color: '#8B6914', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                        style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: '99px', border: '1px solid ' + T.gold, background: 'rgba(201,168,76,0.08)', color: '#8B6914', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", ...(isMobile ? { minHeight: '36px' } : {}) }}>
                         + {s.titre}
                       </button>
                     ))}
@@ -904,7 +904,7 @@ function EditeurCarte({ carte, recettes, parametres, onSave, onBack, onAutoSave,
                     </span>
                   </h3>
                   <button onClick={e => { e.stopPropagation(); supprimerSection(section.titre); }}
-                    style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '0.85rem' }}
+                    style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '0.85rem', ...(isMobile ? { minHeight: '36px' } : {}) }}
                     onMouseEnter={e => e.currentTarget.style.color = T.red}
                     onMouseLeave={e => e.currentTarget.style.color = '#D1C4B0'}
                   >Supprimer section</button>
