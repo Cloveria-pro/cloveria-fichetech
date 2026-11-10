@@ -1692,6 +1692,121 @@ function ResultatsView({ resultats, onBack }) {
           <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.05rem', fontWeight: 700, color: T.text, margin: 0 }}>Analyse détaillée</h3>
           <span style={{ fontSize: '0.75rem', color: T.muted }}>{filtered.length} plat{filtered.length !== 1 ? 's' : ''}</span>
         </div>
+        {/* Téléphone : une carte par plat (même ordre, mêmes calculs et textes que le tableau ci-dessous), puis les totaux */}
+        {isMobile ? (
+          <div style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.82rem' }}>
+            {sortedRows.map((r, i) => {
+              const sansPrix = !!r.sansPrix;
+              const q = QUADRANTS[r.quadrant] || QUADRANTS.poids_mort;
+              const part = totalVentes > 0 ? (r.quantite / totalVentes * 100).toFixed(1) : '—';
+              const rowId = r.recetteId || r.nomFiche;
+              const isNeg = !sansPrix && r.margeUnitaire != null && r.margeUnitaire < 0;
+              const libelle = { fontSize: '0.63rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#8C7E6E', marginBottom: '2px' };
+              return (
+                <div key={i} id={`trow-${rowId}`} style={{ border: '1px solid #F3EDE4', borderRadius: '10px', padding: '0.75rem 0.875rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  {/* Plat et catégorie */}
+                  <div>
+                    <div style={{ fontWeight: 700, color: T.text, overflowWrap: 'anywhere' }}>
+                      <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: sansPrix ? T.muted : q.color, marginRight: '8px', verticalAlign: 'middle' }} />
+                      {r.nomFiche}
+                    </div>
+                    <div style={{ color: T.muted, fontSize: '0.76rem', marginTop: '2px' }}>{r.categorieMenu}</div>
+                  </div>
+                  {/* Ventes, Part ; Prix TTC, Coût mat. HT ; Marge/u HT, Marge tot. HT */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '0.5rem 0.75rem' }}>
+                    <div>
+                      <div style={libelle}>Ventes</div>
+                      <div style={{ fontWeight: 600, color: T.text }}>{r.quantite}</div>
+                    </div>
+                    <div>
+                      <div style={libelle}>Part</div>
+                      <div style={{ color: T.muted, fontSize: '0.78rem' }}>{part}%</div>
+                    </div>
+                    <div>
+                      <div style={libelle}>Prix TTC</div>
+                      <div style={{ color: T.text }}>{r.prixVente > 0 ? r.prixVente.toFixed(2) + ' €' : '—'}</div>
+                    </div>
+                    <div>
+                      <div style={libelle}>Coût mat. HT</div>
+                      <div style={{ color: '#DC2626' }}>{r.coutMat.toFixed(2)} €</div>
+                    </div>
+                    <div>
+                      <div style={libelle}>Marge/u HT</div>
+                      {sansPrix ? (
+                        <div style={{ color: T.muted }}>—</div>
+                      ) : (
+                        <div style={{ fontWeight: 700, fontFamily: "'Playfair Display', serif", color: isNeg ? '#DC2626' : T.green }}>
+                          {r.margeUnitaire >= 0 ? '+' : ''}{r.margeUnitaire.toFixed(2)} €
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <div style={libelle}>Marge tot. HT</div>
+                      {sansPrix ? (
+                        <div style={{ color: T.muted }}>—</div>
+                      ) : (
+                        <div style={{ fontWeight: 700, fontFamily: "'Playfair Display', serif", color: r.margeTotal >= 0 ? T.text : '#DC2626' }}>
+                          {r.margeTotal >= 0 ? '+' : ''}{r.margeTotal.toFixed(2)} €
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {/* Action recommandée (retour à la ligne autorisé) */}
+                  <div>
+                    <div style={libelle}>Action recommandée</div>
+                    {sansPrix ? (
+                      <span style={{ display: 'inline-block', padding: '3px 9px', borderRadius: '5px', fontSize: '0.72rem', fontWeight: 600, color: T.muted, background: '#F8F6F1', border: '1px solid #E8E2D9' }}>
+                        Prix de vente manquant : marge non calculée
+                      </span>
+                    ) : isNeg ? (
+                      <span style={{ display: 'inline-block', padding: '3px 9px', borderRadius: '5px', fontSize: '0.72rem', fontWeight: 700, color: '#fff', background: '#DC2626' }}>
+                        ⚠ Urgent — vous perdez de l'argent à chaque vente
+                      </span>
+                    ) : (
+                      <span style={{ display: 'inline-block', padding: '3px 9px', borderRadius: '5px', fontSize: '0.72rem', fontWeight: 600, color: q.color, background: q.bg, border: `1px solid ${q.border}` }}>
+                        {q.icon} {RECOMMANDATIONS[r.quadrant]}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            {/* Totaux : mêmes textes et calculs que le pied du tableau */}
+            <div style={{ background: '#F5F2EC', borderTop: '2px solid #E8E2D9', borderRadius: '10px', padding: '0.75rem 0.875rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ fontWeight: 700, color: T.text, fontSize: '0.82rem' }}>
+                Total — {filtered.length} plat{filtered.length !== 1 ? 's' : ''}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)', gap: '0.5rem 0.75rem' }}>
+                <div>
+                  <div style={{ fontSize: '0.63rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#8C7E6E', marginBottom: '2px' }}>Ventes</div>
+                  <div style={{ fontWeight: 700, color: T.text }}>{totalVentes}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.63rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#8C7E6E', marginBottom: '2px' }}>Part</div>
+                  <div style={{ color: T.muted, fontSize: '0.78rem' }}>100%</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.63rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#8C7E6E', marginBottom: '2px' }}>Marge tot. HT</div>
+                  <div style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: '1rem', color: totalMarge >= 0 ? T.green : '#DC2626' }}>
+                    {totalMarge >= 0 ? '+' : ''}{totalMarge.toFixed(2)} €
+                  </div>
+                </div>
+              </div>
+              {totalMarge < 0 && (
+                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#DC2626' }}>
+                  ⚠ Attention — votre carte perd de l'argent sur cette période
+                </span>
+              )}
+              {platsSansPrix.length > 0 && (
+                <div style={{ fontSize: '0.72rem', color: T.muted }}>
+                  {platsSansPrix.length === 1
+                    ? '1 plat sans prix de vente, exclu de la marge'
+                    : `${platsSansPrix.length} plats sans prix de vente, exclus de la marge`}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
         <div className="me-tbl-wrap">
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
             <thead>
@@ -1796,6 +1911,7 @@ function ResultatsView({ resultats, onBack }) {
             </tfoot>
           </table>
         </div>
+        )}
       </div>
 
       {/* ── Navigation ── */}
