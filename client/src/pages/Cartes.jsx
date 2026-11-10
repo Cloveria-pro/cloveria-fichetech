@@ -61,6 +61,8 @@ function ListeCartes({ cartes, onNew, onOpen, onDelete }) {
     [...cartes].sort((a, b) => (a.ordre ?? Infinity) - (b.ordre ?? Infinity))
   );
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const width = useWindowWidth();
+  const isMobile = width < 768;
 
   useEffect(() => {
     setLocalCartes([...cartes].sort((a, b) => (a.ordre ?? Infinity) - (b.ordre ?? Infinity)));
@@ -130,7 +132,7 @@ function ListeCartes({ cartes, onNew, onOpen, onDelete }) {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
                             {!search && (
-                              <span {...dragHandleProps} onClick={e => e.stopPropagation()} style={{ cursor: 'grab', color: '#C5BDB0', fontSize: '1rem', lineHeight: 1, flexShrink: 0 }} title="Glisser pour réordonner">⠿</span>
+                              <span {...dragHandleProps} onClick={e => e.stopPropagation()} style={{ cursor: 'grab', color: '#C5BDB0', fontSize: '1rem', lineHeight: 1, flexShrink: 0, touchAction: 'none', ...(isMobile ? { minWidth: '36px', minHeight: '36px' } : {}) }} title="Glisser pour réordonner">⠿</span>
                             )}
                           </div>
                           <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.15rem', fontWeight: 700, color: T.text }}>{carte.nom}</h2>
@@ -888,7 +890,7 @@ function EditeurCarte({ carte, recettes, parametres, onSave, onBack, onAutoSave,
               <div style={{ ...card, padding: '1.25rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isOpen ? '0.875rem' : 0 }}>
                   <h3 onClick={() => toggleSection(section.titre)} style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, color: T.text, display: 'flex', alignItems: 'center', gap: '8px', margin: 0, flex: 1, cursor: 'pointer', userSelect: 'none' }}>
-                    <span {...dragProps} onClick={e => e.stopPropagation()} style={{ cursor: 'grab', color: '#C5BDB0', fontSize: '1rem', padding: '0 2px', lineHeight: 1 }} title="Glisser pour réordonner">⠿</span>
+                    <span {...dragProps} onClick={e => e.stopPropagation()} style={{ cursor: 'grab', color: '#C5BDB0', fontSize: '1rem', padding: '0 2px', lineHeight: 1, touchAction: 'none', ...(isMobile ? { minWidth: '36px', minHeight: '36px' } : {}) }} title="Glisser pour réordonner">⠿</span>
                     <span style={{ fontSize: '0.65rem', color: T.muted, display: 'inline-block', transition: 'transform 0.15s', transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▼</span>
                     <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: T.gold, display: 'inline-block', flexShrink: 0 }} />
                     {section.titre}
