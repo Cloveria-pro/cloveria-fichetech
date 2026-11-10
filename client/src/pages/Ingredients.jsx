@@ -294,11 +294,13 @@ function computeComparaisonCatalog(ingredients) {
 }
 
 function ComparaisonFournisseurs({ items, onClose }) {
+  const width = useWindowWidth();
+  const isMobile = width < 768;
   const comparaison = computeComparaisonCatalog(items);
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', ...(isMobile ? { flexWrap: 'wrap', rowGap: '0.75rem' } : {}) }}>
         <div>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', fontWeight: 700, color: T.text }}>Comparaison fournisseurs</h1>
           <p style={{ color: T.muted, fontSize: '0.875rem', marginTop: '2px' }}>Ingrédients présents plusieurs fois avec des fournisseurs différents</p>
@@ -315,7 +317,7 @@ function ComparaisonFournisseurs({ items, onClose }) {
         </div>
       ) : (
         comparaison.map(({ nom, rows }) => (
-          <div key={nom} style={{ ...card, padding: '1.25rem', marginBottom: '1rem' }}>
+          <div key={nom} style={{ ...card, padding: '1.25rem', marginBottom: '1rem', ...(isMobile ? { overflowX: 'auto' } : {}) }}>
             <div style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, color: T.text, fontSize: '1rem', marginBottom: '0.75rem' }}>{nom}</div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
