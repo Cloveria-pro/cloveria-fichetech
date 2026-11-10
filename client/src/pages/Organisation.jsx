@@ -514,7 +514,7 @@ export default function Organisation() {
   ];
 
   const sidebarRight = (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', ...(isMobile ? { alignSelf: 'stretch' } : {}) }}>
       <div style={{ ...card, padding: '1.25rem' }}>
         <div style={{ ...metaStyle, marginBottom: '0.875rem' }}>Calendrier</div>
         <MiniCalendar items={items} selectedDay={selectedDay} onDayClick={setSelectedDay} />
@@ -610,7 +610,7 @@ export default function Organisation() {
                 {filterType || selectedDay
                   ? 'Modifiez les filtres ou ajoutez un nouvel élément.'
                   : undated.length > 0
-                    ? 'Les éléments sans date sont affichés dans la colonne de droite.'
+                    ? (isMobile ? 'Les éléments sans date sont affichés sous le calendrier.' : 'Les éléments sans date sont affichés dans la colonne de droite.')
                     : 'Cliquez sur « + Ajouter » pour créer votre premier rappel, événement ou note.'}
               </div>
             </div>
