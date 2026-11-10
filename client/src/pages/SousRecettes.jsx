@@ -136,7 +136,7 @@ export default function SousRecettes() {
         </div>
       )}
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem', ...(isMobile ? { flexWrap: 'wrap', rowGap: '0.75rem' } : {}) }}>
         <div>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', fontWeight: 700, color: T.text }}>Sous-recettes</h1>
           <p style={{ color: T.muted, fontSize: '0.875rem', marginTop: '2px' }}>
@@ -161,7 +161,7 @@ export default function SousRecettes() {
           </h3>
 
           {/* Nom + quantité produite + unité */}
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0, 1fr) minmax(0, 1fr)' : '2fr 1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'minmax(0, 1fr) minmax(0, 1fr)' : '2fr 1fr 1fr', gap: '1rem', marginBottom: '1.25rem', ...(isMobile ? { alignItems: 'end' } : {}) }}>
             <div style={isMobile ? { gridColumn: '1 / -1' } : undefined}>
               <label style={labelStyle}>Nom</label>
               <input
@@ -407,6 +407,67 @@ export default function SousRecettes() {
 
       {/* Tableau des sous-recettes */}
       <div style={{ ...card, overflow: 'hidden' }}>
+        {/* Téléphone : une carte par sous-recette (mêmes informations et actions que le tableau ci-dessous) */}
+        {isMobile ? (
+          <div>
+            {items.length === 0 && (
+              <p style={{ textAlign: 'center', color: T.muted, padding: '2.5rem 1rem', fontStyle: 'italic', fontSize: '0.875rem', margin: 0 }}>
+                Aucune sous-recette. Créez des préparations de base réutilisables dans vos fiches techniques.
+              </p>
+            )}
+            {items.map(sr => {
+              const ct = computeCoutTotal(sr.ingredients);
+              const cu = computeCoutUnitaire(ct, sr.quantiteProduite, sr.unite);
+              const libelle = { fontSize: '0.72rem', color: T.muted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '2px' };
+              return (
+                <div key={sr.id} style={{ padding: '0.875rem 1rem', borderBottom: '1px solid #F9F7F4', display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.875rem', color: T.text }}>
+                  <div style={{ fontWeight: 600, overflowWrap: 'anywhere' }}>{sr.nom}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '0.5rem 0.75rem' }}>
+                    <div>
+                      <div style={libelle}>Quantité produite</div>
+                      <div style={{ color: T.muted }}>{sr.quantiteProduite} {sr.unite}</div>
+                    </div>
+                    <div>
+                      <div style={libelle}>Ingrédients</div>
+                      <div style={{ color: T.muted }}>
+                        {(sr.ingredients || []).length} ingrédient{(sr.ingredients || []).length !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={libelle}>Coût total</div>
+                      <div>
+                        <span style={{ fontWeight: 700, color: T.green }}>{ct.toFixed(2)}</span>
+                        <span style={{ color: T.muted, fontSize: '0.8rem', marginLeft: '4px' }}>EUR</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={libelle}>Coût unitaire</div>
+                      <div style={{ color: T.muted, fontSize: '0.82rem', overflowWrap: 'anywhere' }}>
+                        {cu.toFixed(5)} EUR/{labelUniteBase(sr.unite)}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={() => dupliquer(sr)}
+                      style={{ ...btnSm, border: '1px solid #E5E0D8', background: '#fff', color: T.text, minHeight: '36px' }}
+                    >Dupliquer</button>
+                    <button
+                      onClick={() => startEdit(sr)}
+                      style={{ ...btnSm, border: '1px solid #E5E0D8', background: '#fff', color: T.text, minHeight: '36px' }}
+                    >Modifier</button>
+                    <button
+                      onClick={() => supprimer(sr.id)}
+                      style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '1rem', padding: '2px 6px', borderRadius: '4px', minWidth: '36px', minHeight: '36px' }}
+                      onMouseEnter={e => e.currentTarget.style.color = '#DC2626'}
+                      onMouseLeave={e => e.currentTarget.style.color = '#D1C4B0'}
+                    >✕</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead style={{ background: '#FAFAF8' }}>
             <tr>
@@ -470,6 +531,7 @@ export default function SousRecettes() {
             })}
           </tbody>
         </table>
+        )}
       </div>
 
       {items.length === 0 && editForm === null && (
