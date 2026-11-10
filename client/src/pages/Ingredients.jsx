@@ -1280,7 +1280,7 @@ function ImportFacture({ items, setItems }) {
       )}
 
       {impactReport && impactReport.report.length > 0 && (
-        <div style={{ marginBottom: '2rem', ...card, padding: '1.5rem', border: '1px solid #FED7AA' }}>
+        <div style={{ marginBottom: '2rem', ...card, padding: '1.5rem', border: '1px solid #FED7AA', ...(isMobile ? { overflowX: 'auto' } : {}) }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <div>
               <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1rem', fontWeight: 700, color: T.text }}>
