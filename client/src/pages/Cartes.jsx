@@ -913,8 +913,8 @@ function EditeurCarte({ carte, recettes, parametres, onSave, onBack, onAutoSave,
                       const cp = rec ? coutPortion(rec) : 0;
                       const fc = fcPct(cp, plat.prixVente);
                       return (
-                        <div key={plat.recetteId} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0.75rem', borderRadius: '8px', background: '#FAFAF8', marginBottom: '4px', border: '1px solid #F3EFE8' }}>
-                          <div style={{ flex: 1, minWidth: 0 }}>
+                        <div key={plat.recetteId} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0.75rem', borderRadius: '8px', background: '#FAFAF8', marginBottom: '4px', border: '1px solid #F3EFE8', ...(isMobile ? { flexWrap: 'wrap' } : {}) }}>
+                          <div style={{ flex: isMobile ? '1 1 100%' : 1, minWidth: 0 }}>
                             <Link to={'/fiches-techniques/' + plat.recetteId}
                               style={{ fontFamily: "'Playfair Display', serif", fontWeight: 600, fontSize: '0.875rem', color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textDecoration: 'none', display: 'block' }}
                               onClick={e => e.stopPropagation()}
@@ -939,7 +939,7 @@ function EditeurCarte({ carte, recettes, parametres, onSave, onBack, onAutoSave,
                             </div>
                           )}
                           <button onClick={() => removePlat(section.titre, plat.recetteId)}
-                            style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '1rem', flexShrink: 0 }}
+                            style={{ background: 'none', border: 'none', color: '#D1C4B0', cursor: 'pointer', fontSize: '1rem', flexShrink: 0, ...(isMobile ? { minWidth: '36px', minHeight: '36px' } : {}) }}
                             onMouseEnter={e => e.currentTarget.style.color = T.red}
                             onMouseLeave={e => e.currentTarget.style.color = '#D1C4B0'}
                           >✕</button>
