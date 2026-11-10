@@ -778,13 +778,13 @@ export default function FicheTechnique() {
             }
           </div>
         ))}
-        <div style={{ ...card, padding: '1rem 1.25rem', border: '2px solid rgba(201,168,76,0.35)' }}>
+        <div style={{ ...card, padding: '1rem 1.25rem', border: '2px solid rgba(201,168,76,0.35)', ...(isMobile ? { gridColumn: '1 / -1' } : {}) }}>
           <div style={{ fontSize: '0.72rem', color: T.gold, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, marginBottom: '4px' }}>Couverts</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <button onClick={() => setCouverts(c => Math.max(1, c - 1))} style={{ width: '26px', height: '26px', border: '1px solid #E5E0D8', borderRadius: '4px', background: '#fff', cursor: 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.text, flexShrink: 0 }}>−</button>
+            <button onClick={() => setCouverts(c => Math.max(1, c - 1))} style={{ width: '26px', height: '26px', border: '1px solid #E5E0D8', borderRadius: '4px', background: '#fff', cursor: 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.text, flexShrink: 0, ...(isMobile ? { width: '36px', height: '36px' } : {}) }}>−</button>
             <input type="number" min="1" value={couverts} onChange={e => setCouverts(Math.max(1, parseInt(e.target.value) || 1))}
               style={{ ...inputStyle, width: '52px', textAlign: 'center', fontFamily: "'Playfair Display', serif", fontSize: '1.4rem', fontWeight: 700, padding: '0' }} />
-            <button onClick={() => setCouverts(c => c + 1)} style={{ width: '26px', height: '26px', border: '1px solid #E5E0D8', borderRadius: '4px', background: '#fff', cursor: 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.text, flexShrink: 0 }}>+</button>
+            <button onClick={() => setCouverts(c => c + 1)} style={{ width: '26px', height: '26px', border: '1px solid #E5E0D8', borderRadius: '4px', background: '#fff', cursor: 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.text, flexShrink: 0, ...(isMobile ? { width: '36px', height: '36px' } : {}) }}>+</button>
           </div>
         </div>
       </div>
